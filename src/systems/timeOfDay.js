@@ -172,6 +172,16 @@ export function install(ctx) {
   /** @type {Array<{o: THREE.Object3D, baseIntensity: number, baseEmissive: number}>} */
   let nightLights = [];
   let lastChildCount = -1;
+  /**
+   * Base values are captured ONCE per object and never re-read.
+   *
+   * applyNight writes straight into `intensity` and `emissiveIntensity`, so a
+   * second scan that re-read them would take an already-scaled value as the new
+   * base and compound it: rescan at midnight and every lamp gets brighter on
+   * each pass, rescan at noon and they collapse toward zero.
+   * @type {WeakMap<THREE.Object3D, {intensity:number, emissive:number}>}
+   */
+  const nightBase = new WeakMap();
 
   function rescanNightLights() {
     if (scene.children.length === lastChildCount) return;
@@ -179,12 +189,16 @@ export function install(ctx) {
     const found = [];
     scene.traverse((o) => {
       if (o.userData?.nightLight !== true) return;
-      const mat = o.material;
-      found.push({
-        o,
-        baseIntensity: o.isLight ? (o.userData.nightIntensity ?? o.intensity ?? 1) : 0,
-        baseEmissive: mat && !Array.isArray(mat) && mat.emissiveIntensity != null ? mat.emissiveIntensity : 1,
-      });
+      let base = nightBase.get(o);
+      if (!base) {
+        const mat = o.material;
+        base = {
+          intensity: o.isLight ? (o.userData.nightIntensity ?? o.intensity ?? 1) : 0,
+          emissive: mat && !Array.isArray(mat) && mat.emissiveIntensity != null ? mat.emissiveIntensity : 1,
+        };
+        nightBase.set(o, base);
+      }
+      found.push({ o, baseIntensity: base.intensity, baseEmissive: base.emissive });
     });
     nightLights = found;
   }

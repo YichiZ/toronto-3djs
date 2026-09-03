@@ -26,6 +26,18 @@ const PROBE_ABOVE = 2.4;   // ray origin height above the believed level
 const PROBE_BELOW = 9.0;
 const BODY_RADIUS = 0.55;  // horizontal clearance kept from walls
 
+/**
+ * Exponential settle rates, per second rather than per frame.
+ *
+ * A fixed per-frame factor made the walk feel different at 30 fps and 144 fps -
+ * the camera visibly lagged the forecourt stairs on a slow machine and was glued
+ * to them on a fast one. These are time constants; `settle` converts one into
+ * the fraction to move this frame.
+ */
+const GROUND_SETTLE = 12;    // 1/s, lands on a real floor in ~120 ms
+const FALLBACK_SETTLE = 4;   // 1/s, softer hold when nothing is underfoot
+const settle = (rate, dt) => 1 - Math.exp(-rate * Math.max(dt, 0));
+
 /** Walkable levels, low to high. Q/E steps through these. */
 const LEVEL_ORDER = [
   { name: 'PATH', y: LEVELS.path },
@@ -66,10 +78,17 @@ export function install(ctx) {
   const velocity = new THREE.Vector3();
   const keys = new Set();
 
+  // THREE.Sprite.raycast dereferences `raycaster.camera` unconditionally, and a
+  // Raycaster built by hand has it as null - so a single sprite anywhere in the
+  // scene (reference mode's labels are added at install, before the first frame)
+  // makes every walker ray throw. The frame loop swallows the exception per
+  // callback, so the only symptom was that walking silently did nothing.
   const down = new THREE.Raycaster();
   down.far = PROBE_ABOVE + PROBE_BELOW;
+  down.camera = camera;
   const forward = new THREE.Raycaster();
   forward.far = BODY_RADIUS + 0.35;
+  forward.camera = camera;
 
   const DOWN_VEC = new THREE.Vector3(0, -1, 0);
   const tmpOrigin = new THREE.Vector3();
@@ -201,7 +220,7 @@ function ignoreHit(hit) {
 }
 
   /** Snap to whatever floor is actually under the walker on the current level. */
-  function ground() {
+  function ground(dt) {
     const believedFloor = LEVEL_ORDER[levelIndex].y;
     tmpOrigin.set(camera.position.x, believedFloor + PROBE_ABOVE, camera.position.z);
     down.set(tmpOrigin, DOWN_VEC);
@@ -212,12 +231,12 @@ function ignoreHit(hit) {
       if (ignoreHit(hit)) continue;
       const targetY = hit.point.y + EYE;
       if (targetY - camera.position.y > STEP_UP + PROBE_ABOVE) continue;
-      camera.position.y += (targetY - camera.position.y) * 0.35;
+      camera.position.y += (targetY - camera.position.y) * settle(GROUND_SETTLE, dt);
       return hit.point.y;
     }
     // Nothing underfoot (a gap, or the module that builds this floor failed):
     // hold the nominal level rather than falling through the world.
-    camera.position.y += (believedFloor + EYE - camera.position.y) * 0.15;
+    camera.position.y += (believedFloor + EYE - camera.position.y) * settle(FALLBACK_SETTLE, dt);
     return believedFloor;
   }
 
@@ -281,7 +300,7 @@ function ignoreHit(hit) {
     if (Math.abs(dz) > 1e-5 && !blocked(0, Math.sign(dz))) camera.position.z += dz;
     else velocity.z = 0;
 
-    ground();
+    ground(dt);
   }
 
   function update(dt) {

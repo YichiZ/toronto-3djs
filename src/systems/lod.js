@@ -46,7 +46,9 @@ export function install(ctx, root) {
 
   let accum = 0;
   let visible = tracked.length;
+  let enabled = true;
   ctx.onFrame.push((dt) => {
+    if (!enabled) return;
     accum += dt;
     if (accum < CHECK_INTERVAL) return;
     accum = 0;
@@ -72,9 +74,22 @@ export function install(ctx, root) {
   return {
     tracked: () => tracked.length,
     visible: () => visible,
-    /** Force everything on, for screenshot comparison against reference views. */
+    enabled: () => enabled,
+    /**
+     * Force everything on, for screenshot comparison against reference views.
+     * This latches: without disabling the band check the next tick, 250 ms
+     * later, would silently put the culled scene back before the capture.
+     * Call setEnabled(true) to hand control back.
+     */
     showAll() {
+      enabled = false;
       for (const t of tracked) t.obj.visible = true;
+      visible = tracked.length;
+    },
+    setEnabled(on) {
+      enabled = !!on;
+      accum = CHECK_INTERVAL;   // re-evaluate on the very next frame
+      return enabled;
     },
   };
 }

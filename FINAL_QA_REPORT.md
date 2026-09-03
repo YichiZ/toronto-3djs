@@ -57,8 +57,8 @@ come from a live page capture (`node qa/capture.mjs`).
 
 | metric | value |
 |---|---|
-| average FPS | 172.4 |
-| triangles | 1562186 |
+| average FPS | 156.6 |
+| triangles | 1561562 |
 | draw calls | 1949 |
 | geometries resident | 1974 |
 | textures resident | 211 |
@@ -195,6 +195,7 @@ in the modelling.
 - Vehicles do not turn at intersections; each stays in its lane for the length of its street.
 - Vegetation is built for late spring / summer foliage only. No autumn or bare-branch variant exists.
 - 675 m of PATH is reconstructed - the spine between Union, the Royal York, Royal Bank Plaza, Brookfield Place, CIBC Square and Scotiabank Arena. The real network is roughly 30 km citywide.
+- Code review pass: 11 defects found and fixed, including one that made walk mode silently inoperative (a hand-built Raycaster with no camera throws inside THREE.Sprite.raycast, and the frame loop swallowed it). Three fixes - occlusion-aware picking, the walker's raycasts and the zero-viewport resize guard - are verified against the live page rather than by unit test.
 - `union-station` — Head house runs 229 m west from Bay and stops short of York; plaza and vehicle ramps fill the gap. Only the train shed spans the full Bay-York block.
 - `union-trainshed` — Bush-type shed with the glass atrium roof over the centre bays. Not electrified - GO, VIA and UP Express run diesel here.
 - `royal-york` — Directly across Front Street from the station, north side. Chateau-style green copper roof.

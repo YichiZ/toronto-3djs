@@ -302,9 +302,13 @@ function update(dt, elapsed) {
       v.s += v.speed * dt;
     }
 
-    // Only the leading vehicle can reach the end first, so one check suffices.
-    const last = list[list.length - 1];
-    if (last && last.s > lane.len) {
+    // Drain every vehicle that passed the end this step, not just one. On a long
+    // frame - an interior streaming hitch, or a backgrounded tab resuming with dt
+    // at the 0.1 s ceiling - two cars on a short lane like Rees can both overrun,
+    // and the one left behind would be extrapolated off the end of the roadway.
+    for (let guard = 0; guard < list.length; guard++) {
+      const last = list[list.length - 1];
+      if (!last || last.s <= lane.len) break;
       last.s -= lane.len;
       last.sig = 0;
       list.pop();
@@ -454,6 +458,10 @@ export function build(ctx) {
 /** Scale the fleet for the HUD. 0 clears the roads, 1 is the authored density. */
 export function setDensity(multiplier) {
   density = Math.max(0, Math.min(3, Number(multiplier) || 0));
+  // Reachable before build() has run on this module instance: a consumer that
+  // imports by a different specifier (an HMR query, a QA harness, a second
+  // bundle) gets a fresh instance whose meshes are still null.
+  if (!headlights || !taillights) return density;
   for (const im of meshes) {
     if (!im) continue;
     const max = im.instanceMatrix.count;

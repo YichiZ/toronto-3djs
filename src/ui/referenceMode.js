@@ -66,6 +66,9 @@ function labelSprite(record) {
   sprite.scale.set(24, 6, 1);
   sprite.renderOrder = 900;
   sprite.userData.noCollide = true;
+  // Labels are never picked and never walked on, and Sprite.raycast is the one
+  // primitive that throws when a hand-built Raycaster has no camera. Opt out.
+  sprite.raycast = () => {};
   return sprite;
 }
 

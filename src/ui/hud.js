@@ -36,7 +36,7 @@ const el = (tag, className, html) => {
  * @param {{controls?:object, tour?:object, time?:object, reference?:object, failures?:Array}} deps
  */
 export function install(ctx, { controls, tour, time, reference, failures = [] } = {}) {
-  const { camera, renderer, stats } = ctx;
+  const { camera, renderer, scene, stats } = ctx;
 
   const hud = el('div', 'hud');
   document.body.appendChild(hud);
@@ -213,9 +213,12 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   crowdInput.addEventListener('input', () => {
     const v = Number(crowdInput.value);
     crowdValue.textContent = `${Math.round(v * 100)}%`;
-    // The pedestrian system may not exist yet; broadcast and let it listen.
+    // Broadcast and let the crowd systems listen: they are built after the HUD
+    // and are not reachable from here by reference. (A direct
+    // `__TWIN__.pedestrians.setDensity` call used to sit here and was always a
+    // no-op - __TWIN__ has no `pedestrians` key - which made this dispatch look
+    // redundant. It is not; it is the only path.)
     ctx.crowdDensity = v;
-    window.__TWIN__?.pedestrians?.setDensity?.(v);
     window.dispatchEvent(new CustomEvent('twin:crowd-density', { detail: v }));
   });
 
@@ -237,6 +240,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   // --- picking ------------------------------------------------------------
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
+  const PICK_RANGE = 40;   // metres; a frontage further off is not what you meant
   let downAt = null;
 
   renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -248,6 +252,31 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     pick(e.clientX, e.clientY);
   });
 
+  /** Nearest ancestor carrying a registry id - the entity a mesh belongs to. */
+  function registryRoot(node) {
+    let n = node;
+    while (n && !n.userData?.registryId) n = n.parent;
+    return n;
+  }
+
+  /**
+   * Is `hit` a solid thing standing between the camera and the frontage?
+   *
+   * Geometry belonging to the SAME registered entity does not count: the
+   * storefront's own glazing sits a few centimetres in front of its interaction
+   * volume, and treating that as an occluder would make every frontage
+   * unclickable. Invisible, non-colliding and interactive geometry is skipped
+   * for the same reason the walker skips it.
+   */
+  function occludes(hit, ownRoot) {
+    if (!hit.face) return false;
+    for (let o = hit.object; o; o = o.parent) {
+      if (o.visible === false || o.userData?.noCollide || o.userData?.interactive) return false;
+      if (ownRoot && o === ownRoot) return false;
+    }
+    return true;
+  }
+
   function pick(clientX, clientY) {
     const targets = getInteractive();
     if (!targets.length) return;
@@ -257,12 +286,24 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     ndc.x = locked ? 0 : ((clientX - rect.left) / rect.width) * 2 - 1;
     ndc.y = locked ? 0 : -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(ndc, camera);
-    raycaster.far = 40;
+    raycaster.far = PICK_RANGE;
     const hit = raycaster.intersectObjects(targets, true)[0];
     if (!hit) return;
     let node = hit.object;
     while (node && !node.userData?.payload) node = node.parent;
     if (!node) return;
+
+    // The interaction volumes are the only candidates above, so nothing in the
+    // world can occlude them on its own - without this second pass, clicking a
+    // blank wall opens the card for a frontage on the far side of the building.
+    const ownRoot = registryRoot(node);
+    raycaster.far = Math.max(0, hit.distance - 0.02);
+    const blockers = raycaster.intersectObject(scene, true);
+    raycaster.far = PICK_RANGE;
+    for (const b of blockers) {
+      if (occludes(b, ownRoot)) return;
+    }
+
     const record = findRecordFor(node);
     showCard(node.userData.payload ?? {}, record);
   }

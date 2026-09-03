@@ -44,8 +44,18 @@ export function createContext(mount) {
   function resize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    // A zero-sized viewport - a minimised window, a hidden or not-yet-laid-out
+    // container, a tab restored from bfcache - makes aspect NaN, which poisons
+    // the projection matrix and its inverse for good. Everything that unprojects
+    // then silently returns NaN, so the canvas renders nothing AND click-picking
+    // stops finding anything, with no error anywhere. Wait for a real size.
+    if (!(w > 0) || !(h > 0)) return;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
+    // Re-applied on every resize, not just at construction: dragging the window
+    // between a 2x and a 1x display fires resize but not a reload, and a stale
+    // ratio either quadruples the frame cost or renders soft.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(w, h);
     for (const fn of onResize) fn();
   }

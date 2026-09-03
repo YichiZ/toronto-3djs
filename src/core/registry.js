@@ -56,10 +56,19 @@ export function register(spec) {
   return record;
 }
 
-/** Mark an object as raycast-interactive (storefronts, doors, exhibits). */
+/**
+ * Mark an object as raycast-interactive (storefronts, doors, exhibits).
+ *
+ * Interaction volumes are invisible via `material.visible = false`, which leaves
+ * `object.visible === true` - so the walker's collision raycast, which can only
+ * see object visibility, would treat all 400-odd of them as solid walls. Several
+ * are free-standing in walkable floor (the Union Loop mezzanine, the Stanley Cup
+ * plinth), so this flag is what keeps the player from being stopped by nothing.
+ */
 export function registerInteractive(object, payload) {
   if (!object) throw new TypeError('registerInteractive: object is required');
   object.userData.interactive = true;
+  object.userData.noCollide = true;
   object.userData.payload = Object.freeze(payload ?? {});
   interactive.push(object);
   return object;

@@ -1,0 +1,100 @@
+/**
+ * Entry point.
+ *
+ * Boot order matters: context -> lighting -> world -> camera modes -> UI. The
+ * loading overlay reports which module is building so a slow block is visible
+ * rather than looking like a hang.
+ */
+import { createContext } from './core/context.js';
+import { buildWorld } from './world/index.js';
+import { summary } from './core/registry.js';
+
+const mount = document.getElementById('app');
+const overlay = document.getElementById('loading');
+const stageEl = overlay?.querySelector('.stage');
+const barEl = overlay?.querySelector('.bar i');
+
+function stage(text, pct) {
+  if (stageEl) stageEl.textContent = text;
+  if (barEl) barEl.style.width = `${Math.round(pct * 100)}%`;
+}
+
+async function boot() {
+  const ctx = createContext(mount);
+
+  const { install: installTime } = await import('./systems/timeOfDay.js');
+  const time = installTime(ctx);
+
+  const { failures, lod } = await buildWorld(ctx, (name, pct) => stage(`building ${name}`, pct * 0.9));
+
+  stage('camera', 0.93);
+  const { install: installControls } = await import('./ui/controls.js');
+  const controls = installControls(ctx);
+  // The brief's opening frame: Union Station and the Front Street canyon. The
+  // raw default camera sits inside the head house, which reads as a white room.
+  controls.teleport('front-street-establishing');
+
+  stage('interface', 0.97);
+  const { install: installHud } = await import('./ui/hud.js');
+  const { install: installTour } = await import('./ui/tour.js');
+  const { install: installReference } = await import('./ui/referenceMode.js');
+
+  const tour = installTour(ctx, controls);
+  const reference = installReference(ctx);
+  installHud(ctx, { controls, tour, time, reference, failures });
+
+  ctx.start();
+  stage('ready', 1);
+  overlay?.classList.add('done');
+  setTimeout(() => overlay?.remove(), 700);
+
+  // Exposed for the QA harness driving the page through a headless browser.
+  window.__TWIN__ = {
+    ctx, controls, tour, time, reference, lod,
+    registry: summary,
+    failures,
+    stats: () => ({ ...ctx.stats, memory: ctx.renderer.info.memory }),
+    /**
+     * One call the QA capture can evaluate to get every runtime figure the
+     * report asks for. Anything a system does not expose comes back null rather
+     * than as a guess, so `npm run qa` prints "not captured" instead of fiction.
+     */
+    async metrics() {
+      // Read the live counters off the scene groups, not off the modules. The
+      // systems publish them on `group.userData`, and that is the instance the
+      // running world actually built - a re-import can hand back a module whose
+      // own counters were never populated.
+      const live = (name, key) => {
+        const g = ctx.scene.getObjectByName(name);
+        const fn = g?.userData?.[key];
+        return typeof fn === 'function' ? fn() : null;
+      };
+      const { interiorStates } = await import('./world/index.js');
+      return {
+        fps: Number(ctx.stats.fps.toFixed(1)),
+        drawCalls: ctx.stats.drawCalls,
+        triangles: ctx.stats.triangles,
+        programs: ctx.renderer.info.programs?.length ?? null,
+        memory: { ...ctx.renderer.info.memory },
+        registry: summary(),
+        interiors: interiorStates().length,
+        lodTracked: lod?.tracked() ?? null,
+        pedestrians: live('pedestrians', 'population'),
+        vehicles: live('vehicles', 'count'),
+        trains: live('trains', 'consists')?.length ?? null,
+        failures,
+      };
+    },
+    teleport: (name) => controls.teleport(name),
+    setTime: (h) => time.setHour(h),
+  };
+
+  if (failures.length) {
+    console.warn(`[boot] ${failures.length} module(s) failed to build`, failures);
+  }
+}
+
+boot().catch((err) => {
+  console.error('[boot] fatal', err);
+  if (stageEl) stageEl.textContent = `failed: ${err.message}`;
+});

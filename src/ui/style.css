@@ -1,0 +1,447 @@
+/*
+ * Interface skin: loading overlay, HUD, panels, touch controls.
+ *
+ * Dark translucent glass over a bright city render, system fonts only (no
+ * network requests of any kind are allowed in this build). The overlay is
+ * pointer-transparent by default and re-enables pointer events per panel, so
+ * dragging to look never gets eaten by empty chrome.
+ */
+
+:root {
+  --glass: rgba(12, 16, 22, 0.72);
+  --glass-edge: rgba(255, 255, 255, 0.10);
+  --ink: #e8edf3;
+  --ink-dim: #93a3b5;
+  --accent: #7dd3fc;
+  --c-surveyed: #4ade80;
+  --c-reference: #60a5fa;
+  --c-inferred: #fbbf24;
+  --c-approximated: #f87171;
+  --radius: 10px;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0b1016;
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { position: fixed; inset: 0; }
+#app canvas { display: block; width: 100vw; height: 100vh; }
+
+/* ---------------------------------------------------------------- loading */
+
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 90% at 50% 10%, #1a2634 0%, #0a0e14 70%);
+  transition: opacity 600ms ease;
+}
+#loading.done { opacity: 0; pointer-events: none; }
+
+#loading .panel {
+  width: min(420px, 84vw);
+  padding: 28px 30px 24px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+  text-align: left;
+}
+#loading h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+#loading .sub {
+  margin: 4px 0 20px;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+#loading .bar {
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+#loading .bar i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #fbbf24);
+  transition: width 260ms ease;
+}
+#loading .stage {
+  margin: 12px 0 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  letter-spacing: 0.02em;
+}
+
+/* -------------------------------------------------------------------- hud */
+
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  font-size: 13px;
+}
+
+.hud-panel {
+  position: absolute;
+  pointer-events: auto;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.32);
+}
+
+.hud-place {
+  top: 14px;
+  left: 14px;
+  padding: 9px 13px;
+  max-width: min(420px, 52vw);
+}
+.hud-place .place-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.hud-place .place-name em {
+  font-style: normal;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  vertical-align: 1px;
+}
+.hud-place .dist { color: var(--ink-dim); font-weight: 400; font-size: 11.5px; }
+.hud-place .place-meta {
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  display: flex;
+  gap: 8px;
+}
+
+.hud-stats {
+  top: 14px;
+  right: 14px;
+  padding: 8px 12px;
+  display: flex;
+  gap: 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-dim);
+}
+.hud-stats .fps { color: var(--ink); }
+
+.hud-fail {
+  top: 56px;
+  right: 14px;
+  padding: 7px 11px;
+  max-width: 300px;
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fecaca;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.hud-fail b { display: block; font-size: 12px; }
+.hud-fail span { color: #fca5a5; font-family: var(--mono); }
+
+.hud-bar {
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: min(1080px, 96vw);
+}
+.hud-group { display: flex; align-items: center; gap: 6px; }
+.hud-group > label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-dim);
+}
+
+.hud-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.hud-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.hud-btn.on {
+  background: rgba(125, 211, 252, 0.18);
+  border-color: rgba(125, 211, 252, 0.5);
+  color: #e0f2fe;
+}
+.hud-btn.small { padding: 4px 8px; font-size: 11.5px; }
+.hud-btn kbd {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink-dim);
+  border: 1px solid var(--glass-edge);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+.hud-select {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-edge);
+  border-radius: 7px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  max-width: 190px;
+  cursor: pointer;
+}
+.hud-select option { background: #0f151d; color: var(--ink); }
+
+.hud-slider input[type="range"] {
+  appearance: none;
+  width: 108px;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+}
+.hud-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+}
+.hud-slider input[type="range"]::-moz-range-thumb {
+  width: 13px; height: 13px; border: none; border-radius: 50%; background: var(--accent);
+}
+.hud-value {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+  min-width: 82px;
+}
+
+/* ------------------------------------------------------------ help + card */
+
+.hud-help {
+  left: 14px;
+  bottom: 78px;
+  width: min(430px, 88vw);
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 16px 18px;
+  line-height: 1.5;
+}
+.hud-help h2 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-dim);
+}
+.hud-help dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
+  gap: 4px 14px;
+  font-size: 12.5px;
+}
+.hud-help dt { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+.hud-help dd { margin: 0; color: var(--ink); }
+.hud-reflayers { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+.hud-reflayers h2 { width: 100%; margin-bottom: 2px; }
+
+.hud-note {
+  margin: 14px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  line-height: 1.5;
+}
+
+.hud-card {
+  right: 14px;
+  bottom: 78px;
+  width: min(320px, 86vw);
+  padding: 15px 17px 14px;
+}
+.hud-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; padding-right: 20px; }
+.hud-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  font-size: 12.5px;
+}
+.hud-card dt {
+  color: var(--ink-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.hud-card dd { margin: 0; }
+.hud-close {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 22px; height: 22px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hud-close:hover { background: rgba(255, 255, 255, 0.10); color: var(--ink); }
+
+.confidence {
+  margin-top: 12px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid var(--ink-dim);
+}
+.c-surveyed, .confidence.c-surveyed { color: var(--c-surveyed); border-left-color: var(--c-surveyed); }
+.c-reference, .confidence.c-reference { color: var(--c-reference); border-left-color: var(--c-reference); }
+.c-inferred, .confidence.c-inferred { color: var(--c-inferred); border-left-color: var(--c-inferred); }
+.c-approximated, .confidence.c-approximated { color: var(--c-approximated); border-left-color: var(--c-approximated); }
+
+/* ------------------------------------------------------------------- tour */
+
+#tour-caption {
+  position: fixed;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%) translateY(8px);
+  z-index: 45;
+  width: min(680px, 92vw);
+  padding: 13px 17px 15px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transition: opacity 500ms ease, transform 500ms ease;
+  pointer-events: none;
+}
+#tour-caption.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#tour-caption .tour-beat {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 5px;
+}
+#tour-caption .tour-text { font-size: 14.5px; line-height: 1.5; }
+#tour-caption .tour-progress {
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 2px;
+  width: 0;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  transition: width 200ms linear;
+}
+
+/* ------------------------------------------------------------ touch input */
+
+.touch-controls { position: fixed; inset: 0; z-index: 44; pointer-events: none; }
+.touch-controls .stick {
+  position: absolute;
+  left: 22px;
+  bottom: 96px;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-edge);
+  background: rgba(12, 16, 22, 0.42);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+  touch-action: none;
+  display: grid;
+  place-items: center;
+}
+.touch-controls .stick i {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(125, 211, 252, 0.55);
+  display: block;
+}
+.touch-controls .look-pad {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 55vw;
+  height: 74vh;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+/* ------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  /* The tour's easing flourishes are disabled in JS too (tour.js reads the
+     same media query); this kills the CSS half of them. */
+  *, *::before, *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  #tour-caption { transform: translateX(-50%); }
+  #tour-caption.visible { transform: translateX(-50%); }
+  #loading { transition: none; }
+}
+
+/* --------------------------------------------------------------- compact */
+
+@media (max-width: 720px) {
+  .hud-bar { gap: 7px; padding: 7px 8px; bottom: 10px; }
+  .hud-slider input[type="range"] { width: 74px; }
+  .hud-value { min-width: 54px; }
+  .hud-help { bottom: auto; top: 62px; max-height: 50vh; }
+  .hud-card { bottom: auto; top: 62px; }
+  .hud-place { max-width: 62vw; }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "toronto-3djs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive Three.js digital twin of Union Station and downtown Toronto",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "qa": "node qa/run-qa.mjs",
+    "test": "node --test \"qa/*.test.mjs\"",
+    "capture": "node qa/capture.mjs"
+  },
+  "dependencies": {
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

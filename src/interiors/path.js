@@ -522,10 +522,21 @@ function buildStreetcarLoop() {
 function buildSubwayMezzanine() {
   const g = new THREE.Group();
   g.name = 'path-union-subway-mezzanine';
-  const cx = -8;
-  const cz = 8;
   const w = 44;
   const d = 18;
+
+  // Placed against the Bay Street corridor's east edge, not on top of it.
+  //
+  // Hardcoded at cx = -8 the room spanned x -30..14, so its west wall landed
+  // exactly on the corridor centreline (x = -30) and split the 12 m corridor
+  // lengthwise: a walker heading north hit that wall head-on 10 m in and the
+  // segment was 22% traversable. Deriving cx from the segment keeps the room
+  // adjacent and connected - the doorway in its west wall opens onto the
+  // corridor - and stops the two drifting back into each other if either moves.
+  const bay = PATH_SEGMENTS.find((x) => x.id === 'path-bay-north');
+  const corridorEastEdge = bay ? bay.from.x + bay.width / 2 : -24;
+  const cx = corridorEastEdge + w / 2;
+  const cz = 8;
 
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), M.pathFloor());
   floor.rotation.x = -Math.PI / 2;

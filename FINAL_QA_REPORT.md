@@ -192,7 +192,7 @@ in the modelling.
 - The absolute geo anchor is a hypothesis. Block spacing and street widths are authored in metres and internally consistent; an anchor error offsets the scene rigidly rather than distorting it.
 - The CN Tower stands 597 m from Union Station's Front Street entrance on a true bearing of 238 deg; the brief states 'roughly 600 m, near 240-250 deg'.
 - Berczy Park sits just north-east of its real position inside the Front/Wellington/Church wedge - the Gooderham footprint leaves no room immediately east of it.
-- PATH traversal, measured by walking each segment end to end: six of the eight run 100%, brookfield-yonge 88%, and bay-north 22% - a structure below Bay Street still dams it about 10 m in. Before this pass only one segment was traversable at all; junctions were walled off.
+- PATH traversal, measured by walking each segment end to end: all eight now run 100%. Before this work only one did - junctions were walled off, the forecourt stair shafts were driven across the corridors they land in, the subway mezzanine straddled the Bay Street run's centreline and the Hockey Hall of Fame's galleries sat on the Brookfield-Yonge spine.
 - Pedestrians do not collide with the player. They are instanced and non-reactive, so a solid crowd stalled the walker at random - a 14 s promenade walk covered 18 m one run and 40 m the next purely on who was standing there.
 - Pedestrians are not skinned; crossing waits are random rather than tied to the vehicle signal phase. Vehicles do not turn at intersections.
 - Vegetation is late spring / summer foliage only.

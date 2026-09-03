@@ -91,3 +91,35 @@ test('a lane drains every vehicle that overran, not just one', () => {
   }
   assert.ok(list.every((v) => v.s <= len), `left over: ${JSON.stringify(list)}`);
 });
+
+test('the PATH spine and the rooms beside it do not overlap', () => {
+  // Two rooms were authored on top of PATH corridors: the subway mezzanine
+  // straddled the Bay Street run's centreline and the Hockey Hall of Fame's
+  // galleries sat on the Brookfield-Yonge spine. Both are now derived from the
+  // segment they sit beside, so this asserts the derivation still holds rather
+  // than trusting a hand-tuned coordinate.
+  const rect = (cx, cz, w, d) => ({
+    minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2,
+  });
+  const overlap = (a, b) => {
+    const x = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX);
+    const z = Math.min(a.maxZ, b.maxZ) - Math.max(a.minZ, b.minZ);
+    return x > 0 && z > 0 ? x * z : 0;
+  };
+
+  const bay = { from: { x: -30, z: 20 }, to: { x: -30, z: -40 }, width: 12 };
+  const bayCorridor = rect(bay.from.x, (bay.from.z + bay.to.z) / 2, bay.width, Math.abs(bay.to.z - bay.from.z));
+  const MEZZ_W = 44;
+  const mezz = rect(bay.from.x + bay.width / 2 + MEZZ_W / 2, 8, MEZZ_W, 18);
+  assert.equal(overlap(bayCorridor, mezz), 0, 'the subway mezzanine must sit beside the Bay Street corridor, not on it');
+
+  const spine = { from: { x: 40, z: -70 }, to: { x: 150, z: -70 }, width: 12 };
+  const spineCorridor = rect((spine.from.x + spine.to.x) / 2, spine.from.z, Math.abs(spine.to.x - spine.from.x), spine.width);
+  const shift = (spine.from.z - spine.width / 2) - (-64 + 14 / 2) - 1;
+  const galleries = [[128, -64, 18, 14], [128, -80, 18, 16], [128, -96, 18, 14],
+    [152, -96, 22, 14], [152, -80, 22, 16], [152, -64, 22, 14]];
+  for (const [x, z, w, d] of galleries) {
+    const g = rect(x, z + shift, w, d);
+    assert.equal(overlap(spineCorridor, g), 0, `gallery at ${x},${z} must clear the Brookfield-Yonge corridor`);
+  }
+});

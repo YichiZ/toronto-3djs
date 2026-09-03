@@ -23,6 +23,7 @@ import { M } from '../core/materials.js';
 import { colonnade } from '../world/buildingKit.js';
 import { register, registerInteractive } from '../core/registry.js';
 import { registerInterior } from '../world/index.js';
+import { PATH_SEGMENTS } from './path.js';
 
 const BANK = getBuilding('hockey-hall-of-fame') ?? { x: 155, z: -32, w: 32, d: 30, height: 19 };
 const HALL_FLOOR = 0.3;
@@ -33,6 +34,24 @@ const DOME_SPRING = HALL_FLOOR + 9.2;
 const MUSEUM_FLOOR = LEVELS.path;          // -6.5
 const MUSEUM_CEIL = LEVELS.unionConcourse + 0.4;  // -3.1, a 3.4 m clear gallery
 
+/**
+ * Grid-north shift applied to every gallery so the block clears the PATH.
+ *
+ * As authored, four of the six galleries straddled `path-brookfield-yonge`
+ * (z = -70, 12 m wide), and the entry gallery's west wall stood square across
+ * it: the corridor was 88% traversable and a walker heading for Yonge Street
+ * stopped dead inside a display gallery. The corridor is a spine and the museum's
+ * partition layout is explicitly not asserted, so the museum yields. Derived from
+ * the segment rather than hardcoded, so neither can drift back into the other.
+ */
+const MUSEUM_SHIFT_Z = (() => {
+  const spine = PATH_SEGMENTS.find((s) => s.id === 'path-brookfield-yonge');
+  if (!spine) return -20;
+  const corridorNorthEdge = spine.from.z - spine.width / 2;   // -76
+  const southmostGalleryEdge = -64 + 14 / 2;                  // entry gallery, -57
+  return corridorNorthEdge - southmostGalleryEdge - 1;        // 1 m of clearance
+})();
+
 const GALLERIES = Object.freeze([
   { id: 'hhofi-gallery-entry', name: 'Museum entry and orientation', x: 128, z: -64, w: 18, d: 14 },
   { id: 'hhofi-gallery-origins', name: 'Origins of the game', x: 128, z: -80, w: 18, d: 16 },
@@ -40,7 +59,7 @@ const GALLERIES = Object.freeze([
   { id: 'hhofi-gallery-trophies', name: 'Trophy and silverware gallery', x: 152, z: -96, w: 22, d: 14 },
   { id: 'hhofi-gallery-honoured', name: 'Honoured Members gallery', x: 152, z: -80, w: 22, d: 16 },
   { id: 'hhofi-gallery-world', name: 'World of hockey', x: 152, z: -64, w: 22, d: 14 },
-]);
+].map((g) => ({ ...g, z: g.z + MUSEUM_SHIFT_Z })));
 
 const matCache = new Map();
 const local = (key, build) => {
@@ -458,7 +477,7 @@ export function build(ctx) { // eslint-disable-line no-unused-vars
   GALLERIES.forEach((spec, i) => museum.add(buildGallery(spec, i)));
   museum.add(new THREE.AmbientLight(0xbcc8d4, 0.4));
   const p = new THREE.PointLight(0xdfe8f2, 26, 60, 2);
-  p.position.set(140, MUSEUM_CEIL - 0.8, -80);
+  p.position.set(140, MUSEUM_CEIL - 0.8, -80 + MUSEUM_SHIFT_Z);
   museum.add(p);
   root.add(museum);
 
@@ -502,7 +521,7 @@ export function build(ctx) { // eslint-disable-line no-unused-vars
   });
   registerInterior({
     id: 'hhof-museum', group: museum,
-    centre: { x: 140, y: MUSEUM_FLOOR + 2, z: -80 },
+    centre: { x: 140, y: MUSEUM_FLOOR + 2, z: -80 + MUSEUM_SHIFT_Z },
     radius: 70,
   });
 

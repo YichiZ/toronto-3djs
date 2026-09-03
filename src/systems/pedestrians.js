@@ -334,6 +334,12 @@ function makeMeshes(group, counts, tag) {
     const c = new THREE.Color();
     for (let k = 0; k < n; k++) im.setColorAt(k, c.setHex(CLOTHING[(Math.random() * CLOTHING.length) | 0]));
     im.instanceColor.needsUpdate = true;
+    // The crowd does not collide with the player. Agents are instanced and
+    // non-reactive: they walk through the camera, cannot step aside, and give no
+    // feedback, so a solid crowd just stalls the walker at random - a measured
+    // 14 s walk down the Union promenade covered 18 m one run and 40 m the next
+    // purely on who happened to be standing there.
+    im.userData.noCollide = true;
     group.add(im);
     out.push(im);
   });

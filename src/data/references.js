@@ -51,7 +51,10 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'great-hall',
     name: 'Great Hall interior',
-    position: { x: -170, y: EYE, z: 44 },
+    // Inside the hall: its floor runs x -168..-92, z 32..58. At x=-170 this stood
+    // 2 m beyond the west wall, on no floor at all, and the walker dropped to the
+    // concourse below.
+    position: { x: -162, y: EYE, z: 45 },
     lookAt: { x: -40, y: 16, z: 44 },
     mode: 'walk',
     description: 'Standing on the Great Hall floor at the west end, looking east.',

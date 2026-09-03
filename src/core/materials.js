@@ -185,6 +185,31 @@ export function facadeMaterial(kind, opts = {}) {
 /** Snapshot of the façade materials, for the night lighting switch. */
 export const facadeMaterials = () => [...facadeMats];
 
+/**
+ * A private copy of a shared material with some properties overridden.
+ *
+ * Materials from `M` are CACHED AND SHARED - mutating one changes every mesh
+ * using it. That bit us: two interior modules set `.side = BackSide` on
+ * `M.concretePlain()` because they were inside a box, which silently flipped the
+ * global ground plane, the curbs, the viaduct parapets, the Gardiner barriers
+ * and the platform decks to back-facing. The ground plane then vanished from
+ * both rendering and raycasts, and the walker fell 6.7 m through the street into
+ * the PATH. Take a variant instead of writing to the shared instance.
+ *
+ * Variants are themselves cached by (base name + overrides), so calling this in
+ * a loop does not leak a material per call.
+ *
+ * @param {THREE.Material} base a material from `M`
+ * @param {Record<string, unknown>} overrides e.g. `{ side: THREE.BackSide }`
+ */
+export function variant(base, overrides = {}) {
+  // `||`, not `??`: THREE gives an unnamed material `name === ''`, which is
+  // neither null nor undefined, so `??` would key every unnamed base identically
+  // and hand the second caller the first caller's material.
+  const key = `variant:${base.name || base.uuid}:${JSON.stringify(overrides)}`;
+  return memo(key, () => Object.assign(base.clone(), overrides));
+}
+
 /** Every material currently alive, for the performance audit. */
 export const materialCount = () => cache.size;
 

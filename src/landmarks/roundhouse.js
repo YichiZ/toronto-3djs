@@ -25,7 +25,7 @@
 import * as THREE from 'three';
 import { getBuilding } from '../data/buildings.js';
 import { tenantsFor } from '../data/tenants.js';
-import { M } from '../core/materials.js';
+import { M, variant } from '../core/materials.js';
 import { register, registerInteractive } from '../core/registry.js';
 
 const BAYS = 32;
@@ -147,10 +147,14 @@ function buildTurntable() {
   floor.position.y = -2.6;
   floor.receiveShadow = true;
 
+  // Private variant: the shared M.concrete() clads the viaduct and half the
+  // podiums, and flipping its side would turn all of them inside out.
   const rim = new THREE.Mesh(
-    new THREE.CylinderGeometry(TURNTABLE_R, TURNTABLE_R, 2.6, 32, 1, true), M.concrete());
+    new THREE.CylinderGeometry(TURNTABLE_R, TURNTABLE_R, 2.6, 32, 1, true),
+    variant(M.concrete(), { side: THREE.BackSide })
+  );
   rim.position.y = -1.3;
-  rim.material.side = THREE.BackSide;
+  rim.userData.noCollide = true;   // back-facing shell: invisible from outside
 
   const bridge = new THREE.Group();
   bridge.name = 'roundhouse-turntable-bridge';

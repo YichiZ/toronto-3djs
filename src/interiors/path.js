@@ -23,7 +23,7 @@
  */
 import * as THREE from 'three';
 import { LEVELS, NS } from '../data/grid.js';
-import { M } from '../core/materials.js';
+import { M, variant } from '../core/materials.js';
 import { storefrontBand } from '../world/buildingKit.js';
 import { register, registerInteractive } from '../core/registry.js';
 import { tenantsFor } from '../data/tenants.js';
@@ -185,6 +185,60 @@ const signMaterial = (rows, key) =>
  * rotated onto the segment bearing — so every corridor shares one construction
  * path and the storefronts always face inward.
  */
+/**
+ * Where another corridor meets this one, and on which side.
+ *
+ * Segments are authored as straight runs between shared points, so a spur that
+ * starts on a trunk's centreline puts its own side wall straight across the
+ * trunk. Rather than trimming every segment by hand, each corridor asks which
+ * others touch it and leaves a gap in the wall on that side.
+ *
+ * @returns {Array<{c:number, w:number}>} opening centres along the local X axis
+ */
+function junctionOpenings(s, len, dz) {
+  const ux = (s.to.x - s.from.x) / len;
+  const uz = (s.to.z - s.from.z) / len;
+  const toLocal = (p) => {
+    const px = p.x - s.from.x;
+    const pz = p.z - s.from.z;
+    return { x: px * ux + pz * uz, z: -px * uz + pz * ux };
+  };
+  const out = [];
+  for (const b of PATH_SEGMENTS) {
+    if (b.id === s.id) continue;
+    const ends = [[b.from, b.to], [b.to, b.from]];
+    for (const [meet, away] of ends) {
+      const m = toLocal(meet);
+      if (m.x < -1 || m.x > len + 1) continue;          // not alongside this run
+      // Half-widths, not the full width: m.z is measured from THIS corridor's
+      // centreline, so its own wall is at s.width / 2. Comparing against the
+      // full width accepted endpoints entirely outside the corridor and would
+      // have cut an opening onto nothing.
+      if (Math.abs(m.z) > s.width / 2 + b.width / 2) continue;
+      // Only open the wall the other corridor actually heads through.
+      const a = toLocal(away);
+      if (Math.sign(a.z - m.z) !== Math.sign(dz)) continue;
+      out.push({ c: Math.max(0, Math.min(len, m.x)), w: b.width + 1.2 });
+    }
+  }
+  return out;
+}
+
+/** Solid spans of a side wall, i.e. the wall minus its junction openings. */
+function wallSpans(s, len, dz) {
+  const gaps = junctionOpenings(s, len, dz)
+    .map((o) => [Math.max(0, o.c - o.w / 2), Math.min(len, o.c + o.w / 2)])
+    .sort((a, b) => a[0] - b[0]);
+  const spans = [];
+  let cursor = 0;
+  for (const [a, b] of gaps) {
+    if (a > cursor + 0.3) spans.push({ mid: (cursor + a) / 2, len: a - cursor });
+    cursor = Math.max(cursor, b);
+  }
+  if (len > cursor + 0.3) spans.push({ mid: (cursor + len) / 2, len: len - cursor });
+  return spans;
+}
+
 function corridor(s, tenantKey) {
   const g = new THREE.Group();
   g.name = s.id;
@@ -202,11 +256,17 @@ function corridor(s, tenantKey) {
   ceil.position.set(len / 2, CEIL, 0);
   g.add(ceil);
 
+  // Side walls, broken by an opening wherever another corridor meets this one.
+  // Built as one solid box per side, a T-junction was walled off: a walker could
+  // cross a single segment but never turn a corner, so the "network" was eight
+  // disconnected tubes. Openings make it actually connected.
   for (const dz of [-half, half]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(len, CLEAR, 0.35), M.concretePlain());
-    wall.position.set(len / 2, FLOOR + CLEAR / 2, dz);
-    wall.receiveShadow = true;
-    g.add(wall);
+    for (const span of wallSpans(s, len, dz)) {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(span.len, CLEAR, 0.35), M.concretePlain());
+      wall.position.set(span.mid, FLOOR + CLEAR / 2, dz);
+      wall.receiveShadow = true;
+      g.add(wall);
+    }
   }
 
   // Recessed fluorescent troffers — instanced, emissive, and the only light.
@@ -368,9 +428,17 @@ function buildStreetcarLoop() {
   const R = 17;
   const y = FLOOR - 0.4;   // track slab sits just below the concourse floor
 
-  const box = new THREE.Mesh(new THREE.BoxGeometry(R * 2 + 16, 5.2, R * 2 + 16), M.concretePlain());
+  // A private variant: writing side onto the shared material would flip every
+  // other concrete surface in the city to back-facing.
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(R * 2 + 16, 5.2, R * 2 + 16),
+    variant(M.concretePlain(), { side: THREE.BackSide })   // we are inside it
+  );
   box.position.set(cx, y + 2.6, cz);
-  box.material.side = THREE.BackSide;   // we are inside it
+  // A back-facing shell renders as nothing from outside, so colliding with it
+  // from outside is an invisible wall. This 50 m box straddles the Bay Street
+  // PATH run and dammed it 10 m in. Let the walker pass through into the room.
+  box.userData.noCollide = true;
   g.add(box);
 
   // two rails as flattened tori — a real 1.495 m TTC gauge
@@ -423,8 +491,11 @@ function buildStreetcarLoop() {
   );
   portal.position.set(NS.bay - 8, y + 2.3, cz - R - 7.4);
   g.add(portal);
-  const tunnel = new THREE.Mesh(new THREE.BoxGeometry(8.2, 4.4, 34), M.concretePlain());
-  tunnel.material.side = THREE.BackSide;
+  const tunnel = new THREE.Mesh(
+    new THREE.BoxGeometry(8.2, 4.4, 34),
+    variant(M.concretePlain(), { side: THREE.BackSide })
+  );
+  tunnel.userData.noCollide = true;   // same reason as the loop shell above
   tunnel.position.set(NS.bay - 8, y + 2.2, cz - R - 24);
   g.add(tunnel);
 
@@ -467,10 +538,25 @@ function buildSubwayMezzanine() {
   ceil.position.set(cx, CEIL, cz);
   g.add(ceil);
 
+  // Walls with a doorway in the middle of each side. Built solid, the mezzanine
+  // was a sealed box that the Bay Street PATH run terminated against - a walker
+  // heading north stopped 16 m in against a room they could see into but never
+  // enter. A mezzanine has openings on every side; so does this one.
+  const DOOR = 6;
   for (const [bw, bd, dx, dz] of [[w, 0.4, 0, -d / 2], [w, 0.4, 0, d / 2], [0.4, d, -w / 2, 0], [0.4, d, w / 2, 0]]) {
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(bw, CLEAR, bd), M.concretePlain());
-    wall.position.set(cx + dx, FLOOR + CLEAR / 2, cz + dz);
-    g.add(wall);
+    const alongX = bw > bd;
+    const span = alongX ? bw : bd;
+    const piece = (span - DOOR) / 2;
+    if (piece <= 0.2) continue;                      // wall shorter than its doorway
+    for (const sign of [-1, 1]) {
+      const off = sign * (DOOR / 2 + piece / 2);
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(alongX ? piece : bw, CLEAR, alongX ? bd : piece),
+        M.concretePlain()
+      );
+      wall.position.set(cx + dx + (alongX ? off : 0), FLOOR + CLEAR / 2, cz + dz + (alongX ? 0 : off));
+      g.add(wall);
+    }
   }
 
   // fare gates, instanced

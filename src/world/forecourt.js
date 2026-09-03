@@ -88,9 +88,18 @@ function stairHeadhouse({ width, depth, floorY, steps = 20, label }) {
   const g = new THREE.Group();
 
   // Shaft: a dark void the stair descends into, so the opening never reads solid.
+  //
+  // It stops at the PATH ceiling rather than running all the way to the floor.
+  // Driven the full depth it was a solid 6.5 m box standing across the corridor
+  // it lands in, damming the network: a walker heading east under Front Street
+  // hit it head-on 40 m short of Bay. The stair itself still descends; only the
+  // enclosing well is trimmed to the slab it passes through.
   const shaftDepth = depth + 4.5;
-  const shaft = new THREE.Mesh(box(width - 0.4, -floorY, shaftDepth), M.concretePlain());
-  shaft.position.set(0, floorY / 2, shaftDepth / 2 - depth / 2);
+  // Spans street level down to the PATH ceiling only - the slab it cuts through -
+  // leaving the corridor's own clear height below it open.
+  const shaftHeight = Math.max(0.6, -LEVELS.pathCeiling);
+  const shaft = new THREE.Mesh(box(width - 0.4, shaftHeight, shaftDepth), M.concretePlain());
+  shaft.position.set(0, LEVELS.pathCeiling + shaftHeight / 2, shaftDepth / 2 - depth / 2);
   g.add(shaft);
 
   const rise = -floorY / steps;

@@ -24,6 +24,13 @@ const ACCEL = 12;          // m/s^2 toward the desired velocity
 const STEP_UP = 1.2;       // largest step the walker will climb in one go
 const PROBE_ABOVE = 2.4;   // ray origin height above the believed level
 const PROBE_BELOW = 9.0;
+/**
+ * How far a surface may sit from a level's nominal height and still count as it.
+ * Every real floor in the model lands within 0.2 m of nominal; 1.5 keeps them all
+ * and excludes near misses like the SkyWalk's roof crown, which sits 1.6 m under
+ * the Gardiner deck's height and is not a floor.
+ */
+const LEVEL_TOLERANCE = 1.5;
 const BODY_RADIUS = 0.55;  // horizontal clearance kept from walls
 
 /**
@@ -91,6 +98,8 @@ export function install(ctx) {
   forward.camera = camera;
 
   const DOWN_VEC = new THREE.Vector3(0, -1, 0);
+  const hitNormal = new THREE.Vector3();
+  const step = new THREE.Vector3();
   const tmpOrigin = new THREE.Vector3();
   const tmpDir = new THREE.Vector3();
   const tmpRight = new THREE.Vector3();
@@ -194,8 +203,40 @@ export function install(ctx) {
   }
   dom.addEventListener('click', onCanvasClick);
 
+  /**
+   * Is there a walkable floor at this level, here?
+   *
+   * Probes downward from just above the level and accepts a surface within a
+   * storey of it. Used to skip levels that do not exist at the walker's position.
+   */
+  function hasFloorAt(index) {
+    const y = LEVEL_ORDER[index].y;
+    tmpOrigin.set(camera.position.x, y + PROBE_ABOVE, camera.position.z);
+    down.set(tmpOrigin, DOWN_VEC);
+    for (const hit of down.intersectObject(scene, true)) {
+      if (ignoreHit(hit)) continue;
+      return Math.abs(hit.point.y - y) <= LEVEL_TOLERANCE;
+    }
+    return false;
+  }
+
+  /**
+   * Step to the next level in `delta` that actually has a floor here.
+   *
+   * The naive one-step version stranded the walker: descend to the PATH from
+   * Front Street, press E, and the intended concourse does not exist at that
+   * spot, so grounding pulled you straight back down to the PATH - there was no
+   * way out below grade except by finding a modelled stair. Skipping empty
+   * levels makes Q/E mean "next surface up/down", which is what the layering is
+   * for. If nothing in that direction has a floor, fall back to the immediate
+   * neighbour so the key is never simply dead.
+   */
   function changeLevel(delta) {
-    const next = Math.max(0, Math.min(LEVEL_ORDER.length - 1, levelIndex + delta));
+    let next = -1;
+    for (let i = levelIndex + delta; i >= 0 && i < LEVEL_ORDER.length; i += delta) {
+      if (hasFloorAt(i)) { next = i; break; }
+    }
+    if (next === -1) next = Math.max(0, Math.min(LEVEL_ORDER.length - 1, levelIndex + delta));
     if (next === levelIndex) return;
     levelIndex = next;
     camera.position.y = LEVEL_ORDER[levelIndex].y + EYE;
@@ -240,23 +281,63 @@ function ignoreHit(hit) {
     return believedFloor;
   }
 
-  /** Cheap wall test: one ray along the intended movement direction. */
-  function blocked(dirX, dirZ) {
+  /**
+   * First blocking surface along a movement direction, or null.
+   *
+   * Returns the world-space normal so the caller can slide along it. Testing
+   * each world axis separately instead only looks like sliding: walk straight
+   * into a bollard with no lateral input and both the blocked axis and the
+   * (zero) free axis stop, and the walker is stuck against a 20 cm post forever.
+   * Downtown is full of posts.
+   *
+   * @returns {THREE.Vector3|null} unit normal of the blocking face
+   */
+  function blockingNormal(dirX, dirZ) {
     tmpDir.set(dirX, 0, dirZ);
-    if (tmpDir.lengthSq() < 1e-6) return false;
+    if (tmpDir.lengthSq() < 1e-6) return null;
     tmpDir.normalize();
     tmpOrigin.copy(camera.position).setY(camera.position.y - 0.6);
     forward.set(tmpOrigin, tmpDir);
     const hits = forward.intersectObject(scene, true);
     for (const hit of hits) {
       if (ignoreHit(hit)) continue;
-      if (hit.distance < BODY_RADIUS) return true;
-      return false;
+      if (hit.distance >= BODY_RADIUS) return null;
+      // Face normals are in object space; take them to world space, flatten to
+      // the ground plane, and point them back at the walker.
+      hitNormal.copy(hit.face.normal)
+        .transformDirection(hit.object.matrixWorld)
+        .setY(0);
+      if (hitNormal.lengthSq() < 1e-6) return null;   // a purely horizontal face
+      hitNormal.normalize();
+      if (hitNormal.dot(tmpDir) > 0) hitNormal.negate();
+      return hitNormal;
     }
-    return false;
+    return null;
   }
 
+  /**
+   * Largest distance the walker may move in one collision test.
+   *
+   * The forward ray only reaches BODY_RADIUS + 0.35, so a step longer than that
+   * can jump clean through a wall before anything is tested. context.js clamps
+   * dt to 0.1 s, which keeps a run step under the limit today - but collision
+   * correctness should not depend on a constant in another module, so long
+   * frames are substepped instead.
+   */
+  const MAX_STEP = BODY_RADIUS * 0.8;
+
   function updateWalk(dt) {
+    // Substep long frames rather than trusting the caller's dt clamp.
+    const span = Math.hypot(velocity.x, velocity.z) * dt;
+    if (span > MAX_STEP) {
+      const parts = Math.min(8, Math.ceil(span / MAX_STEP));
+      for (let i = 0; i < parts; i++) walkStep(dt / parts);
+      return;
+    }
+    walkStep(dt);
+  }
+
+  function walkStep(dt) {
     if (touch.lookX || touch.lookY) {
       // PointerLockControls exposes the same yaw/pitch path used by the mouse.
       const euler = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(camera.quaternion);
@@ -292,15 +373,36 @@ function ignoreHit(hit) {
     velocity.x += (wish.x - velocity.x) * Math.min(1, ACCEL * dt);
     velocity.z += (wish.z - velocity.z) * Math.min(1, ACCEL * dt);
 
-    const dx = velocity.x * dt;
-    const dz = velocity.z * dt;
-    // Axis-separated so sliding along a wall still works.
-    if (Math.abs(dx) > 1e-5 && !blocked(Math.sign(dx), 0)) camera.position.x += dx;
-    else velocity.x = 0;
-    if (Math.abs(dz) > 1e-5 && !blocked(0, Math.sign(dz))) camera.position.z += dz;
-    else velocity.z = 0;
+    // Move, and if something is in the way slide along it rather than stopping.
+    // Two passes: the first slide can put the walker into a second surface (an
+    // inside corner), and the second resolves it. A third would buy nothing -
+    // if two surfaces still block, the walker is genuinely wedged.
+    step.set(velocity.x * dt, 0, velocity.z * dt);
+    for (let pass = 0; pass < 2 && step.lengthSq() > 1e-10; pass++) {
+      const n = blockingNormal(step.x, step.z);
+      if (!n) break;
+      // Project the step onto the surface plane, and drop the velocity the same
+      // way so the walker does not build up speed into a wall.
+      step.addScaledVector(n, -step.dot(n));
+      velocity.addScaledVector(n, -velocity.dot(n));
+    }
+    if (step.lengthSq() > 1e-10 && !blockingNormal(step.x, step.z)) {
+      camera.position.x += step.x;
+      camera.position.z += step.z;
+    } else if (step.lengthSq() <= 1e-10) {
+      velocity.set(0, 0, 0);
+    }
 
-    ground(dt);
+    // Adopt the level of the floor actually underfoot. Q/E set an INTENTION;
+    // ground() decides what is really there. Without this the two disagree - press
+    // E on Front Street, where no viaduct deck or SkyWalk exists overhead, and the
+    // walker correctly settles back onto the pavement while the HUD keeps
+    // announcing "SkyWalk".
+    const floorY = ground(dt);
+    if (Number.isFinite(floorY)) {
+      const actual = nearestLevelIndex(floorY);
+      if (actual !== levelIndex) levelIndex = actual;
+    }
   }
 
   function update(dt) {

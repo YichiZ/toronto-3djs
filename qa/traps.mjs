@@ -205,6 +205,33 @@ const CHECKS = [
     },
   },
   {
+    id: 'no-shared-material-mutation',
+    trap: 'Writing to a material from the shared M library. They are cached and shared, so one module setting .side or .transparent silently changes every other mesh using it.',
+    async run() {
+      const files = await walk(SRC);
+      const offenders = [];
+      const PROPS = 'side|transparent|opacity|depthWrite|depthTest|blending|wireframe|emissive';
+      for (const f of files) {
+        if (f.endsWith('core/materials.js')) continue;
+        const src = codeNoStrings(await readFile(f, 'utf8'));
+        // Only meshes whose material demonstrably came out of the shared library
+        // count. Helpers (ArrowHelper, Box3Helper) build their own material and
+        // may be tuned freely, which is why this is not a blanket .material ban.
+        const shared = new Set();
+        for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*new THREE\.Mesh\([\s\S]{0,260}?\bM\.\w+\s*\(/g)) {
+          shared.add(m[1]);
+        }
+        for (const name of shared) {
+          const re = new RegExp(`\\b${name}\\.material\\.(?:${PROPS})\\s*=`);
+          if (re.test(src)) offenders.push(`${f.replace(SRC, '')} (${name})`);
+        }
+      }
+      return offenders.length
+        ? { status: 'fail', detail: `shared material mutated in ${offenders.join(', ')} - use variant() from core/materials.js` }
+        : { status: 'pass', detail: 'no module writes render state onto a shared material; overrides go through variant()' };
+    },
+  },
+  {
     id: 'no-external-assets',
     trap: 'Shipping scraped Google Earth geometry, imagery or brand asset packages.',
     async run() {

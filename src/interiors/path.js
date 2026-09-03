@@ -210,7 +210,11 @@ function junctionOpenings(s, len, dz) {
     for (const [meet, away] of ends) {
       const m = toLocal(meet);
       if (m.x < -1 || m.x > len + 1) continue;          // not alongside this run
-      if (Math.abs(m.z) > s.width) continue;            // not close enough to touch
+      // Half-widths, not the full width: m.z is measured from THIS corridor's
+      // centreline, so its own wall is at s.width / 2. Comparing against the
+      // full width accepted endpoints entirely outside the corridor and would
+      // have cut an opening onto nothing.
+      if (Math.abs(m.z) > s.width / 2 + b.width / 2) continue;
       // Only open the wall the other corridor actually heads through.
       const a = toLocal(away);
       if (Math.sign(a.z - m.z) !== Math.sign(dz)) continue;

@@ -197,7 +197,8 @@ in the modelling.
 - Pedestrians are not skinned; crossing waits are random rather than tied to the vehicle signal phase. Vehicles do not turn at intersections.
 - Vegetation is late spring / summer foliage only.
 - 675 m of PATH is reconstructed - the spine only. The real network is roughly 30 km citywide.
-- Two review passes fixed 15 defects. The most serious: walk mode never moved (a hand-built Raycaster with no camera throws inside THREE.Sprite.raycast, and the frame loop swallowed it); a shared material mutated to BackSide by two interior modules flipped the global ground plane, so the walker fell 6.7 m through the street into the PATH; and a zero-height viewport made the camera projection NaN, silently killing both rendering and picking.
+- Three review passes fixed 21 defects. The most serious: walk mode never moved (a hand-built Raycaster with no camera throws inside THREE.Sprite.raycast, swallowed by the frame loop); a shared material mutated to BackSide flipped the global ground plane so the walker fell 6.7 m through the street; a zero-height viewport made the camera projection NaN, killing rendering and picking silently; and the PATH's junctions were walled off, so the 'network' was eight disconnected tubes.
+- Walking costs about 13 fps on the densest block (105 idle vs 92 moving, measured on the Union Station forecourt) - the collision raycasts against the full scene. A dedicated collision layer would recover it.
 - `union-station` — Head house runs 229 m west from Bay and stops short of York; plaza and vehicle ramps fill the gap. Only the train shed spans the full Bay-York block.
 - `union-trainshed` — Bush-type shed with the glass atrium roof over the centre bays. Not electrified - GO, VIA and UP Express run diesel here.
 - `royal-york` — Directly across Front Street from the station, north side. Chateau-style green copper roof.

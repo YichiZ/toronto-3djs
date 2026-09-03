@@ -203,7 +203,10 @@ export const facadeMaterials = () => [...facadeMats];
  * @param {Record<string, unknown>} overrides e.g. `{ side: THREE.BackSide }`
  */
 export function variant(base, overrides = {}) {
-  const key = `variant:${base.name ?? base.uuid}:${JSON.stringify(overrides)}`;
+  // `||`, not `??`: THREE gives an unnamed material `name === ''`, which is
+  // neither null nor undefined, so `??` would key every unnamed base identically
+  // and hand the second caller the first caller's material.
+  const key = `variant:${base.name || base.uuid}:${JSON.stringify(overrides)}`;
   return memo(key, () => Object.assign(base.clone(), overrides));
 }
 

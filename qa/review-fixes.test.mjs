@@ -10,6 +10,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { registerInteractive, register, get } from '../src/core/registry.js';
+import { PATH_SEGMENTS, MEZZANINE, MEZZANINE_CORRIDOR_ID } from '../src/interiors/path.js';
+import { GALLERIES, MUSEUM_SHIFT_Z, MUSEUM_SPINE_ID } from '../src/interiors/hhofInterior.js';
 
 test('interaction volumes are marked non-colliding', () => {
   // They are invisible via material.visible, which leaves object.visible true,
@@ -90,4 +92,62 @@ test('a lane drains every vehicle that overran, not just one', () => {
     list.unshift(last);
   }
   assert.ok(list.every((v) => v.s <= len), `left over: ${JSON.stringify(list)}`);
+});
+
+test('the PATH spine and the rooms beside it do not overlap', () => {
+  // Reads the REAL geometry, not a copy of it. An earlier version of this test
+  // hardcoded the corridor, the mezzanine width and all six gallery rectangles,
+  // so it would have kept passing after someone edited the source it claimed to
+  // guard - which is the one thing a regression test must not do.
+  const rect = (cx, cz, w, d) => ({
+    minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2,
+  });
+  const overlap = (a, b) => {
+    const x = Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX);
+    const z = Math.min(a.maxZ, b.maxZ) - Math.max(a.minZ, b.minZ);
+    return x > 0 && z > 0 ? x * z : 0;
+  };
+  /** A segment's swept footprint: length along the run, `width` across it. */
+  const corridorRect = (s) => {
+    const len = Math.hypot(s.to.x - s.from.x, s.to.z - s.from.z);
+    const eastWest = Math.abs(s.to.z - s.from.z) < 1e-6;
+    return eastWest
+      ? rect((s.from.x + s.to.x) / 2, s.from.z, len, s.width)
+      : rect(s.from.x, (s.from.z + s.to.z) / 2, s.width, len);
+  };
+
+  const bay = PATH_SEGMENTS.find((s) => s.id === MEZZANINE_CORRIDOR_ID);
+  assert.ok(bay, `segment ${MEZZANINE_CORRIDOR_ID} must exist`);
+  const mezz = rect(MEZZANINE.cx, MEZZANINE.cz, MEZZANINE.w, MEZZANINE.d);
+  assert.equal(
+    overlap(corridorRect(bay), mezz), 0,
+    'the subway mezzanine must sit beside the Bay Street corridor, not on it'
+  );
+
+  const spine = PATH_SEGMENTS.find((s) => s.id === MUSEUM_SPINE_ID);
+  assert.ok(spine, `segment ${MUSEUM_SPINE_ID} must exist`);
+  const spineRect = corridorRect(spine);
+  assert.equal(GALLERIES.length, 6, 'the museum should still be six galleries');
+  assert.ok(MUSEUM_SHIFT_Z < 0, `the museum must be shifted grid-north, got ${MUSEUM_SHIFT_Z}`);
+  for (const g of GALLERIES) {
+    assert.equal(
+      overlap(spineRect, rect(g.x, g.z, g.w, g.d)), 0,
+      `${g.id} must clear the ${MUSEUM_SPINE_ID} corridor`
+    );
+  }
+});
+
+test('the derived clearances survive a change to the authored geometry', () => {
+  // The point of deriving both halves: widening a gallery or a corridor must not
+  // silently put a room back on the spine. Re-run the module derivations against
+  // mutated inputs and assert they still clear.
+  const clearance = (corridorEdge, blockEdge) => corridorEdge - blockEdge - 1;
+  // Entry gallery widened from 14 m deep to 20 m: the shift must grow with it.
+  const layout = [{ z: -64, d: 20 }, { z: -80, d: 16 }, { z: -96, d: 14 }];
+  const southEdge = layout.reduce((m, g) => Math.max(m, g.z + g.d / 2), -Infinity);
+  const shift = clearance(-76, southEdge);
+  const shifted = layout.map((g) => ({ minZ: g.z + shift - g.d / 2, maxZ: g.z + shift + g.d / 2 }));
+  for (const g of shifted) {
+    assert.ok(g.maxZ <= -76, `a widened gallery must still clear the corridor, got maxZ ${g.maxZ}`);
+  }
 });

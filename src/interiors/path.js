@@ -518,14 +518,40 @@ function buildStreetcarLoop() {
   return g;
 }
 
+/** The corridor the subway mezzanine has to sit beside rather than on. */
+export const MEZZANINE_CORRIDOR_ID = 'path-bay-north';
+
+/**
+ * The subway mezzanine's footprint, placed against the Bay Street corridor's
+ * east edge rather than on top of it.
+ *
+ * Hardcoded at cx = -8 the room spanned x -30..14, so its west wall landed
+ * exactly on the corridor centreline (x = -30) and split the 12 m corridor
+ * lengthwise: a walker heading north hit that wall head-on 10 m in and the
+ * segment was 22% traversable. Derived from the segment, the room stays adjacent
+ * and connected - the doorway in its west wall opens onto the corridor - and the
+ * two cannot drift back into each other if either moves.
+ *
+ * Exported so the regression test can assert against the geometry actually
+ * built, instead of a copy of these numbers.
+ */
+export const MEZZANINE = (() => {
+  const w = 44;
+  const d = 18;
+  const bay = PATH_SEGMENTS.find((s) => s.id === MEZZANINE_CORRIDOR_ID);
+  // `width` is a cross-section; on this north-south run it reads as an x-extent.
+  const northSouth = bay ? Math.abs(bay.to.x - bay.from.x) < 1e-6 : false;
+  const eastEdge = bay && northSouth
+    ? bay.from.x + bay.width / 2
+    : (bay ? Math.max(bay.from.x, bay.to.x) + bay.width / 2 : -24);
+  return Object.freeze({ cx: eastEdge + w / 2, cz: 8, w, d });
+})();
+
 /** Union subway station mezzanine, with the fare line and stairs to the platform. */
 function buildSubwayMezzanine() {
   const g = new THREE.Group();
   g.name = 'path-union-subway-mezzanine';
-  const cx = -8;
-  const cz = 8;
-  const w = 44;
-  const d = 18;
+  const { cx, cz, w, d } = MEZZANINE;
 
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), M.pathFloor());
   floor.rotation.x = -Math.PI / 2;

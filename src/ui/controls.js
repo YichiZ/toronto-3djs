@@ -447,7 +447,11 @@ function ignoreHit(hit) {
       // Pivot around what the camera is already looking at, so the switch
       // changes the controls and nothing else.
       camera.getWorldDirection(tmpDir);
-      const t = orbitTargetFrom(camera.position, tmpDir, ORBIT_PULLBACK, orbit.minDistance);
+      const t = orbitTargetFrom(camera.position, tmpDir, {
+        distance: ORBIT_PULLBACK,
+        minDistance: orbit.minDistance,
+        maxPolarAngle: orbit.maxPolarAngle,
+      });
       orbit.target.set(t.x, t.y, t.z);
     }
     if (name === 'walk') {

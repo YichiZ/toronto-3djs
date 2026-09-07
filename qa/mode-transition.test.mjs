@@ -45,3 +45,13 @@ test('altitude no longer decides the level - the orbit target does', () => {
   );
   assert.equal(walkLevelForTarget(LEVELS.street, LEVEL_HEIGHTS, STREET, TOLERANCE), STREET);
 });
+
+test('a level look drops the target under the polar limit, so orbit does not nudge the camera', () => {
+  const maxPolarAngle = Math.PI * 0.495;
+  const pos = { x: 0, y: 1.7, z: 0 };
+  const t = orbitTargetFrom(pos, { x: 0, y: 0, z: -1 }, { maxPolarAngle });
+  const d = Math.hypot(t.x - pos.x, t.y - pos.y, t.z - pos.z);
+  const polar = Math.acos((pos.y - t.y) / d);
+  assert.ok(polar <= maxPolarAngle + 1e-9, `polar angle ${polar} exceeds the orbit limit`);
+  assert.ok(pos.y - t.y < 1.1, 'and the drop is a sliver, not a tilt you would see');
+});

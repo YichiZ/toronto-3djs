@@ -13,62 +13,18 @@
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { chromium } from 'playwright';
+import { openWorld } from './e2eHarness.mjs';
 
-const ROOT = new URL('../', import.meta.url).pathname;
-
-let server;
-let browser;
+let world;
 let page;
 const consoleErrors = [];
 
-/** Start vite and read the URL it actually bound, rather than assuming a port. */
-function startServer() {
-  return new Promise((resolve, reject) => {
-    server = spawn('npx', ['vite', '--host', '127.0.0.1'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
-    const fail = setTimeout(() => reject(new Error('vite did not report a URL within 30 s')), 30_000);
-    let out = '';
-    server.stdout.setEncoding('utf8');
-    server.stdout.on('data', (d) => {
-      out += d;
-      const m = out.match(/http:\/\/127\.0\.0\.1:(\d+)/);
-      if (m) { clearTimeout(fail); resolve(`http://127.0.0.1:${m[1]}/`); }
-    });
-    server.on('error', (err) => { clearTimeout(fail); reject(err); });
-  });
-}
-
-/**
- * Playwright's own chromium if it has been downloaded, otherwise the Chrome
- * already on the machine. A digital twin needs real WebGL, and asking every
- * checkout to pull a 150 MB browser it may already have twice over is the kind
- * of setup step that gets an e2e suite quietly switched off.
- */
-async function launchBrowser() {
-  try {
-    return await chromium.launch();
-  } catch (err) {
-    if (!/Executable doesn't exist/.test(String(err))) throw err;
-    return chromium.launch({ channel: 'chrome' });
-  }
-}
-
 before(async () => {
-  const url = await startServer();
-  browser = await launchBrowser();
-  page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-  page.on('pageerror', (e) => consoleErrors.push(String(e)));
-  await page.goto(url);
-  // The world builds asynchronously; __TWIN__ appears only once it is running.
-  await page.waitForFunction(() => Boolean(window.__TWIN__), null, { timeout: 60_000 });
+  world = await openWorld({ consoleErrors });
+  page = world.page;
 });
 
-after(async () => {
-  await browser?.close();
-  server?.kill();
-});
+after(async () => { await world?.close(); });
 
 /** Put the orbit camera somewhere specific, the way the QA harness is meant to be used. */
 const orbitFrom = (camera, target) => page.evaluate(([c, t]) => {

@@ -21,6 +21,7 @@ import { LEVELS } from '../data/grid.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
 import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
 import { ballistic, hasLanded, JUMP_SPEED, MAX_FALL } from './jump.js';
+import { probeHeights } from './probes.js';
 
 const EYE = 1.7;
 const WALK_SPEED = 3.4;   // m/s, an unhurried commuter
@@ -110,6 +111,13 @@ export function install(ctx) {
   const fall = new THREE.Raycaster();
   fall.far = EYE + MAX_FALL;
   fall.camera = camera;
+
+  // Last surface ground() actually found. The low collision ray is hung off
+  // this rather than off the eye, because the camera eases toward the floor and
+  // lags it by up to 0.6 m on a run up the forecourt stairs - see probes.js.
+  // It is one substep stale when blockingNormal reads it, which is at most a
+  // few centimetres of travel and never a step's worth of height.
+  let floorUnderfoot = LEVEL_ORDER[STREET_LEVEL].y;
 
   const DOWN_VEC = new THREE.Vector3(0, -1, 0);
   const hitNormal = new THREE.Vector3();
@@ -368,11 +376,13 @@ function ignoreHit(hit) {
       const targetY = hit.point.y + EYE;
       if (targetY - camera.position.y > STEP_UP + PROBE_ABOVE) continue;
       camera.position.y += (targetY - camera.position.y) * settle(GROUND_SETTLE, dt);
+      floorUnderfoot = hit.point.y;
       return hit.point.y;
     }
     // Nothing underfoot (a gap, or the module that builds this floor failed):
     // hold the nominal level rather than falling through the world.
     camera.position.y += (believedFloor + EYE - camera.position.y) * settle(FALLBACK_SETTLE, dt);
+    floorUnderfoot = believedFloor;
     return believedFloor;
   }
 
@@ -385,13 +395,24 @@ function ignoreHit(hit) {
    * (zero) free axis stop, and the walker is stuck against a 20 cm post forever.
    * Downtown is full of posts.
    *
+   * TWO rays, chest and knee - see probes.js for the heights and why. A single
+   * chest-high ray sailed over every post, bench and planter in the model. The
+   * low one is only cast when the high one is clear, so an obstructed step
+   * still costs one ray and a clear one costs two.
+   *
    * @returns {THREE.Vector3|null} unit normal of the blocking face
    */
   function blockingNormal(dirX, dirZ) {
     tmpDir.set(dirX, 0, dirZ);
     if (tmpDir.lengthSq() < 1e-6) return null;
     tmpDir.normalize();
-    tmpOrigin.copy(camera.position).setY(camera.position.y - 0.6);
+    const { high, low } = probeHeights(camera.position.y, floorUnderfoot);
+    return castBlocker(high) ?? (low === null ? null : castBlocker(low));
+  }
+
+  /** One forward ray at `originY`; the world normal of what it hits, or null. */
+  function castBlocker(originY) {
+    tmpOrigin.copy(camera.position).setY(originY);
     forward.set(tmpOrigin, tmpDir);
     const hits = forward.intersectObject(scene, true);
     for (const hit of hits) {

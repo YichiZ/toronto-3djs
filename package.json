@@ -10,12 +10,14 @@
     "preview": "vite preview --port 4173",
     "qa": "node qa/run-qa.mjs",
     "test": "node --test \"qa/*.test.mjs\"",
-    "capture": "node qa/capture.mjs"
+    "capture": "node qa/capture.mjs",
+    "e2e": "node --test qa/*.e2e.mjs"
   },
   "dependencies": {
     "three": "^0.171.0"
   },
   "devDependencies": {
+    "playwright": "^1.63.0",
     "vite": "^6.0.0"
   }
 }

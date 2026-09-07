@@ -74,6 +74,7 @@ automated check in [`qa/traps.mjs`](qa/traps.mjs):
 | `W A S D` / arrows | walk |
 | mouse | look (click to capture the pointer) |
 | `Shift` | run |
+| `Space` | jump — a hop, for clearing a bollard; height is still `Q`/`E` |
 | `Q` / `E` | change level — PATH, street, SkyWalk |
 | `1` `2` `3` | walk / orbit / cinematic tour |
 | `R` | reference mode |

@@ -96,6 +96,20 @@ const readCamera = () => page.evaluate(() => {
   };
 });
 
+/**
+ * Wait until the walker's height has stopped moving.
+ *
+ * ground() eases toward the floor rather than snapping, so a height sampled
+ * right after a mode switch is still travelling. Measuring a 0.9 m hop against
+ * a moving baseline made the hop test flaky.
+ */
+const waitForSettled = () => page.waitForFunction(() => {
+  const y = window.__TWIN__.ctx.camera.position.y;
+  const last = window.__settleProbe;
+  window.__settleProbe = y;
+  return last !== undefined && Math.abs(y - last) < 1e-3;
+}, null, { timeout: 10_000, polling: 'raf' });
+
 /** Click a HUD mode button by its label, so the test drives the real UI. */
 const clickMode = async (label) => {
   await page.getByRole('button', { name: new RegExp(`^${label}`) }).click();
@@ -150,6 +164,96 @@ test('orbiting the PATH and switching to walk puts you on the PATH', async () =>
   const cam = await readCamera();
   assert.equal(cam.level, 'PATH');
   assert.ok(cam.pos[1] < 0, `still below grade after grounding, got y ${cam.pos[1].toFixed(2)}`);
+});
+
+test('Space hops, and the walker comes back down to the same floor', async () => {
+  // Stand somewhere flat and known: the street outside Union.
+  await orbitFrom([0, 120, 220], [-16, 0, 40]);
+  await clickMode('Walk');
+  await waitForSettled();
+  const before = await readCamera();
+
+  await page.locator('canvas').first().click();   // focus the view, as a player would
+  const trace = await page.evaluate(async () => {
+    const { ctx, controls } = window.__TWIN__;
+    const samples = [];
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+    const started = performance.now();
+    while (performance.now() - started < 1200) {
+      samples.push({ y: ctx.camera.position.y, air: controls.airborne, level: controls.level });
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
+    return samples;
+  });
+
+  const rise = Math.max(...trace.map((s) => s.y)) - before.pos[1];
+  assert.ok(rise > 0.6 && rise < 1.1, `hop rose ${rise.toFixed(2)} m, expected about 0.9`);
+  assert.ok(trace.some((s) => s.air), 'the walker was actually airborne');
+
+  const after = await readCamera();
+  assert.equal(after.mode, 'walk');
+  assert.ok(Math.abs(after.pos[1] - before.pos[1]) < 0.05,
+    `landed at ${after.pos[1].toFixed(2)}, took off from ${before.pos[1].toFixed(2)}`);
+  assert.equal(after.level, before.level, 'a hop is not a level change');
+  // The level must not flicker mid-air onto whatever passes under the arc.
+  assert.deepEqual([...new Set(trace.map((s) => s.level))], [before.level]);
+});
+
+test('hopping off the SkyWalk lands on the street, and the level follows once', async () => {
+  // A modelled stretch of SkyWalk deck. If the geometry moves, this fails loudly
+  // rather than quietly testing a hop over open ground.
+  const ON_SKYWALK = [-400, -160];
+  const hop = await page.evaluate(async ([x, z]) => {
+    const { ctx, controls } = window.__TWIN__;
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    controls.setMode('orbit');
+    controls.setMode('walk');
+    ctx.camera.position.set(x, 10.7, z);
+    controls.setLevelByY(9);
+    for (let i = 0; i < 30; i++) await frame();
+    const start = { y: ctx.camera.position.y, level: controls.level };
+
+    controls.jump();
+    const seen = [];
+    const t0 = performance.now();
+    while (performance.now() - t0 < 4000) {
+      // Drift sideways off the deck while airborne, the way a player would.
+      if (controls.airborne) ctx.camera.position.x += 0.12;
+      seen.push({ y: ctx.camera.position.y, level: controls.level, air: controls.airborne });
+      await frame();
+    }
+    return { start, seen, end: { y: ctx.camera.position.y, level: controls.level, air: controls.airborne } };
+  }, ON_SKYWALK);
+
+  assert.equal(hop.start.level, 'SkyWalk', 'the test spot is no longer on the SkyWalk deck');
+  assert.ok(Math.max(...hop.seen.map((s) => s.y)) - hop.start.y > 0.6, 'the hop rose');
+  assert.equal(hop.end.air, false, 'the walker landed');
+  assert.equal(hop.end.level, 'street', `ended on ${hop.end.level}`);
+  assert.ok(hop.end.y < 3, `landed at ${hop.end.y.toFixed(2)}, expected street level`);
+  // Exactly one level change, on landing - not a flicker through everything the
+  // arc passed over.
+  assert.deepEqual([...new Set(hop.seen.map((s) => s.level))], ['SkyWalk', 'street']);
+});
+
+test('holding Space does not pogo', async () => {
+  const airborne = await page.evaluate(async () => {
+    const { controls } = window.__TWIN__;
+    // The browser sends repeat events while a key is held; only the first hops.
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', bubbles: true }));
+    const seen = [];
+    for (let i = 0; i < 90; i++) {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', repeat: true, bubbles: true }));
+      seen.push(controls.airborne);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space', bubbles: true }));
+    return seen;
+  });
+  // One contiguous hop, then back on the ground and staying there.
+  assert.equal(airborne.at(-1), false, 'still bouncing after the key was held');
+  const hops = airborne.filter((a, i) => a && !airborne[i - 1]).length;
+  assert.equal(hops, 1, `held Space produced ${hops} hops`);
 });
 
 test('a viewpoint teleport still lands where it says', async () => {

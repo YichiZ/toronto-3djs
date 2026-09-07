@@ -291,6 +291,161 @@ test('a viewpoint teleport still lands where it says', async () => {
     'setMode must not overwrite the position teleport just set');
 });
 
+/**
+ * Walk (or run) forward for `ms`, sampling the camera each frame.
+ *
+ * Drives the same key events a player sends, from a placed position and a yaw
+ * chosen by the caller, so the walk is over known ground rather than wherever
+ * the previous test left the view pointing.
+ */
+const walkForward = (pos, yaw, ms, shift) => page.evaluate(async ([at, yawAngle, span, run]) => {
+  const { ctx, controls } = window.__TWIN__;
+  const frame = () => new Promise((r) => requestAnimationFrame(r));
+  controls.setMode('orbit');
+  controls.setMode('walk');
+  ctx.camera.position.set(at[0], at[1], at[2]);
+  ctx.camera.rotation.set(0, yawAngle, 0);          // level, facing along the street
+  for (let i = 0; i < 40; i++) await frame();       // let ground() settle
+
+  const start = ctx.camera.position.clone();
+  const keys = run ? ['KeyW', 'ShiftLeft'] : ['KeyW'];
+  for (const code of keys) window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+  const samples = [];
+  const t0 = performance.now();
+  while (performance.now() - t0 < span) {
+    samples.push({
+      y: ctx.camera.position.y,
+      bob: controls.bobOffset,
+      fov: ctx.camera.fov,
+      air: controls.airborne,
+    });
+    await frame();
+  }
+  for (const code of keys) window.dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+
+  // Coast to a stop, and keep sampling: this is where the FOV must come back.
+  const after = [];
+  const t1 = performance.now();
+  while (performance.now() - t1 < 1500) {
+    after.push({ y: ctx.camera.position.y, bob: controls.bobOffset, fov: ctx.camera.fov });
+    await frame();
+  }
+  const end = ctx.camera.position;
+  return {
+    samples,
+    after,
+    travelled: Math.hypot(end.x - start.x, end.z - start.z),
+  };
+}, [pos, yaw, ms, Boolean(shift)]);
+
+/** A flat, open stretch of Front Street with room to run. */
+const OPEN_STREET = [-16, 1.7, 60];
+const ALONG_STREET = Math.PI / 2;
+
+const span = (values) => Math.max(...values) - Math.min(...values);
+/** Total distance a trace travelled, up and down - a bob shows up here, a grade barely does. */
+const wander = (values) => values.reduce((sum, v, i) => (i ? sum + Math.abs(v - values[i - 1]) : 0), 0);
+
+test('holding Shift widens the frame, and releasing it brings the frame back', async () => {
+  const run = await walkForward(OPEN_STREET, ALONG_STREET, 1500, true);
+  assert.ok(run.travelled > 4,
+    `the walker only covered ${run.travelled.toFixed(1)} m - the test spot is blocked`);
+
+  const widest = Math.max(...run.samples.map((s) => s.fov));
+  assert.ok(widest > 62, `running only reached ${widest.toFixed(2)} deg, expected about 64`);
+  assert.ok(widest <= 64.001, `overshot to ${widest.toFixed(2)} deg`);
+
+  // And it comes all the way back to the lens the camera was built with.
+  const rested = run.after.at(-1).fov;
+  assert.ok(Math.abs(rested - 58) < 0.01, `left at ${rested.toFixed(3)} deg after stopping`);
+});
+
+test('a walk does not widen the frame - the kick means running', async () => {
+  const walk = await walkForward(OPEN_STREET, ALONG_STREET, 1200, false);
+  assert.ok(walk.travelled > 2, `the walker only covered ${walk.travelled.toFixed(1)} m`);
+  const widest = Math.max(...walk.samples.map((s) => s.fov));
+  assert.ok(widest < 58.01, `a walk widened the lens to ${widest.toFixed(3)} deg`);
+});
+
+test('the head bobs while walking, harder while running, and is still while standing', async () => {
+  // Downtown has no long stretch of genuinely level pavement - every candidate
+  // spot moves 20 cm or more of real grade over a few seconds, which swamps a
+  // 3 cm bob in the raw camera height. So the offset itself is read back, and
+  // then checked to be genuinely IN the height rather than merely reported.
+  const walk = await walkForward(OPEN_STREET, ALONG_STREET, 1400, false);
+  assert.ok(walk.travelled > 2,
+    `the walker only covered ${walk.travelled.toFixed(1)} m - the test spot is blocked`);
+
+  const bobs = walk.samples.map((s) => s.bob);
+  const swing = span(bobs);
+  assert.ok(swing > 0.03 && swing < 0.09,
+    `the head swung ${(swing * 100).toFixed(1)} cm at a walk, expected about 5.6`);
+  const reversals = bobs.filter((b, i) =>
+    i > 0 && i < bobs.length - 1 && (b - bobs[i - 1]) * (bobs[i + 1] - b) < 0).length;
+  assert.ok(reversals > 4, `the bob only turned around ${reversals} times in 1.4 s`);
+
+  // The offset is really applied, and in phase: subtracting it from the camera
+  // height leaves a far smoother trace than the height itself.
+  const heights = walk.samples.map((s) => s.y);
+  const flattened = heights.map((y, i) => y - bobs[i]);
+  const removed = wander(heights) - wander(flattened);
+  assert.ok(removed > wander(bobs) * 0.4,
+    `removing the reported bob took only ${removed.toFixed(2)} m out of the camera's ` +
+    `${wander(heights).toFixed(2)} m of travel, against ${wander(bobs).toFixed(2)} m of bob - ` +
+    `it is not in the height, or it is out of phase with it`);
+
+  // Standing still, the strength decays to nothing.
+  const rest = walk.after.slice(-30);
+  assert.ok(Math.max(...rest.map((s) => Math.abs(s.bob))) < 0.002,
+    'the head kept bobbing after the walker stopped');
+  assert.ok(span(rest.map((s) => s.y)) < 0.004, 'the camera height never settled');
+
+  // And running bobs harder than walking - the amplitude scales with speed.
+  const run = await walkForward(OPEN_STREET, ALONG_STREET, 1400, true);
+  assert.ok(span(run.samples.map((s) => s.bob)) > swing * 1.2,
+    'a run should bob harder than a walk');
+});
+
+test('the head does not bob mid-hop', async () => {
+  const hop = await page.evaluate(async ([pos, yawAngle]) => {
+    const { ctx, controls } = window.__TWIN__;
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    controls.setMode('orbit');
+    controls.setMode('walk');
+    ctx.camera.position.set(pos[0], pos[1], pos[2]);
+    ctx.camera.rotation.set(0, yawAngle, 0);
+    for (let i = 0; i < 40; i++) await frame();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ShiftLeft', bubbles: true }));
+    for (let i = 0; i < 30; i++) await frame();     // get the bob running first
+    controls.jump();
+    const seen = [];
+    const t0 = performance.now();
+    while (performance.now() - t0 < 1200) {
+      seen.push({ y: ctx.camera.position.y, bob: controls.bobOffset, air: controls.airborne });
+      await frame();
+    }
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ShiftLeft', bubbles: true }));
+    return seen;
+  }, [OPEN_STREET, ALONG_STREET]);
+
+  assert.ok(hop.some((s) => s.air), 'the walker never left the ground');
+  const air = hop.filter((s) => s.air);
+  // The bob fades out at take-off rather than snapping, so the first few frames
+  // still carry a little; by the middle of the arc it must be gone.
+  const late = air.slice(Math.ceil(air.length / 2));
+  assert.ok(Math.max(...late.map((s) => Math.abs(s.bob))) < 0.002,
+    'the head was still bobbing in mid-air');
+  // And the descent really is a clean fall, not a rippled one.
+  const ys = air.map((s) => s.y);
+  const peak = ys.indexOf(Math.max(...ys));
+  const wobbles = ys.filter((y, i) =>
+    i > peak + 2 && i < ys.length - 1 && ys[i + 1] > y + 1e-4).length;
+  assert.equal(wobbles, 0, 'the descent went back up - something is riding on the arc');
+});
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

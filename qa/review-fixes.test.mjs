@@ -8,6 +8,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { settle } from '../src/ui/runFeel.js';
 import * as THREE from 'three';
 import { registerInteractive, register, get } from '../src/core/registry.js';
 import { PATH_SEGMENTS, MEZZANINE, MEZZANINE_CORRIDOR_ID } from '../src/interiors/path.js';
@@ -34,9 +35,6 @@ test('the registry refuses a duplicate id rather than silently overwriting', () 
 });
 
 test('the ground settle is frame-rate independent', async () => {
-  // controls.js pulls in DOM-only addons, so the rate function is re-derived
-  // here from the same definition rather than imported.
-  const settle = (rate, dt) => 1 - Math.exp(-rate * Math.max(dt, 0));
   // Both rates must cover the SAME simulated span, or the comparison measures
   // step quantisation rather than frame-rate dependence. 0.1 s divides exactly
   // into 10 steps at 100 fps and 2 steps at 20 fps.

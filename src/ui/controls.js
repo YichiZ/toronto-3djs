@@ -13,6 +13,10 @@
  * floors: Q/E and PageUp/Down still own the vertical layering, which is the
  * subject of this reconstruction. Mid-air the level is frozen rather than re-read
  * each frame - see src/ui/jump.js for why.
+ *
+ * RUNNING (Shift) is told by a small FOV widening and a head bob keyed to the
+ * distance walked - see src/ui/runFeel.js. Without them 7.5 m/s framed exactly
+ * like 3.4 m/s, and the run may as well not have been there.
  */
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
@@ -23,6 +27,10 @@ import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTrans
 import { ballistic, hasLanded, JUMP_SPEED, MAX_FALL } from './jump.js';
 import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
+import {
+  settle, easeTo, runFraction, bobGain, bobHeight,
+  RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
+} from './runFeel.js';
 
 const EYE = 1.7;
 const WALK_SPEED = 3.4;   // m/s, an unhurried commuter
@@ -50,7 +58,6 @@ const BODY_RADIUS = 0.55;  // horizontal clearance kept from walls
  */
 const GROUND_SETTLE = 12;    // 1/s, lands on a real floor in ~120 ms
 const FALLBACK_SETTLE = 4;   // 1/s, softer hold when nothing is underfoot
-const settle = (rate, dt) => 1 - Math.exp(-rate * Math.max(dt, 0));
 
 /** Walkable levels, low to high. Q/E steps through these. */
 const LEVEL_ORDER = [
@@ -93,6 +100,16 @@ export function install(ctx) {
    * was only held at by ground()'s nominal-level fallback?
    */
   let takeoffOnFloor = false;
+
+  // --- run feel -----------------------------------------------------------
+  /** The FOV the camera was built with. The run kick is measured from this. */
+  const REST_FOV = camera.fov;
+  /** Metres of ground actually covered on foot; the bob's phase is a function of it. */
+  let bobDistance = 0;
+  /** Eased strength, so take-off and landing fade the bob instead of popping it. */
+  let bobStrength = 0;
+  /** The offset currently added to camera.position.y, peeled off before ground()/fly() run. */
+  let bobY = 0;
 
   // --- walk rig -----------------------------------------------------------
   const pointer = new PointerLockControls(camera, dom);
@@ -283,6 +300,7 @@ export function install(ctx) {
     levelIndex = next;
     camera.position.y = LEVEL_ORDER[levelIndex].y + EYE;
     velocity.set(0, 0, 0);
+    clearBob();
   }
 
 /**
@@ -496,7 +514,57 @@ function ignoreHit(hit) {
    */
   const MAX_AIR_DT = 1 / 120;
 
+  /**
+   * Forget the bob offset after something has written camera.position.y wholesale.
+   *
+   * ground() and fly() own that value, so the bob is an offset laid on top and
+   * peeled off again each frame. Anything that ASSIGNS the height instead - a
+   * level change, a teleport, a mode switch - has already discarded the offset,
+   * and leaving bobY claiming it is still there makes the next frame subtract a
+   * few centimetres that are not in the number.
+   */
+  function clearBob() {
+    bobY = 0;
+    bobStrength = 0;
+  }
+
+  /**
+   * Advance the bob and lay it back on top of the height ground()/fly() chose.
+   *
+   * The strength is eased rather than applied raw so that going airborne - where
+   * the bob must be off, because a bobbing jump looks broken - fades the head
+   * back instead of dropping it 4 cm in a single frame.
+   */
+  function applyBob(dt) {
+    const speed = Math.hypot(velocity.x, velocity.z);
+    bobStrength = easeTo(bobStrength, bobGain(speed, WALK_SPEED, airborne), BOB_SETTLE, dt);
+    bobY = bobHeight(bobDistance, bobStrength);
+    camera.position.y += bobY;
+  }
+
+  /**
+   * Widen the frame while running, and let it back down when not.
+   *
+   * Runs in every mode rather than only in walk, so leaving walk mid-sprint does
+   * not strand the orbit and cinematic cameras on a wide lens.
+   */
+  function updateFov(dt) {
+    const speed = mode === 'walk' ? Math.hypot(velocity.x, velocity.z) : 0;
+    const target = REST_FOV + RUN_FOV_GAIN * runFraction(speed, WALK_SPEED, RUN_SPEED);
+    // An exponential ease never quite arrives, so it is snapped once inside a
+    // thousandth of a degree. Without that the projection matrix would be
+    // rebuilt every frame of a session that is mostly spent standing still.
+    if (camera.fov === target) return;
+    camera.fov = Math.abs(camera.fov - target) < 1e-3
+      ? target
+      : easeTo(camera.fov, target, FOV_SETTLE, dt);
+    camera.updateProjectionMatrix();
+  }
+
   function updateWalk(dt) {
+    // Work in the walker's true eye height: ground() eases toward the floor and
+    // fly() integrates the arc, and neither can see a bob baked into the value.
+    camera.position.y -= bobY;
     // Substep long frames rather than trusting the caller's dt clamp.
     //
     // The bound is the speed the walker could REACH this frame, not the speed it
@@ -511,11 +579,8 @@ function ignoreHit(hit) {
       span > MAX_STEP ? Math.ceil(span / MAX_STEP) : 1,
       airborne ? Math.ceil(dt / MAX_AIR_DT) : 1,
     ));
-    if (parts > 1) {
-      for (let i = 0; i < parts; i++) walkStep(dt / parts);
-      return;
-    }
-    walkStep(dt);
+    for (let i = 0; i < parts; i++) walkStep(dt / parts);
+    applyBob(dt);
   }
 
   function walkStep(dt) {
@@ -593,6 +658,10 @@ function ignoreHit(hit) {
       if (edged.z === 0) velocity.z = 0;
       camera.position.x += edged.x;
       camera.position.z += edged.z;
+      // Ground actually COVERED, not intended: walking face-first into a wall
+      // slides to a stop, and the head has to stop bobbing with it rather than
+      // marching on the spot.
+      bobDistance += Math.hypot(step.x, step.z);
     }
 
     // Mid-hop, gravity owns the height and the level is frozen until landing.
@@ -617,6 +686,7 @@ function ignoreHit(hit) {
     if (mode === 'walk') updateWalk(dt);
     else if (mode === 'orbit') orbit.update();
     // cinematic: tour.js owns the camera this frame.
+    updateFov(dt);
   }
   ctx.onFrame.push(update);
 
@@ -626,6 +696,12 @@ function ignoreHit(hit) {
     }
     if (name === mode) return mode;
     const previous = mode;
+    // Hand the next mode the walker's true eye height, not one with a few
+    // centimetres of bob still baked into it.
+    if (previous === 'walk') {
+      camera.position.y -= bobY;
+      clearBob();
+    }
     mode = name;
     orbit.enabled = name === 'orbit';
     if (name !== 'walk' && pointer.isLocked) pointer.unlock();
@@ -687,6 +763,7 @@ function ignoreHit(hit) {
       camera.lookAt(vp.lookAt.x, vp.lookAt.y, vp.lookAt.z);
       velocity.set(0, 0, 0);
       airborne = false;
+      clearBob();
     }
     return vp;
   }
@@ -697,6 +774,8 @@ function ignoreHit(hit) {
     get mode() { return mode; },
     get level() { return LEVEL_ORDER[levelIndex].name; },
     get airborne() { return airborne; },
+    /** The head-bob offset currently added to the camera height. For qa/modes.e2e.mjs. */
+    get bobOffset() { return bobY; },
     jump,
     setMode,
     teleport,

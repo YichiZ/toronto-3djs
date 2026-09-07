@@ -123,6 +123,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>W A S D / arrows</dt><dd>walk</dd>
       <dt>Mouse / drag</dt><dd>look (click the view to capture the pointer)</dd>
       <dt>Shift</dt><dd>run</dd>
+      <dt>Space</dt><dd>jump</dd>
       <dt>Q / E, PgDn / PgUp</dt><dd>change level — PATH, concourse, street, viaduct, SkyWalk, Gardiner</dd>
       <dt>1 / 2 / 3</dt><dd>walk / orbit / tour</dd>
       <dt>R</dt><dd>reference mode (labels, x-ray, grid, section)</dd>
@@ -132,9 +133,10 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>Click a storefront</dt><dd>tenant, category, address and confidence grade</dd>
     </dl>
     <div class="hud-reflayers"></div>
-    <p class="hud-note">There is no jump. Height is a level change, because the
-    layering — PATH under the street, tracks on a viaduct above it, the SkyWalk
-    above that — is what this place actually is.</p>`);
+    <p class="hud-note">The jump is a hop &mdash; enough for a bollard, not for a
+    storey. Height is still a level change, because the layering &mdash; PATH under
+    the street, tracks on a viaduct above it, the SkyWalk above that &mdash; is what
+    this place actually is.</p>`);
   help.hidden = true;
   hud.appendChild(help);
 

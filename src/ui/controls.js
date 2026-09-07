@@ -8,8 +8,11 @@
  * just above the level it believes it is on and lands on whatever surface is
  * actually there — stairs, forecourt, PATH floor or SkyWalk deck.
  *
- * WHY THERE IS NO JUMP: vertical movement is a level change (Q/E, PageUp/Down),
- * because the vertical layering is the subject of this reconstruction.
+ * JUMPING is a short hop (Space, ~0.9 m) for clearing a bollard or a planter.
+ * It is deliberately lower than STEP_UP, so it never becomes the way you change
+ * floors: Q/E and PageUp/Down still own the vertical layering, which is the
+ * subject of this reconstruction. Mid-air the level is frozen rather than re-read
+ * each frame - see src/ui/jump.js for why.
  */
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
@@ -17,6 +20,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { LEVELS } from '../data/grid.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
 import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
+import { ballistic, hasLanded, JUMP_SPEED, MAX_FALL } from './jump.js';
 
 const EYE = 1.7;
 const WALK_SPEED = 3.4;   // m/s, an unhurried commuter
@@ -78,6 +82,10 @@ export function install(ctx) {
 
   let mode = 'walk';
   let levelIndex = STREET_LEVEL;
+  /** Mid-jump: gravity owns camera.y, and the level is frozen until landing. */
+  let airborne = false;
+  /** Floor height the current jump left from, for the give-up guard. */
+  let takeoffFloorY = 0;
 
   // --- walk rig -----------------------------------------------------------
   const pointer = new PointerLockControls(camera, dom);
@@ -97,6 +105,11 @@ export function install(ctx) {
   const forward = new THREE.Raycaster();
   forward.far = BODY_RADIUS + 0.35;
   forward.camera = camera;
+  // The jump arc needs to see much further down than the grounded probe: you can
+  // hop off the SkyWalk and the street is 9 m below.
+  const fall = new THREE.Raycaster();
+  fall.far = EYE + MAX_FALL;
+  fall.camera = camera;
 
   const DOWN_VEC = new THREE.Vector3(0, -1, 0);
   const hitNormal = new THREE.Vector3();
@@ -190,8 +203,12 @@ export function install(ctx) {
     keys.add(e.code);
     if (e.code === 'KeyE' || e.code === 'PageUp') changeLevel(1);
     if (e.code === 'KeyQ' || e.code === 'PageDown') changeLevel(-1);
-    // Space is deliberately not a jump; swallow it so the page does not scroll.
-    if (e.code === 'Space') e.preventDefault();
+    // Swallow Space so the page does not scroll, and hop on the press rather
+    // than on the auto-repeat - holding the key must not pogo.
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (!e.repeat) jump();
+    }
   }
   const onKeyUp = (e) => keys.delete(e.code);
   window.addEventListener('keydown', onKeyDown);
@@ -240,6 +257,9 @@ export function install(ctx) {
    * neighbour so the key is never simply dead.
    */
   function changeLevel(delta) {
+    // Not mid-hop: the level is what the walker is standing on, and mid-air it
+    // is not standing on anything yet.
+    if (airborne) return;
     let next = -1;
     for (let i = levelIndex + delta; i >= 0 && i < LEVEL_ORDER.length; i += delta) {
       if (hasFloorAt(i)) { next = i; break; }
@@ -267,6 +287,73 @@ function ignoreHit(hit) {
   }
   return false;
 }
+
+  /**
+   * Start a hop, if the walker is on the ground and actually walking.
+   *
+   * There is no double jump and no jump queueing: a second press mid-air is
+   * ignored rather than buffered, because a hop this short buffers into a pogo.
+   */
+  function jump() {
+    if (mode !== 'walk' || airborne) return;
+    airborne = true;
+    takeoffFloorY = camera.position.y - EYE;
+    velocity.y = JUMP_SPEED;
+  }
+
+  /**
+   * Height of the nearest floor below the walker, or null.
+   *
+   * Unlike hasFloorAt(), this does not care which level the surface belongs to -
+   * a jump can cross levels on the way down, and what you land on is whatever is
+   * physically there.
+   */
+  function floorBelow() {
+    fall.set(camera.position, DOWN_VEC);
+    for (const hit of fall.intersectObject(scene, true)) {
+      if (ignoreHit(hit)) continue;
+      return hit.point.y;
+    }
+    return null;
+  }
+
+  /**
+   * Advance the jump arc by one step, and land if this step crossed a floor.
+   *
+   * Landing is tested as a CROSSING of the step rather than as proximity, so a
+   * fast descent cannot tunnel through a floor between two frames the way a
+   * distance check would.
+   */
+  function fly(dt) {
+    const feetY = camera.position.y - EYE;
+    const next = ballistic(camera.position.y, velocity.y, dt);
+    velocity.y = next.vy;
+
+    // No floor found means this spot has none modelled - the walker was being
+    // held at the nominal level by ground()'s fallback before it jumped. Land it
+    // back on that same nominal floor, so a hop over a gap behaves exactly like
+    // a hop anywhere else instead of dropping 40 m and snapping back.
+    const floorY = floorBelow() ?? takeoffFloorY;
+    if (hasLanded(feetY, next.y - EYE, floorY, velocity.y)) {
+      camera.position.y = floorY + EYE;
+      velocity.y = 0;
+      airborne = false;
+      // Read the level ONCE, from the floor actually landed on. Hopping off the
+      // viaduct deck onto Front Street really is a level change.
+      levelIndex = nearestLevelIndex(floorY);
+      return;
+    }
+
+    // Nothing modelled underneath - the same guard grounded walking uses, rather
+    // than letting the walker fall out of the world.
+    if (next.y - EYE < takeoffFloorY - MAX_FALL) {
+      camera.position.y = LEVEL_ORDER[levelIndex].y + EYE;
+      velocity.y = 0;
+      airborne = false;
+      return;
+    }
+    camera.position.y = next.y;
+  }
 
   /** Snap to whatever floor is actually under the walker on the current level. */
   function ground(dt) {
@@ -336,6 +423,17 @@ function ignoreHit(hit) {
    */
   const MAX_STEP = BODY_RADIUS * 0.8;
 
+  /**
+   * Longest step the jump arc is integrated over.
+   *
+   * Semi-implicit Euler is stable at any step, but the walker only ever EXISTS
+   * at the sampled positions - so a coarse step means the arc's real peak is
+   * lower than its nominal one. At 30 fps a 0.9 m hop topped out at 0.81 m,
+   * which clears a bollard on a fast machine and clips it on a slow one. Four
+   * substeps at 30 fps bring that inside a centimetre.
+   */
+  const MAX_AIR_DT = 1 / 120;
+
   function updateWalk(dt) {
     // Substep long frames rather than trusting the caller's dt clamp.
     //
@@ -347,8 +445,11 @@ function ignoreHit(hit) {
     // tunnelling this guard exists to prevent.
     const attainable = Math.max(Math.hypot(velocity.x, velocity.z), RUN_SPEED);
     const span = attainable * dt;
-    if (span > MAX_STEP) {
-      const parts = Math.min(16, Math.ceil(span / MAX_STEP));
+    const parts = Math.min(16, Math.max(
+      span > MAX_STEP ? Math.ceil(span / MAX_STEP) : 1,
+      airborne ? Math.ceil(dt / MAX_AIR_DT) : 1,
+    ));
+    if (parts > 1) {
       for (let i = 0; i < parts; i++) walkStep(dt / parts);
       return;
     }
@@ -409,10 +510,20 @@ function ignoreHit(hit) {
       blocker = step.lengthSq() > 1e-10 ? blockingNormal(step.x, step.z) : null;
     }
     if (step.lengthSq() <= 1e-10) {
-      velocity.set(0, 0, 0);
+      // Horizontal only. Zeroing the whole vector here killed the jump's
+      // vertical velocity on every frame the walker was not also moving, so a
+      // standing hop rose a centimetre and then hung there, airborne forever.
+      velocity.x = 0;
+      velocity.z = 0;
     } else if (!blocker) {
       camera.position.x += step.x;
       camera.position.z += step.z;
+    }
+
+    // Mid-hop, gravity owns the height and the level is frozen until landing.
+    if (airborne) {
+      fly(dt);
+      return;
     }
 
     // Adopt the level of the floor actually underfoot. Q/E set an INTENTION;
@@ -474,6 +585,7 @@ function ignoreHit(hit) {
         levelIndex = nearestLevelIndex(camera.position.y - EYE);
       }
       velocity.set(0, 0, 0);
+      airborne = false;
     }
     if (joystickEl) joystickEl.style.display = name === 'walk' ? '' : 'none';
     return mode;
@@ -499,6 +611,7 @@ function ignoreHit(hit) {
       levelIndex = nearestLevelIndex(vp.position.y - EYE);
       camera.lookAt(vp.lookAt.x, vp.lookAt.y, vp.lookAt.z);
       velocity.set(0, 0, 0);
+      airborne = false;
     }
     return vp;
   }
@@ -508,6 +621,8 @@ function ignoreHit(hit) {
   return {
     get mode() { return mode; },
     get level() { return LEVEL_ORDER[levelIndex].name; },
+    get airborne() { return airborne; },
+    jump,
     setMode,
     teleport,
     update,

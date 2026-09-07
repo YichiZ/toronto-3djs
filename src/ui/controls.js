@@ -3,10 +3,11 @@
  *
  * WHY WALKING IS GROUNDED BY RAYCAST rather than by a height function: this
  * city is layered. The PATH runs at -6.5, the concourses at -3.5, the street at
- * 0, the viaduct deck at 6.5 and the SkyWalk at 9. A single ground height would
- * be a lie on five of those levels, so the walker fires a ray downward from
- * just above the level it believes it is on and lands on whatever surface is
- * actually there — stairs, forecourt, PATH floor or SkyWalk deck.
+ * 0, the viaduct deck at 6.5, the platforms at 7, the SkyWalk at 9 and the
+ * Gardiner deck at 12. A single ground height would be a lie on six of those
+ * seven, so the walker fires a ray downward from just above the level it
+ * believes it is on and lands on whatever surface is actually there — stairs,
+ * forecourt, PATH floor or SkyWalk deck.
  *
  * JUMPING is a short hop (Space, ~0.9 m) for clearing a bollard or a planter.
  * It is deliberately lower than STEP_UP, so it never becomes the way you change
@@ -17,6 +18,9 @@
  * RUNNING (Shift) is told by a small FOV widening and a head bob keyed to the
  * distance walked - see src/ui/runFeel.js. Without them 7.5 m/s framed exactly
  * like 3.4 m/s, and the run may as well not have been there.
+ *
+ * A LEVEL CHANGE eases rather than cutting, and while it is in flight it owns
+ * camera.y the way a jump does - see src/ui/levelChange.js.
  */
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
@@ -31,6 +35,9 @@ import {
   settle, easeTo, runFraction, bobGain, bobHeight,
   RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
 } from './runFeel.js';
+import {
+  pickLevel, levelTolerances, LEVEL_SETTLE, LEVEL_ARRIVED, MAX_LEVEL_TOLERANCE,
+} from './levelChange.js';
 
 const EYE = 1.7;
 const WALK_SPEED = 3.4;   // m/s, an unhurried commuter
@@ -39,13 +46,6 @@ const ACCEL = 12;          // m/s^2 toward the desired velocity
 const STEP_UP = 1.2;       // largest step the walker will climb in one go
 const PROBE_ABOVE = 2.4;   // ray origin height above the believed level
 const PROBE_BELOW = 9.0;
-/**
- * How far a surface may sit from a level's nominal height and still count as it.
- * Every real floor in the model lands within 0.2 m of nominal; 1.5 keeps them all
- * and excludes near misses like the SkyWalk's roof crown, which sits 1.6 m under
- * the Gardiner deck's height and is not a floor.
- */
-const LEVEL_TOLERANCE = 1.5;
 const BODY_RADIUS = 0.55;  // horizontal clearance kept from walls
 
 /**
@@ -65,10 +65,20 @@ const LEVEL_ORDER = [
   { name: 'concourse', y: LEVELS.unionConcourse },
   { name: 'street', y: LEVELS.street },
   { name: 'viaduct deck', y: LEVELS.viaductDeck },
+  { name: 'platform', y: LEVELS.platform },
   { name: 'SkyWalk', y: LEVELS.skywalk },
   { name: 'Gardiner deck', y: LEVELS.gardinerDeck },
 ];
 const STREET_LEVEL = LEVEL_ORDER.findIndex((l) => l.name === 'street');
+/**
+ * How far a surface may sit from a level's nominal height and still count as it.
+ * Every real floor in the model lands within 0.2 m of nominal, and the default
+ * 1.5 keeps them all while excluding near misses like the SkyWalk's roof crown,
+ * which sits 1.6 m under the Gardiner deck's height and is not a floor. The
+ * platform level, half a metre over the viaduct deck, needs a tighter one - see
+ * levelTolerances().
+ */
+const LEVEL_TOLERANCE = levelTolerances(LEVEL_ORDER);
 
 const nearestLevelIndex = (y) => {
   let best = STREET_LEVEL;
@@ -110,6 +120,16 @@ export function install(ctx) {
   let bobStrength = 0;
   /** The offset currently added to camera.position.y, peeled off before ground()/fly() run. */
   let bobY = 0;
+  /**
+   * Eye height a level change is easing toward, or null when none is running.
+   *
+   * While it is set, the easing owns camera.y - exactly as gravity owns it mid
+   * jump. Letting ground() run alongside would have the two fight for the same
+   * number every frame: grounding reads the floor the walker is still standing
+   * over and drags it back down, so a descent to the PATH would stall a metre
+   * below the pavement.
+   */
+  let levelChangeTo = null;
 
   // --- walk rig -----------------------------------------------------------
   const pointer = new PointerLockControls(camera, dom);
@@ -232,8 +252,13 @@ export function install(ctx) {
   function onKeyDown(e) {
     if (typingInField(e)) return;
     keys.add(e.code);
-    if (e.code === 'KeyE' || e.code === 'PageUp') changeLevel(1);
-    if (e.code === 'KeyQ' || e.code === 'PageDown') changeLevel(-1);
+    // Level keys act on the press only. Under auto-repeat, holding E ran the
+    // walker from the PATH to the Gardiner deck in well under a second, which
+    // is not a journey through six floors - it is a glitch.
+    if (!e.repeat) {
+      if (e.code === 'KeyE' || e.code === 'PageUp') changeLevel(1);
+      if (e.code === 'KeyQ' || e.code === 'PageDown') changeLevel(-1);
+    }
     // Swallow Space so the page does not scroll, and hop on the press rather
     // than on the auto-repeat - holding the key must not pogo.
     if (e.code === 'Space') {
@@ -270,8 +295,8 @@ export function install(ctx) {
     // second.
     for (const hit of down.intersectObject(scene, true)) {
       if (ignoreHit(hit)) continue;
-      if (Math.abs(hit.point.y - y) <= LEVEL_TOLERANCE) return true;
-      if (hit.point.y < y - LEVEL_TOLERANCE) return false;   // sorted: past the level
+      if (Math.abs(hit.point.y - y) <= LEVEL_TOLERANCE[index]) return true;
+      if (hit.point.y < y - LEVEL_TOLERANCE[index]) return false;   // sorted: past the level
     }
     return false;
   }
@@ -288,17 +313,21 @@ export function install(ctx) {
    * neighbour so the key is never simply dead.
    */
   function changeLevel(delta) {
-    // Not mid-hop: the level is what the walker is standing on, and mid-air it
-    // is not standing on anything yet.
-    if (airborne) return;
-    let next = -1;
-    for (let i = levelIndex + delta; i >= 0 && i < LEVEL_ORDER.length; i += delta) {
-      if (hasFloorAt(i)) { next = i; break; }
-    }
-    if (next === -1) next = Math.max(0, Math.min(LEVEL_ORDER.length - 1, levelIndex + delta));
-    if (next === levelIndex) return;
-    levelIndex = next;
-    camera.position.y = LEVEL_ORDER[levelIndex].y + EYE;
+    // Only while walking, and not mid-hop: the level is what the walker is
+    // standing on, and mid-air it is not standing on anything yet. In orbit the
+    // rig owns the camera outright, so a level change there moved nothing and
+    // now would pop a toast about it.
+    if (mode !== 'walk' || airborne) return;
+    const { index, outcome } = pickLevel(levelIndex, delta, LEVEL_ORDER.length, hasFloorAt);
+    // The HUD says what happened, including when nothing did. Silence was the
+    // whole of the old feedback: the chip kept showing the level you were
+    // already on and the key read as broken.
+    window.dispatchEvent(new CustomEvent('twin:level', {
+      detail: { name: LEVEL_ORDER[index].name, outcome, delta },
+    }));
+    if (index === levelIndex) return;
+    levelIndex = index;
+    levelChangeTo = LEVEL_ORDER[levelIndex].y + EYE;
     velocity.set(0, 0, 0);
     clearBob();
   }
@@ -334,6 +363,7 @@ function ignoreHit(hit) {
     // hop lands back at exactly this height, and a running bob is up to 4 cm.
     takeoffFloorY = camera.position.y - bobY - EYE;
     takeoffOnFloor = onFloor;
+    levelChangeTo = null;   // gravity takes the height from here
     velocity.y = JUMP_SPEED;
   }
 
@@ -674,6 +704,16 @@ function ignoreHit(hit) {
       return;
     }
 
+    // A level change in flight owns the height until it arrives, and the level
+    // it is heading for is the intention - not whatever is under the walker on
+    // the way. Arrival is by distance rather than by a timer, so retargeting
+    // mid-flight (pressing E twice) just moves the destination.
+    if (levelChangeTo !== null) {
+      camera.position.y += (levelChangeTo - camera.position.y) * settle(LEVEL_SETTLE, dt);
+      if (Math.abs(levelChangeTo - camera.position.y) < LEVEL_ARRIVED) levelChangeTo = null;
+      return;
+    }
+
     // Adopt the level of the floor actually underfoot. Q/E set an INTENTION;
     // ground() decides what is really there. Without this the two disagree - press
     // E on Front Street, where no viaduct deck or SkyWalk exists overhead, and the
@@ -726,7 +766,7 @@ function ignoreHit(hit) {
         // left alone: the tour has just placed the camera somewhere deliberate,
         // and the orbit target is stale.
         levelIndex = walkLevelForTarget(
-          orbit.target.y, LEVEL_ORDER.map((l) => l.y), STREET_LEVEL, LEVEL_TOLERANCE
+          orbit.target.y, LEVEL_ORDER.map((l) => l.y), STREET_LEVEL, MAX_LEVEL_TOLERANCE
         );
         camera.position.set(orbit.target.x, LEVEL_ORDER[levelIndex].y + EYE, orbit.target.z);
         // Keep the yaw, drop the pitch: arriving at eye height staring at the
@@ -741,6 +781,7 @@ function ignoreHit(hit) {
       }
       velocity.set(0, 0, 0);
       airborne = false;
+      levelChangeTo = null;
     }
     if (joystickEl) joystickEl.style.display = name === 'walk' ? '' : 'none';
     return mode;
@@ -768,6 +809,7 @@ function ignoreHit(hit) {
       velocity.set(0, 0, 0);
       airborne = false;
       clearBob();
+      levelChangeTo = null;
     }
     return vp;
   }
@@ -780,6 +822,7 @@ function ignoreHit(hit) {
     get airborne() { return airborne; },
     /** The head-bob offset currently added to the camera height. For qa/modes.e2e.mjs. */
     get bobOffset() { return bobY; },
+    get changingLevel() { return levelChangeTo !== null; },
     jump,
     setMode,
     teleport,
@@ -788,7 +831,11 @@ function ignoreHit(hit) {
     viewpoints: VIEWPOINTS,
     orbitControls: orbit,
     pointerLock: pointer,
-    setLevelByY: (y) => { levelIndex = nearestLevelIndex(y); return LEVEL_ORDER[levelIndex].name; },
+    setLevelByY: (y) => {
+      levelIndex = nearestLevelIndex(y);
+      levelChangeTo = null;
+      return LEVEL_ORDER[levelIndex].name;
+    },
     dispose() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

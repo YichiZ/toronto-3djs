@@ -16,6 +16,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { LEVELS } from '../data/grid.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
+import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
 
 const EYE = 1.7;
 const WALK_SPEED = 3.4;   // m/s, an unhurried commuter
@@ -438,14 +439,36 @@ function ignoreHit(hit) {
       throw new RangeError(`setMode: unknown mode "${name}"`);
     }
     if (name === mode) return mode;
+    const previous = mode;
     mode = name;
     orbit.enabled = name === 'orbit';
     if (name !== 'walk' && pointer.isLocked) pointer.unlock();
-    if (name === 'orbit') orbit.target.set(
-      camera.position.x + 0, Math.max(camera.position.y - 10, 4), camera.position.z - 60
-    );
+    if (name === 'orbit') {
+      // Pivot around what the camera is already looking at, so the switch
+      // changes the controls and nothing else.
+      camera.getWorldDirection(tmpDir);
+      const t = orbitTargetFrom(camera.position, tmpDir, ORBIT_PULLBACK, orbit.minDistance);
+      orbit.target.set(t.x, t.y, t.z);
+    }
     if (name === 'walk') {
-      levelIndex = nearestLevelIndex(camera.position.y - EYE);
+      if (previous === 'orbit') {
+        // Land at the subject, not under the orbit camera. Cinematic -> walk is
+        // left alone: the tour has just placed the camera somewhere deliberate,
+        // and the orbit target is stale.
+        levelIndex = walkLevelForTarget(
+          orbit.target.y, LEVEL_ORDER.map((l) => l.y), STREET_LEVEL, LEVEL_TOLERANCE
+        );
+        camera.position.set(orbit.target.x, LEVEL_ORDER[levelIndex].y + EYE, orbit.target.z);
+        // Keep the yaw, drop the pitch: arriving at eye height staring at the
+        // pavement only to have the first mouse move snap the view level was
+        // half the jump.
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(camera.quaternion);
+        euler.x = 0;
+        euler.z = 0;
+        camera.quaternion.setFromEuler(euler);
+      } else {
+        levelIndex = nearestLevelIndex(camera.position.y - EYE);
+      }
       velocity.set(0, 0, 0);
     }
     if (joystickEl) joystickEl.style.display = name === 'walk' ? '' : 'none';
@@ -458,13 +481,17 @@ function ignoreHit(hit) {
       console.warn(`[controls] teleport: no viewpoint "${name}"`);
       return null;
     }
-    camera.position.set(vp.position.x, vp.position.y, vp.position.z);
+    // The mode switch is made FIRST and the position second: setMode now moves
+    // the camera itself on an orbit -> walk switch, which would otherwise
+    // overwrite the viewpoint we were asked to teleport to.
     if (vp.mode === 'orbit') {
       setMode('orbit');
+      camera.position.set(vp.position.x, vp.position.y, vp.position.z);
       orbit.target.set(vp.lookAt.x, vp.lookAt.y, vp.lookAt.z);
       orbit.update();
     } else {
       setMode('walk');
+      camera.position.set(vp.position.x, vp.position.y, vp.position.z);
       levelIndex = nearestLevelIndex(vp.position.y - EYE);
       camera.lookAt(vp.lookAt.x, vp.lookAt.y, vp.lookAt.z);
       velocity.set(0, 0, 0);

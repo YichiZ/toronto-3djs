@@ -349,6 +349,9 @@ function ignoreHit(hit) {
       // Read the level ONCE, from the floor actually landed on. Hopping off the
       // viaduct deck onto Front Street really is a level change.
       levelIndex = nearestLevelIndex(floorY);
+      // The knee ray reads this before ground() next runs; a hop off a ledge
+      // must not leave it hung off the floor that was left behind.
+      floorUnderfoot = floorY;
       return;
     }
 
@@ -406,7 +409,15 @@ function ignoreHit(hit) {
     tmpDir.set(dirX, 0, dirZ);
     if (tmpDir.lengthSq() < 1e-6) return null;
     tmpDir.normalize();
-    const { high, low } = probeHeights(camera.position.y, floorUnderfoot);
+    // Mid-hop, the floor that matters is under the feet, not the one left at
+    // take-off: ground() does not run while airborne, so floorUnderfoot keeps
+    // the take-off reading and the knee ray stayed pinned 0.75 m over the
+    // pavement. Measured against three bollards: the walker froze dead in
+    // mid-air on the post (0.00 m/s, every run) until the arc rose far enough
+    // for probeHeights to drop the knee ray as stale, then carried on over. Hung
+    // off the feet, it never falls below ~0.6 m/s.
+    const floorForProbe = airborne ? camera.position.y - EYE : floorUnderfoot;
+    const { high, low } = probeHeights(camera.position.y, floorForProbe);
     return castBlocker(high) ?? (low === null ? null : castBlocker(low));
   }
 

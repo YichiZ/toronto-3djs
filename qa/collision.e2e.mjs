@@ -130,6 +130,60 @@ test('a bench stops the walker too', async () => {
   assert.ok(walk.past < 0.35, `walked ${walk.past.toFixed(2)} m out the far side of the bench`);
 });
 
+test('a hop carries over a bollard without freezing on it mid-air', async () => {
+  // Mid-hop ground() does not run, so a knee ray hung off the take-off floor
+  // stays 0.75 m over the pavement. The walker did still get over the post -
+  // but only after stopping DEAD in mid-air against it (0.00 m/s on every run)
+  // until the arc lifted it high enough for the ray to be dropped as stale.
+  // Distance travelled cannot see that; the minimum airborne speed can.
+  const { prop, alongRow } = await targetProp('bollard');
+  const start = { x: prop.x + alongRow.x * 3.0, z: prop.z + alongRow.z * 3.0 };
+  await page.evaluate(([s, p]) => {
+    const { ctx, controls } = window.__TWIN__;
+    controls.setMode('walk');
+    ctx.camera.position.set(s.x, 0.15 + 1.7, s.z);
+    controls.setLevelByY(0.15);
+    ctx.camera.lookAt(p.x, 0.15 + 1.7, p.z);
+  }, [start, prop]);
+  await page.waitForTimeout(200);
+
+  await page.keyboard.down('KeyW');
+  // Take off and sample in-page, per frame, so neither depends on how fast the
+  // test process polls.
+  const result = await page.evaluate(async (p) => {
+    const { ctx, controls } = window.__TWIN__;
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    let hopped = false;
+    let minAirSpeed = Infinity;
+    let minDist = Infinity;
+    let prev = null;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 2000) {
+      const c = ctx.camera.position;
+      const now = performance.now();
+      const d = Math.hypot(c.x - p.x, c.z - p.z);
+      minDist = Math.min(minDist, d);
+      if (!hopped && d <= 1.0) {
+        controls.jump();
+        hopped = true;
+      }
+      if (hopped && controls.airborne && prev && now > prev.t) {
+        minAirSpeed = Math.min(minAirSpeed, Math.hypot(c.x - prev.x, c.z - prev.z) / ((now - prev.t) / 1000));
+      }
+      prev = { x: c.x, z: c.z, t: now };
+      await frame();
+    }
+    return { hopped, minAirSpeed, minDist };
+  }, prop);
+  await page.keyboard.up('KeyW');
+
+  assert.ok(result.hopped, 'never got within a metre of the bollard to take off');
+  assert.ok(result.minDist < 0.2, `went around the post rather than over it (closest ${result.minDist.toFixed(2)} m)`);
+  // Fixed: never below ~0.57 m/s. Unfixed: 0.00, a dead stop in mid-air.
+  assert.ok(result.minAirSpeed > 0.3,
+    `froze in mid-air on the bollard (min airborne speed ${result.minAirSpeed.toFixed(2)} m/s)`);
+});
+
 test('a curb is still a step and not a wall', async () => {
   // The risk in adding a low ray: it reads every short walkable thing as a
   // wall. The curb is the one the whole downtown is made of - approach the

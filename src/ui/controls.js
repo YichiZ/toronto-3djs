@@ -419,7 +419,12 @@ function ignoreHit(hit) {
     down.set(tmpOrigin, DOWN_VEC);
     for (const hit of collision.intersect(down)) {
       if (ignoreHit(hit)) continue;
-      if (hit.point.y + EYE - camera.position.y > STEP_UP + PROBE_ABOVE) continue;
+      // A surface more than a step above the feet is not the floor: it is a
+      // ledge, a slab or an overhead the probe started below. This compared
+      // against STEP_UP + PROBE_ABOVE, 3.6 m - more than the probe can ever see
+      // above the feet - so it rejected nothing, and a walker on Front Street
+      // stepped 2 m straight up onto the Bay Concourse's ceiling slab (#13).
+      if (hit.point.y + EYE - camera.position.y > STEP_UP) continue;
       return hit.point.y;
     }
     return null;

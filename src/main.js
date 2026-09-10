@@ -30,9 +30,11 @@ async function boot() {
   stage('camera', 0.93);
   const { install: installControls } = await import('./ui/controls.js');
   const controls = installControls(ctx);
-  // The brief's opening frame: Union Station and the Front Street canyon. The
-  // raw default camera sits inside the head house, which reads as a white room.
-  controls.teleport('front-street-establishing');
+  // The brief's opening frame: "Union Station and the Front Street canyon". The
+  // aerial establishing shot used here framed CIBC Square and the Royal York,
+  // with the station a strip cut off at the bottom (6% of the view); the
+  // colonnade in raking perspective from the Bay end is 29% (#23).
+  controls.teleport('front-bay-west');
 
   stage('interface', 0.97);
   const { install: installHud } = await import('./ui/hud.js');

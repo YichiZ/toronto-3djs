@@ -33,10 +33,15 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'front-bay-west',
     name: 'Front & Bay, looking west',
-    position: { x: -16, y: EYE, z: 16 },
+    // Not on the corner itself: from (-16, 16) the Union Station Loop entrance's
+    // glazed canopy (x -27.8..-20.3) filled 39% of the frame as a white wash, and
+    // every spot east of it on the corner has the canopy or a street tree in the
+    // lens. Three metres west of the canopy the view is 29% Union Station and
+    // clear (#23). This is also the boot frame.
+    position: { x: -31, y: EYE, z: 15 },
     lookAt: { x: -230, y: 10, z: 20 },
     mode: 'walk',
-    description: 'South promenade at Bay, the head house colonnade running away west.',
+    description: 'South promenade at the Bay end, just west of the Loop entrance, the head house colonnade running away west.',
     realWorld: 'The canonical Union Station photograph: 22 Tuscan columns in raking perspective, the Royal York rising over the roofline on the right, Front Street falling away toward York.',
   },
   {

@@ -28,7 +28,9 @@ export function registryRoot(node) {
  */
 export function occludes(hit, ownRoot) {
   if (!hit.face) return false;
-  for (let o = hit.object; o; o = o.parent) {
+  // A proxy from the collision index is not in the scene graph; its source is,
+  // and that is where its visibility and its owning entity are.
+  for (let o = hit.object.userData?.collisionSource ?? hit.object; o; o = o.parent) {
     if (o.visible === false || o.userData?.noCollide || o.userData?.interactive) return false;
     if (ownRoot && o === ownRoot) return false;
   }
@@ -42,14 +44,23 @@ export function occludes(hit, ownRoot) {
  * world can occlude them on its own - without the second pass, clicking a blank
  * wall opens the card for a frontage on the far side of the building.
  *
+ * WHY THE BLOCKERS ARE A FUNCTION. The second pass is a ray of up to 40 m, and
+ * against the whole scene it walks every city-wide instanced set: measured at
+ * 7.45 ms a probe with a storefront under the reticle. On the hint's 0.25 s
+ * tick that is a 7 ms hitch four times a second. The app passes the walker's
+ * collision index (issue #6) instead, which answers the same question over the
+ * static world. Moving things then no longer occlude - which is also what you
+ * want: the hint should not flicker as a bus goes by.
+ *
  * @param {import('three').Raycaster} raycaster already aimed; setFromCamera also
  *        sets .camera, which Sprite.raycast dereferences
  * @param {import('three').Object3D[]} targets interaction volumes
- * @param {import('three').Object3D} scene everything that can stand in the way
+ * @param {(rc: import('three').Raycaster) => import('three').Intersection[]} castBlockers
+ *        everything that can stand in the way along rc, nearest first
  * @param {number} range metres
  * @returns {{node: import('three').Object3D, distance: number} | null}
  */
-export function aimAt(raycaster, targets, scene, range) {
+export function aimAt(raycaster, targets, castBlockers, range) {
   if (!targets.length) return null;
   raycaster.far = range;
   const hit = raycaster.intersectObjects(targets, true)[0];
@@ -59,7 +70,7 @@ export function aimAt(raycaster, targets, scene, range) {
   if (!node) return null;
   const ownRoot = registryRoot(node);
   raycaster.far = Math.max(0, hit.distance - 0.02);
-  const blockers = raycaster.intersectObject(scene, true);
+  const blockers = castBlockers(raycaster);
   raycaster.far = range;
   for (const b of blockers) {
     if (occludes(b, ownRoot)) return null;

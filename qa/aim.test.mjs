@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import { aimAt, registryRoot } from '../src/ui/aim.js';
+import { buildCollisionIndex } from '../src/ui/collision.js';
 
 function storefront() {
   const scene = new THREE.Scene();
@@ -31,7 +32,9 @@ function storefront() {
   return { scene, volume, camera, mat };
 }
 
-function aim({ scene, camera }, from, range = 40) {
+const sceneBlockers = (scene) => (rc) => rc.intersectObject(scene, true);
+
+function aim({ scene, camera }, from, range = 40, castBlockers = sceneBlockers(scene)) {
   camera.position.set(...from);
   camera.lookAt(0, 1.5, 0);
   camera.updateMatrixWorld();
@@ -40,7 +43,7 @@ function aim({ scene, camera }, from, range = 40) {
   rc.setFromCamera(new THREE.Vector2(0, 0), camera);
   const targets = [];
   scene.traverse((o) => { if (o.userData.interactive) targets.push(o); });
-  return aimAt(rc, targets, scene, range);
+  return aimAt(rc, targets, castBlockers, range);
 }
 
 test('facing a storefront in clear view aims at it, through its own glazing', () => {
@@ -79,12 +82,38 @@ test('beyond range, or aiming at nothing, is null', () => {
   assert.equal(aim(s, [0, 1.5, 60], 40), null, '60 m off with a 40 m reach');
   const rc = new THREE.Raycaster(new THREE.Vector3(0, 1.5, 10), new THREE.Vector3(0, 0, 1));
   rc.camera = s.camera;
-  assert.equal(aimAt(rc, [s.volume], s.scene, 40), null, 'looking away');
-  assert.equal(aimAt(rc, [], s.scene, 40), null, 'no targets at all');
+  assert.equal(aimAt(rc, [s.volume], sceneBlockers(s.scene), 40), null, 'looking away');
+  assert.equal(aimAt(rc, [], sceneBlockers(s.scene), 40), null, 'no targets at all');
 });
 
 test('registryRoot finds the entity a mesh belongs to', () => {
   const s = storefront();
   assert.equal(registryRoot(s.volume).userData.registryId, 'shop');
   assert.equal(registryRoot(new THREE.Mesh()), null);
+});
+
+test('through the collision index: same answers, and its own instanced glazing still does not hide it', () => {
+  // The app hands aimAt the walker's collision index, whose hits on instanced
+  // geometry are proxies outside the scene graph. Without resolving a proxy to
+  // its source, a storefront's own instanced mullions would hide it.
+  const s = storefront();
+  // Five mullions at x -2..2, so one stands exactly on the aim line at x 0 - the
+  // ray has to pass through the shop's own instanced geometry to reach the
+  // volume. (A first version spaced them at +-0.5: the ray went between them and
+  // the test passed with the resolution deleted, proving nothing.)
+  const mullions = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 3, 0.08), s.mat, 5);
+  const m = new THREE.Matrix4();
+  for (let i = 0; i < 5; i++) mullions.setMatrixAt(i, m.makeTranslation(-2 + i, 1.5, 0.45));
+  s.scene.getObjectByProperty('isGroup', true).add(mullions);          // the shop's own
+  const clear = buildCollisionIndex(s.scene);
+  assert.equal(aim(s, [0, 1.5, 10], 40, (rc) => clear.intersect(rc))?.node, s.volume, 'own mullions do not occlude');
+
+  const across = new THREE.Group();
+  across.userData.registryId = 'building-across-the-street';
+  const wall = new THREE.InstancedMesh(new THREE.BoxGeometry(20, 10, 0.5), s.mat, 1);
+  wall.setMatrixAt(0, m.makeTranslation(0, 1.5, 5));
+  across.add(wall);
+  s.scene.add(across);
+  const blocked = buildCollisionIndex(s.scene);
+  assert.equal(aim(s, [0, 1.5, 10], 40, (rc) => blocked.intersect(rc)), null, "another entity's instanced wall does");
 });

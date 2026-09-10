@@ -279,6 +279,12 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const PICK_RANGE = 40;   // metres; a frontage further off is not what you meant
+  // The aim's occlusion pass: the walker's collision index when there is one -
+  // a whole-scene ray walks every city-wide instanced set, 7 ms a probe - and
+  // the scene itself otherwise. See src/ui/aim.js.
+  const castBlockers = controls?.collision
+    ? (rc) => controls.collision.intersect(rc)
+    : (rc) => rc.intersectObject(scene, true);
   let downAt = null;
 
   renderer.domElement.addEventListener('pointerdown', (e) => {
@@ -297,7 +303,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     ndc.x = locked ? 0 : ((clientX - rect.left) / rect.width) * 2 - 1;
     ndc.y = locked ? 0 : -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(ndc, camera);
-    const hit = aimAt(raycaster, getInteractive(), scene, PICK_RANGE);
+    const hit = aimAt(raycaster, getInteractive(), castBlockers, PICK_RANGE);
     if (hit) openCard(hit.node);
   }
 
@@ -341,7 +347,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     reticle.hidden = !locked;
     if (!locked) { setAimed(null); return; }
     raycaster.setFromCamera(screenCentre, camera);
-    setAimed(aimAt(raycaster, getInteractive(), scene, PICK_RANGE)?.node ?? null);
+    setAimed(aimAt(raycaster, getInteractive(), castBlockers, PICK_RANGE)?.node ?? null);
   }
   controls?.pointerLock?.addEventListener?.('lock', updateAim);
   controls?.pointerLock?.addEventListener?.('unlock', updateAim);

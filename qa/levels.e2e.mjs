@@ -11,28 +11,18 @@
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, launchBrowser } from './e2eHarness.mjs';
+import { openWorld } from './e2eHarness.mjs';
 
-let server;
-let browser;
+let world;
 let page;
 const consoleErrors = [];
 
 before(async () => {
-  const started = await startServer();
-  server = started.server;
-  browser = await launchBrowser();
-  page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
-  page.on('pageerror', (e) => consoleErrors.push(String(e)));
-  await page.goto(started.url);
-  await page.waitForFunction(() => Boolean(window.__TWIN__), null, { timeout: 60_000 });
+  world = await openWorld({ consoleErrors });
+  page = world.page;
 });
 
-after(async () => {
-  await browser?.close();
-  server?.kill();
-});
+after(async () => { await world?.close(); });
 
 /** A spot on Front Street with the PATH and a concourse modelled under it. */
 const OVER_THE_PATH = [-120, 40];

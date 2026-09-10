@@ -156,40 +156,109 @@ test('Space hops, and the walker comes back down to the same floor', async () =>
   assert.deepEqual([...new Set(trace.map((s) => s.level))], [before.level]);
 });
 
-test('hopping off the SkyWalk lands on the street, and the level follows once', async () => {
-  // A modelled stretch of SkyWalk deck. If the geometry moves, this fails loudly
-  // rather than quietly testing a hop over open ground.
-  const ON_SKYWALK = [-400, -160];
-  const hop = await page.evaluate(async ([x, z]) => {
+/**
+ * In-page: height of a real floor under (x, z) on a level, asked the way ground()
+ * asks it - same origin, same invisible/noCollide skip - or null. Passed to
+ * page.evaluate as source, since it has to run next to the scene.
+ */
+const FLOOR_AT = `(THREE, ctx) => {
+  const down = new THREE.Raycaster();
+  down.camera = ctx.camera;
+  down.far = 11.4;                                   // PROBE_ABOVE + PROBE_BELOW
+  return (x, z, levelY) => {
+    down.set(new THREE.Vector3(x, levelY + 2.4, z), new THREE.Vector3(0, -1, 0));
+    for (const hit of down.intersectObject(ctx.scene, true)) {
+      if (!hit.face) continue;
+      let solid = true;
+      for (let o = hit.object; o; o = o.parent) if (o.visible === false || o.userData?.noCollide) solid = false;
+      if (solid) return hit.point.y;
+    }
+    return null;
+  };
+}`;
+
+test('a hop carries off a real ledge - the Royal Bank Plaza roof - onto the street', async () => {
+  // The Royal Bank Plaza setback roof at 8.77, walkable at level 9 (see
+  // qa/edges.e2e.mjs). Along x -28 it is only z -120 to -116 - probed, not
+  // guessed; z -124, where the edge test starts, is held ground south of it.
+  // Walking north stops at its edge; a hop taken there, still pressing W, must
+  // carry the walker off it. The edge guard is for walking - mid-air it was an
+  // invisible wall that stopped the hop dead at the parapet line.
+  const ROOF = [-28, 8.77 + 1.7, -118];
+  const run = await page.evaluate(async ([from, floorAtSrc]) => {
+    const THREE = await import('/node_modules/three/build/three.module.js');
     const { ctx, controls } = window.__TWIN__;
+    const floorAt = eval(floorAtSrc)(THREE, ctx);
     const frame = () => new Promise((r) => requestAnimationFrame(r));
     controls.setMode('orbit');
     controls.setMode('walk');
-    ctx.camera.position.set(x, 10.7, z);
-    controls.setLevelByY(9);
+    ctx.camera.position.set(from[0], from[1], from[2]);
+    controls.setLevelByY(from[1] - 1.7);
+    ctx.camera.lookAt(from[0], from[1], 100);        // grid-north, toward the edge
+    for (let i = 0; i < 30; i++) await frame();
+    const floorAtStart = floorAt(ctx.camera.position.x, ctx.camera.position.z, 9);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+    let t0 = performance.now();
+    while (performance.now() - t0 < 4000) await frame();
+    const atEdge = { z: ctx.camera.position.z, level: controls.level };
+
+    const seen = [];
+    controls.jump();
+    t0 = performance.now();
+    while (performance.now() - t0 < 3000) { seen.push(controls.level); await frame(); }
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true }));
+    const p = ctx.camera.position;
+    return { floorAtStart, atEdge, seen, end: { y: p.y, z: p.z, level: controls.level, air: controls.airborne } };
+  }, [ROOF, FLOOR_AT]);
+
+  assert.notEqual(run.floorAtStart, null, 'no roof modelled here any more - the test would be hopping off nothing');
+  assert.equal(run.atEdge.level, 'SkyWalk');
+  assert.ok(run.atEdge.z < -110, `walking should stop at the roof edge, but reached z ${run.atEdge.z.toFixed(1)}`);
+  assert.equal(run.end.air, false, 'the walker landed');
+  assert.equal(run.end.level, 'street', `the hop ended on ${run.end.level}, not the street below the ledge`);
+  assert.ok(run.end.y < 3, `landed at ${run.end.y.toFixed(2)}, expected street level`);
+  // One level change, on landing - not a flicker through what the arc passed over.
+  const changes = run.seen.filter((l, i) => i === 0 || l !== run.seen[i - 1]);
+  assert.deepEqual(changes.slice(0, 2), ['SkyWalk', 'street']);
+});
+
+test('a hop from ground the walker is only held at lands back at that height', async () => {
+  // (-400, -160) at level 9 has no floor mesh: ground() holds the walker at the
+  // nominal SkyWalk height, and walking there stays up there. A hop used to drop
+  // the walker 9 m to the street instead, because the arc lands on whatever is
+  // physically below. That is the "falls on some gaps and not others" the edge
+  // guard exists to avoid - a hop has to agree with walking.
+  const HELD = [-400, 9 + 1.7, -160];
+  const run = await page.evaluate(async ([from, floorAtSrc]) => {
+    const THREE = await import('/node_modules/three/build/three.module.js');
+    const { ctx, controls } = window.__TWIN__;
+    const floorAt = eval(floorAtSrc)(THREE, ctx);
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    controls.setMode('orbit');
+    controls.setMode('walk');
+    ctx.camera.position.set(from[0], from[1], from[2]);
+    controls.setLevelByY(from[1] - 1.7);
     for (let i = 0; i < 30; i++) await frame();
     const start = { y: ctx.camera.position.y, level: controls.level };
+    const floorAtLevel = floorAt(ctx.camera.position.x, ctx.camera.position.z, 9);
+    const streetBelow = floorAt(ctx.camera.position.x, ctx.camera.position.z, 0);
 
     controls.jump();
-    const seen = [];
+    let peak = -Infinity;
     const t0 = performance.now();
-    while (performance.now() - t0 < 4000) {
-      // Drift sideways off the deck while airborne, the way a player would.
-      if (controls.airborne) ctx.camera.position.x += 0.12;
-      seen.push({ y: ctx.camera.position.y, level: controls.level, air: controls.airborne });
-      await frame();
-    }
-    return { start, seen, end: { y: ctx.camera.position.y, level: controls.level, air: controls.airborne } };
-  }, ON_SKYWALK);
+    while (performance.now() - t0 < 2000) { peak = Math.max(peak, ctx.camera.position.y); await frame(); }
+    return { start, floorAtLevel, streetBelow, peak, end: { y: ctx.camera.position.y, level: controls.level, air: controls.airborne } };
+  }, [HELD, FLOOR_AT]);
 
-  assert.equal(hop.start.level, 'SkyWalk', 'the test spot is no longer on the SkyWalk deck');
-  assert.ok(Math.max(...hop.seen.map((s) => s.y)) - hop.start.y > 0.6, 'the hop rose');
-  assert.equal(hop.end.air, false, 'the walker landed');
-  assert.equal(hop.end.level, 'street', `ended on ${hop.end.level}`);
-  assert.ok(hop.end.y < 3, `landed at ${hop.end.y.toFixed(2)}, expected street level`);
-  // Exactly one level change, on landing - not a flicker through everything the
-  // arc passed over.
-  assert.deepEqual([...new Set(hop.seen.map((s) => s.level))], ['SkyWalk', 'street']);
+  assert.equal(run.floorAtLevel, null, 'this spot is floored now; the test is only meaningful while it is held');
+  assert.notEqual(run.streetBelow, null, 'with nothing modelled below, there is nothing to wrongly fall onto');
+  assert.equal(run.start.level, 'SkyWalk');
+  assert.ok(run.peak - run.start.y > 0.6, 'the hop rose');
+  assert.equal(run.end.air, false, 'the walker landed');
+  assert.equal(run.end.level, 'SkyWalk', `the hop dropped the walker to ${run.end.level}`);
+  assert.ok(Math.abs(run.end.y - run.start.y) < 0.05,
+    `landed at ${run.end.y.toFixed(2)}, took off from ${run.start.y.toFixed(2)}`);
 });
 
 test('holding Space does not pogo', async () => {

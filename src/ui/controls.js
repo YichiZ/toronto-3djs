@@ -329,7 +329,10 @@ function ignoreHit(hit) {
   function jump() {
     if (mode !== 'walk' || airborne) return;
     airborne = true;
-    takeoffFloorY = camera.position.y - EYE;
+    // jump() runs from a key handler, between frames, when the head bob is
+    // still laid on top of the height - so take it off. From held ground the
+    // hop lands back at exactly this height, and a running bob is up to 4 cm.
+    takeoffFloorY = camera.position.y - bobY - EYE;
     takeoffOnFloor = onFloor;
     velocity.y = JUMP_SPEED;
   }
@@ -660,8 +663,9 @@ function ignoreHit(hit) {
       camera.position.z += edged.z;
       // Ground actually COVERED, not intended: walking face-first into a wall
       // slides to a stop, and the head has to stop bobbing with it rather than
-      // marching on the spot.
-      bobDistance += Math.hypot(step.x, step.z);
+      // marching on the spot. So the EDGED step - the edge guard can refuse
+      // part or all of `step`, and refused ground was never covered.
+      bobDistance += Math.hypot(edged.x, edged.z);
     }
 
     // Mid-hop, gravity owns the height and the level is frozen until landing.

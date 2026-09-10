@@ -261,6 +261,48 @@ test('a hop from ground the walker is only held at lands back at that height', a
     `landed at ${run.end.y.toFixed(2)}, took off from ${run.start.y.toFixed(2)}`);
 });
 
+test('a running hop from held ground lands at the held height, not a bob away from it', async () => {
+  // jump() runs from a key handler between frames, while the head bob is still
+  // laid on top of the camera height. From held ground a hop lands back at its
+  // take-off height, so that bob - up to 4 cm at a run - was baked into the
+  // landing. Stepped by hand rather than by frame, so the take-off can be timed
+  // to a bob crest every run instead of depending on where the phase falls.
+  const r = await page.evaluate(() => {
+    const { ctx, controls } = window.__TWIN__;
+    const DT = 1 / 60;
+    const key = (t, c) => window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true }));
+    const HELD_EYE = 9 + 1.7;   // (-400, -160) at level 9: no floor mesh, held
+    controls.setMode('orbit');
+    controls.setMode('walk');
+    ctx.camera.position.set(-400, HELD_EYE, -160);
+    controls.setLevelByY(9);
+    ctx.camera.lookAt(-400, HELD_EYE, 100);
+    for (let i = 0; i < 30; i++) controls.update(DT);
+    key('keydown', 'ShiftLeft');
+    key('keydown', 'KeyW');
+    for (let i = 0; i < 60; i++) controls.update(DT);
+    for (let n = 0; Math.abs(controls.bobOffset) < 0.03 && n < 200; n++) controls.update(DT);
+    const bobAtTakeoff = controls.bobOffset;
+    controls.jump();
+    let landedEye = null;
+    for (let i = 0; i < 120 && landedEye === null; i++) {
+      const wasAirborne = controls.airborne;
+      controls.update(DT);
+      if (wasAirborne && !controls.airborne) landedEye = ctx.camera.position.y - controls.bobOffset;
+    }
+    key('keyup', 'KeyW');
+    key('keyup', 'ShiftLeft');
+    return { bobAtTakeoff, landedEye, heldEye: HELD_EYE, level: controls.level };
+  });
+
+  assert.ok(Math.abs(r.bobAtTakeoff) > 0.03, `the take-off was not at a bob crest (${r.bobAtTakeoff.toFixed(3)} m)`);
+  assert.notEqual(r.landedEye, null, 'the walker never landed');
+  assert.equal(r.level, 'SkyWalk');
+  // Unfixed: off by exactly the bob at take-off, 3-4 cm. Fixed: 0.
+  assert.ok(Math.abs(r.landedEye - r.heldEye) < 0.005,
+    `landed ${(r.landedEye - r.heldEye).toFixed(4)} m off the held height (bob at take-off ${r.bobAtTakeoff.toFixed(4)})`);
+});
+
 test('holding Space does not pogo', async () => {
   const airborne = await page.evaluate(async () => {
     const { controls } = window.__TWIN__;

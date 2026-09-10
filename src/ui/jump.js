@@ -76,3 +76,28 @@ export function hasLanded(feetY, nextFeetY, floorY, vy) {
   if (floorY === null || vy > 0) return false;
   return nextFeetY <= floorY && feetY >= floorY - 1e-6;
 }
+
+/** Metres from the eye to the top of the head. */
+export const HEAD_CLEARANCE = 0.15;
+
+/**
+ * One step of a rising hop, cut short at a ceiling.
+ *
+ * Measured under the Bay Concourse's slab, 0.35 m over a street-level eye: a
+ * hop lifted the eye to 2.52, putting the head half a metre through it (#13).
+ * Rising, the eye may climb no higher than the ceiling less HEAD_CLEARANCE, and
+ * reaching that turns the arc over there. It never pushes the eye DOWN - a
+ * walker already closer than that under a ceiling just cannot rise - and
+ * falling, ceilings do not matter.
+ *
+ * @param {number} eyeY eye before the step
+ * @param {number} nextEyeY where ballistic() would put it
+ * @param {number} vy velocity after the step
+ * @param {number|null} ceilingY underside of the first solid thing above, or null
+ * @returns {{y:number, vy:number}}
+ */
+export function underCeiling(eyeY, nextEyeY, vy, ceilingY) {
+  if (vy <= 0 || ceilingY === null) return { y: nextEyeY, vy };
+  const limit = Math.max(eyeY, ceilingY - HEAD_CLEARANCE);
+  return nextEyeY > limit ? { y: limit, vy: 0 } : { y: nextEyeY, vy };
+}

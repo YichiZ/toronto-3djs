@@ -86,3 +86,23 @@ test('a hop where nothing is modelled underneath still lands', () => {
   const { y: after, vy } = ballistic(takeoff + 0.05, -2, 0.1);
   assert.equal(hasLanded(takeoff + 0.05, after, takeoff, vy), true);
 });
+
+test('a rising hop stops at a ceiling, head clear of it, and turns over there', async () => {
+  const { underCeiling, HEAD_CLEARANCE } = await import('../src/ui/jump.js');
+  // The measured case: eye 1.64 under a surface at 1.99.
+  const r = underCeiling(1.64, 1.90, 3.2, 1.99);
+  assert.ok(Math.abs(r.y - (1.99 - HEAD_CLEARANCE)) < 1e-9, `eye at ${r.y}`);
+  assert.equal(r.vy, 0, 'the arc turns over at the ceiling');
+});
+
+test('a ceiling out of reach, no ceiling, or falling: the step is untouched', async () => {
+  const { underCeiling } = await import('../src/ui/jump.js');
+  assert.deepEqual(underCeiling(1.7, 1.8, 3, 9), { y: 1.8, vy: 3 });
+  assert.deepEqual(underCeiling(1.7, 1.8, 3, null), { y: 1.8, vy: 3 });
+  assert.deepEqual(underCeiling(2.0, 1.9, -2, 2.05), { y: 1.9, vy: -2 });
+});
+
+test('already closer to a ceiling than the head clearance: never pushed down, just cannot rise', async () => {
+  const { underCeiling } = await import('../src/ui/jump.js');
+  assert.deepEqual(underCeiling(1.9, 1.95, 3, 1.99), { y: 1.9, vy: 0 });
+});

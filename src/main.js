@@ -112,6 +112,13 @@ async function boot() {
     setTime: (h) => time.setHour(h),
   };
 
+  // A shared link (#31) replays over the default opening frame; a bad one is
+  // ignored field by field. Then the address bar follows the visitor.
+  const share = await import('./ui/shareLink.js');
+  const { VIEWPOINTS } = await import('./data/references.js');
+  share.applyHash(location.hash, { controls, time, ids: VIEWPOINTS.map((v) => v.id) });
+  share.install(ctx, { controls, time });
+
   if (failures.length) {
     console.warn(`[boot] ${failures.length} module(s) failed to build`, failures);
   }

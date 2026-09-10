@@ -53,6 +53,21 @@ const MODULES = [
 const interiors = [];
 
 /**
+ * Metres from ANY part of an interior at which it streams in, on top of the
+ * radius around its centre.
+ *
+ * The centre rule alone left geometry you were standing in unstreamed: PATH
+ * corridors join the cluster nearest their midpoint, so the Union-to-arena
+ * corridor belongs to 'path-cluster-south', centred 112 m from its Union end -
+ * and there it was neither drawn nor solid (issue #13). Four metres is two
+ * checks' travel at a run (7.5 m/s, every 0.25 s), and it keeps the street 4.6 m
+ * above that corridor out: measured across all 24 viewpoints the busiest frame
+ * stays at 1469 draw calls, one viewpoint rising 1330 -> 1435 for a PATH stair
+ * that really is beside it.
+ */
+const CONTACT = 4;
+
+/**
  * Register an interior volume. The group is hidden until the camera enters the
  * radius, then faded in by simple visibility (no per-material fade: an opaque
  * pop at 40 m behind a wall is invisible, and cross-fading four interiors costs
@@ -100,8 +115,11 @@ export async function buildWorld(ctx, onProgress = () => {}) {
     if (accum < 0.25) return;
     accum = 0;
     for (const it of interiors) {
+      // Groups are static once built; their box is taken on the first check.
+      it.box ??= new THREE.Box3().setFromObject(it.group);
       tmp.set(it.centre.x, it.centre.y ?? 0, it.centre.z);
-      const near = ctx.camera.position.distanceTo(tmp) < it.radius;
+      const near = ctx.camera.position.distanceTo(tmp) < it.radius
+        || it.box.distanceToPoint(ctx.camera.position) < CONTACT;
       if (near !== it.group.visible) it.group.visible = near;
     }
   });

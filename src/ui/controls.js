@@ -27,7 +27,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
 import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
-import { ballistic, hasLanded, JUMP_SPEED, MAX_FALL } from './jump.js';
+import { ballistic, hasLanded, underCeiling, JUMP_SPEED, MAX_FALL, HEAD_CLEARANCE } from './jump.js';
 import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
 import { buildCollisionIndex } from './collision.js';
@@ -136,6 +136,10 @@ export function install(ctx) {
   const fall = new THREE.Raycaster();
   fall.far = EYE + MAX_FALL;
   fall.camera = camera;
+  // A rising hop looks up, so the head stops at a ceiling (see underCeiling).
+  const up = new THREE.Raycaster();
+  up.camera = camera;
+  const UP_VEC = new THREE.Vector3(0, 1, 0);
 
   // What the walker's rays test: the world's static geometry, gridded, with
   // instanced sets split into local proxies - see src/ui/collision.js. Built
@@ -360,6 +364,17 @@ function ignoreHit(hit) {
    * a jump can cross levels on the way down, and what you land on is whatever is
    * physically there.
    */
+  /** Underside of the first solid thing within `reach` above the eye, or null. */
+  function ceilingAbove(reach) {
+    up.set(camera.position, UP_VEC);
+    up.far = Math.max(0, reach);
+    for (const hit of collision.intersect(up)) {
+      if (ignoreHit(hit)) continue;
+      return hit.point.y;
+    }
+    return null;
+  }
+
   function floorBelow() {
     fall.set(camera.position, DOWN_VEC);
     for (const hit of collision.intersect(fall)) {
@@ -379,6 +394,11 @@ function ignoreHit(hit) {
   function fly(dt) {
     const feetY = camera.position.y - EYE;
     const next = ballistic(camera.position.y, velocity.y, dt);
+    // Rising, the head stops at a ceiling instead of passing through it (#13).
+    if (next.vy > 0) {
+      const reach = next.y - camera.position.y + HEAD_CLEARANCE;
+      Object.assign(next, underCeiling(camera.position.y, next.y, next.vy, ceilingAbove(reach)));
+    }
     velocity.y = next.vy;
 
     // A hop from a stretch the walker was only HELD at - no floor mesh, ground()'s

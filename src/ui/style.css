@@ -135,6 +135,8 @@ html, body {
   vertical-align: 1px;
 }
 .hud-place .dist { color: var(--ink-dim); font-weight: 400; font-size: 11.5px; }
+.hud-place .place-near { margin-top: 2px; font-size: 11.5px; color: var(--ink-dim); }
+.hud-place .place-near:empty { display: none; }
 .hud-place .place-meta {
   margin-top: 3px;
   font-family: var(--mono);

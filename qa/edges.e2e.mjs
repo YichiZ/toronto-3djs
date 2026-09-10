@@ -13,57 +13,20 @@
  * the street and walk off northward.
  *
  *   npm run e2e
- *
- * Needs a Playwright chromium (`npx playwright install chromium`).
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { chromium } from 'playwright';
+import { openWorld } from './e2eHarness.mjs';
 
-const ROOT = new URL('../', import.meta.url).pathname;
-
-let server;
-let browser;
+let world;
 let page;
 
-function startServer() {
-  return new Promise((resolve, reject) => {
-    server = spawn('npx', ['vite', '--host', '127.0.0.1'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
-    const fail = setTimeout(() => reject(new Error('vite did not report a URL within 30 s')), 30_000);
-    let out = '';
-    server.stdout.setEncoding('utf8');
-    server.stdout.on('data', (d) => {
-      out += d;
-      const m = out.match(/http:\/\/127\.0\.0\.1:(\d+)/);
-      if (m) { clearTimeout(fail); resolve(`http://127.0.0.1:${m[1]}/`); }
-    });
-    server.on('error', (err) => { clearTimeout(fail); reject(err); });
-  });
-}
-
-/** Playwright's own chromium if it has been downloaded, otherwise the machine's Chrome. */
-async function launchBrowser() {
-  try {
-    return await chromium.launch();
-  } catch (err) {
-    if (!/Executable doesn't exist/.test(String(err))) throw err;
-    return chromium.launch({ channel: 'chrome' });
-  }
-}
-
 before(async () => {
-  const url = await startServer();
-  browser = await launchBrowser();
-  page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  await page.goto(url);
-  await page.waitForFunction(() => Boolean(window.__TWIN__), null, { timeout: 60_000 });
+  world = await openWorld();
+  page = world.page;
 });
 
-after(async () => {
-  await browser?.close();
-  server?.kill();
-});
+after(async () => { await world?.close(); });
 
 /**
  * Stand at `from`, face `look`, hold W for `ms`, and report where the walker

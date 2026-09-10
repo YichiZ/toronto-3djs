@@ -88,6 +88,11 @@ export function install(ctx) {
   let airborne = false;
   /** Floor height the current jump left from, for the give-up guard. */
   let takeoffFloorY = 0;
+  /**
+   * Did the current jump leave from a REAL floor, or from a stretch the walker
+   * was only held at by ground()'s nominal-level fallback?
+   */
+  let takeoffOnFloor = false;
 
   // --- walk rig -----------------------------------------------------------
   const pointer = new PointerLockControls(camera, dom);
@@ -307,6 +312,7 @@ function ignoreHit(hit) {
     if (mode !== 'walk' || airborne) return;
     airborne = true;
     takeoffFloorY = camera.position.y - EYE;
+    takeoffOnFloor = onFloor;
     velocity.y = JUMP_SPEED;
   }
 
@@ -338,11 +344,14 @@ function ignoreHit(hit) {
     const next = ballistic(camera.position.y, velocity.y, dt);
     velocity.y = next.vy;
 
-    // No floor found means this spot has none modelled - the walker was being
-    // held at the nominal level by ground()'s fallback before it jumped. Land it
-    // back on that same nominal floor, so a hop over a gap behaves exactly like
-    // a hop anywhere else instead of dropping 40 m and snapping back.
-    const floorY = floorBelow() ?? takeoffFloorY;
+    // A hop from a stretch the walker was only HELD at - no floor mesh, ground()'s
+    // nominal-level fallback - lands back at that height, whatever is modelled
+    // further down. Walking there holds you up; hopping must not quietly drop
+    // you 9 m to the street instead. This is the same line src/ui/edge.js draws
+    // for walking: "stepped off a floor" and "was never on one" are different.
+    // From a real floor, land on whatever is physically below; if nothing is
+    // modelled below either, the take-off height is the same fallback.
+    const floorY = takeoffOnFloor ? (floorBelow() ?? takeoffFloorY) : takeoffFloorY;
     if (hasLanded(feetY, next.y - EYE, floorY, velocity.y)) {
       camera.position.y = floorY + EYE;
       velocity.y = 0;
@@ -572,7 +581,11 @@ function ignoreHit(hit) {
       // An edge is a wall you can see over: refuse the part of the step that
       // would leave a real floor for thin air (issue #13). One extra downward
       // ray in the common case; up to three only at an edge.
-      const edged = stepAtEdge(step, onFloor, BODY_RADIUS,
+      // Grounded only. onFloor is written by ground(), which does not run
+      // mid-air, so it stays true for the whole of a hop taken from a roof -
+      // and the guard stopped the walker dead in the air at the parapet line,
+      // an invisible wall. Hopping off a real ledge is a deliberate act.
+      const edged = stepAtEdge(step, onFloor && !airborne, BODY_RADIUS,
         (dx, dz) => floorUnder(camera.position.x + dx, camera.position.z + dz) !== null);
       // Drop the velocity that was refused, so the walker does not press into
       // the edge at full speed and shoot off it the moment it turns away.

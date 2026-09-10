@@ -42,10 +42,14 @@ export async function launchBrowser() {
 }
 
 /** Server + browser + a page with the world already built. */
-export async function openWorld({ consoleErrors = [] } = {}) {
+export async function openWorld({ consoleErrors = [], contextOptions } = {}) {
   const { server, url } = await startServer();
   const browser = await launchBrowser();
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const viewport = { width: 1280, height: 800 };
+  // contextOptions: e.g. { hasTouch: true } for a touchscreen device.
+  const page = contextOptions
+    ? await (await browser.newContext({ viewport, ...contextOptions })).newPage()
+    : await browser.newPage({ viewport });
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
   await page.goto(url);

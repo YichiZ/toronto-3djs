@@ -98,7 +98,10 @@ html, body {
 .hud {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  /* Above the touch layer (44): its look pad covered the stats panel, the
+     failure chip and the card, so none of them could be tapped (#14). The
+     container ignores pointers, so empty HUD space still passes drags through. */
+  z-index: 45;
   pointer-events: none;
   font-size: 13px;
 }
@@ -374,7 +377,7 @@ html, body {
   left: 50%;
   bottom: 84px;
   transform: translateX(-50%) translateY(8px);
-  z-index: 45;
+  z-index: 46;   /* stays over the HUD, as it always was */
   width: min(680px, 92vw);
   padding: 13px 17px 15px;
   background: var(--glass);
@@ -536,3 +539,8 @@ html, body {
 @media (pointer: coarse) {
   .hud-minimap { bottom: auto; top: 104px; }
 }
+
+/* Look speed in the help panel (#14). */
+.hud-help .hud-look { margin: 10px 0 4px; font-size: 12px; color: var(--ink-dim); }
+.hud-help .hud-look input { vertical-align: middle; width: 150px; margin: 0 6px; accent-color: var(--accent); }
+.hud-help .hud-look output { font-family: var(--mono); color: var(--ink); }

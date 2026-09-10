@@ -169,6 +169,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>F</dt><dd>open the storefront under the reticle (walking, pointer captured)</dd>
       <dt>M</dt><dd>minimap while walking — click a dot to jump to that viewpoint</dd>
     </dl>
+    <div class="hud-look"><label>Look speed<input type="range" min="0.25" max="3" step="0.05"><output></output></label></div>
     <div class="hud-reflayers"></div>
     <p class="hud-note">The jump is a hop &mdash; enough for a bollard, not for a
     storey. Height is still a level change, because the layering &mdash; PATH under
@@ -176,6 +177,22 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     this place actually is.</p>`);
   help.hidden = true;
   hud.appendChild(help);
+
+  // Look speed, for touch drags and the mouse alike (#14). Controls owns and
+  // remembers it; this is only the knob.
+  {
+    const row = help.querySelector('.hud-look');
+    const input = row.querySelector('input');
+    const out = row.querySelector('output');
+    if (controls?.setLookSpeed) {
+      const show = () => { out.textContent = `${controls.lookSpeed.toFixed(2)}×`; };
+      input.value = String(controls.lookSpeed);
+      show();
+      input.addEventListener('input', () => { controls.setLookSpeed(Number(input.value)); show(); });
+    } else {
+      row.hidden = true;
+    }
+  }
 
   if (reference?.setLayer) {
     const box = help.querySelector('.hud-reflayers');

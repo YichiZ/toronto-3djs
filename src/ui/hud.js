@@ -151,6 +151,11 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
 
   const helpButton = el('button', 'hud-btn', 'Help<kbd>H</kbd>');
   bar.appendChild(helpButton);
+  // The bar wraps to one, two or three rows with the width; panels that float
+  // above it (tour caption, help) sit on its real height, not a guess (#29).
+  new ResizeObserver(() => {
+    document.documentElement.style.setProperty('--hud-bar-h', `${bar.offsetHeight}px`);
+  }).observe(bar);
 
   // --- help panel ---------------------------------------------------------
   const help = el('div', 'hud-panel hud-help', `
@@ -474,6 +479,9 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     const bearing = gridDirectionToBearing(dir.x, dir.z);
     bearingEl.textContent = `${bearing.toFixed(0)}° ${compassPoint(bearing)} true`;
     levelEl.textContent = controls?.level ? `· ${controls.level}` : '';
+    // The level is where the walker stands; orbit and the tour have no walker,
+    // and the chip read "SkyWalk" over an aerial (#29).
+    levelEl.hidden = controls?.mode !== 'walk';
 
     const near = nearestEntity();
     if (near) {

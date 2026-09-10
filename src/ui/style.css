@@ -287,7 +287,7 @@ html, body {
 
 .hud-help {
   left: 14px;
-  bottom: 78px;
+  bottom: calc(var(--hud-bar-h, 50px) + 28px);
   width: min(430px, 88vw);
   max-height: 62vh;
   overflow-y: auto;
@@ -322,7 +322,7 @@ html, body {
 
 .hud-card {
   right: 14px;
-  bottom: 78px;
+  bottom: calc(var(--hud-bar-h, 50px) + 28px);
   width: min(320px, 86vw);
   padding: 15px 17px 14px;
 }
@@ -375,7 +375,8 @@ html, body {
 #tour-caption {
   position: fixed;
   left: 50%;
-  bottom: 84px;
+  /* Above the mode bar, whatever it wraps to; it covered the bar's top rows. */
+  bottom: calc(var(--hud-bar-h, 60px) + 28px);
   transform: translateX(-50%) translateY(8px);
   z-index: 46;   /* stays over the HUD, as it always was */
   width: min(680px, 92vw);
@@ -465,9 +466,12 @@ html, body {
   .hud-bar { gap: 7px; padding: 7px 8px; bottom: 10px; }
   .hud-slider input[type="range"] { width: 74px; }
   .hud-value { min-width: 54px; }
-  .hud-help { bottom: auto; top: 62px; max-height: 50vh; }
-  .hud-card { bottom: auto; top: 62px; }
+  /* Above the bar like everywhere else: hung at top 62 px they sat inside the
+     place label. The cap keeps the help panel's top clear of that label. */
+  .hud-help { max-height: calc(100vh - var(--hud-bar-h, 50px) - 140px); }
   .hud-place { max-width: 62vw; }
+  /* fps only: all three counters ran 100 px into the place label at 390 px. */
+  .hud-stats .calls, .hud-stats .tris { display: none; }
 }
 
 /* Walk-mode reticle: where a click or F lands while the pointer is captured (issue #9). */

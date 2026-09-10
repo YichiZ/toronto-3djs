@@ -457,9 +457,15 @@ export function build() {
     byFace.set(key, list);
   }
 
+  // Faces with no shopfronts to hang a plate on. Union Station's north face is
+  // the Front Street colonnade: its tenants trade inside (concourses.js puts
+  // them there), and plates between the Tuscan columns were an invention (#28).
+  const NO_FASCIA = new Set(['union-station|north']);
+
   let fasciaCount = 0;
   let genericCount = 0;
   for (const [key, list] of byFace) {
+    if (NO_FASCIA.has(key)) continue;
     const [buildingId, face] = key.split('|');
     const b = getBuilding(buildingId);
     if (!b) {

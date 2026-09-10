@@ -346,6 +346,7 @@ const walkForward = (pos, yaw, ms, shift) => page.evaluate(async ([at, yawAngle,
   controls.setMode('orbit');
   controls.setMode('walk');
   ctx.camera.position.set(at[0], at[1], at[2]);
+  controls.setLevelByY(at[1] - 1.7);
   ctx.camera.rotation.set(0, yawAngle, 0);          // level, facing along the street
   for (let i = 0; i < 40; i++) await frame();       // let ground() settle
 
@@ -380,8 +381,18 @@ const walkForward = (pos, yaw, ms, shift) => page.evaluate(async ([at, yawAngle,
   };
 }, [pos, yaw, ms, Boolean(shift)]);
 
-/** A flat, open stretch of Front Street with room to run. */
-const OPEN_STREET = [-16, 1.7, 60];
+/**
+ * A flat, open stretch of Front Street with room to run: the middle of Front
+ * Street West, open sky, 25 m clear ahead - probed, not assumed.
+ *
+ * It was (-16, 60), which is inside Union's east wing under the Bay Concourse
+ * slab. Once #13 stopped the walker stepping 2 m up onto that slab, it stood
+ * under it, a hop stopped at it, and the bob test read the fade in the second
+ * half of a shortened arc, 0.2 mm over its limit. The tests below also set the
+ * level outright: they used to inherit whatever an earlier test left behind,
+ * which is why they passed in a full run and failed on their own.
+ */
+const OPEN_STREET = [-90, 1.7, 0];
 const ALONG_STREET = Math.PI / 2;
 
 const span = (values) => Math.max(...values) - Math.min(...values);
@@ -455,6 +466,7 @@ test('the head does not bob mid-hop', async () => {
     controls.setMode('orbit');
     controls.setMode('walk');
     ctx.camera.position.set(pos[0], pos[1], pos[2]);
+    controls.setLevelByY(pos[1] - 1.7);
     ctx.camera.rotation.set(0, yawAngle, 0);
     for (let i = 0; i < 40; i++) await frame();
 

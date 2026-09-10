@@ -252,14 +252,3 @@ export const VIEWPOINTS = Object.freeze([
 ]);
 
 export const getViewpoint = (id) => VIEWPOINTS.find((v) => v.id === id) ?? null;
-
-/** Nearest viewpoint to a grid position — used by the HUD's "where am I". */
-export function nearestViewpoint(x, z) {
-  let best = null;
-  let bestD = Infinity;
-  for (const v of VIEWPOINTS) {
-    const d = (v.position.x - x) ** 2 + (v.position.z - z) ** 2;
-    if (d < bestD) { bestD = d; best = v; }
-  }
-  return best ? { viewpoint: best, distance: Math.sqrt(bestD) } : null;
-}

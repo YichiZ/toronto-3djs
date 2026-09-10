@@ -13,6 +13,8 @@ import * as THREE from 'three';
 import { all, getInteractive } from '../core/registry.js';
 import { gridDirectionToBearing } from '../core/geo.js';
 import { VIEWPOINTS } from '../data/references.js';
+import { INTERSECTIONS } from '../data/grid.js';
+import { pickPlace, nearestIntersection } from './placeLabel.js';
 
 const CONFIDENCE_CLASS = {
   surveyed: 'c-surveyed',
@@ -43,9 +45,11 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
 
   // --- top left: place and bearing ---------------------------------------
   const place = el('div', 'hud-panel hud-place',
-    '<div class="place-name">—</div><div class="place-meta"><span class="bearing">—</span><span class="level"></span></div>');
+    '<div class="place-name">—</div><div class="place-near"></div>' +
+    '<div class="place-meta"><span class="bearing">—</span><span class="level"></span></div>');
   hud.appendChild(place);
   const placeName = place.querySelector('.place-name');
+  const placeNear = place.querySelector('.place-near');
   const bearingEl = place.querySelector('.bearing');
   const levelEl = place.querySelector('.level');
 
@@ -374,8 +378,6 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   // Throttled: nearest-entity search walks the registry, and nobody reads a
   // location label sixty times a second.
   const dir = new THREE.Vector3();
-  const worldPos = new THREE.Vector3();
-  const box = new THREE.Box3();
   let accum = 0;
   let cachedRecords = null;
   let cachedCount = -1;
@@ -387,18 +389,21 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       cachedRecords = records
         .filter((r) => r.object && r.kind !== 'system')
         .map((r) => {
-          box.setFromObject(r.object);
-          const c = box.isEmpty() ? r.object.position.clone() : box.getCenter(new THREE.Vector3());
-          return { record: r, centre: c };
+          const b = new THREE.Box3().setFromObject(r.object);
+          // Nothing built under it yet: measure from where the object is.
+          if (b.isEmpty()) b.setFromCenterAndSize(r.object.getWorldPosition(new THREE.Vector3()), new THREE.Vector3());
+          const size = b.getSize(new THREE.Vector3());
+          return { record: r, box: b, footprint: size.x * size.z };
         });
     }
-    let best = null;
-    let bestD = Infinity;
-    for (const entry of cachedRecords) {
-      const d = camera.position.distanceToSquared(entry.centre);
-      if (d < bestD) { bestD = d; best = entry; }
-    }
-    return best ? { record: best.record, distance: Math.sqrt(bestD) } : null;
+    // To the box, 0 when inside - not to its centre, which is 100 m off on
+    // Union Station's 229 m face. See src/ui/placeLabel.js for the ranking.
+    const entries = cachedRecords.map((e) => ({
+      record: e.record,
+      distance: e.box.distanceToPoint(camera.position),
+      footprint: e.footprint,
+    }));
+    return pickPlace(entries, camera.position.y < 0);
   }
 
   ctx.onFrame.push((dt) => {
@@ -420,6 +425,8 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     } else {
       placeName.textContent = 'downtown Toronto';
     }
+    const corner = nearestIntersection(camera.position.x, camera.position.z, INTERSECTIONS);
+    placeNear.textContent = corner ? `near ${corner.name} · ${corner.distance.toFixed(0)} m` : '';
 
     fpsEl.textContent = `${stats.fps.toFixed(0)} fps`;
     callsEl.textContent = `${stats.drawCalls} calls`;

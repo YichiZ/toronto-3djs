@@ -1,9 +1,10 @@
 /**
  * Regressions for the code-review findings.
  *
- * Only the parts that run without a WebGL context are covered here; the
- * occlusion-aware picking, the walker's raycasts and the resize guard were
- * verified against the live page and are noted in FINAL_QA_REPORT.md.
+ * Only the parts that run without a WebGL context are covered here. The
+ * walker's own arithmetic has unit tests of its own (qa/walk.test.mjs and the
+ * helper tests beside it), and its raycasts, the occlusion-aware picking and the
+ * collision index are covered end to end in a real browser by qa/*.e2e.mjs.
  * `npm test`
  */
 import { test } from 'node:test';

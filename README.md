@@ -75,11 +75,12 @@ automated check in [`qa/traps.mjs`](qa/traps.mjs):
 | mouse | look (click to capture the pointer) |
 | `Shift` | run |
 | `Space` | jump — a hop, for clearing a bollard; height is still `Q`/`E` |
-| `Q` / `E` | change level — PATH, street, SkyWalk |
+| `Q` / `E`, `PgDn` / `PgUp` | change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gardiner |
 | `1` `2` `3` | walk / orbit / cinematic tour |
 | `R` | reference mode |
 | `T` | start the tour |
 | `H` | help |
+| `Esc` | close panels, release the pointer |
 | click a storefront | tenant card, with its verification grade |
 | `F` | open the storefront under the reticle (walking, pointer captured) |
 | `M` | minimap while walking; click a viewpoint dot to jump there |

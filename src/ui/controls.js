@@ -31,6 +31,7 @@ import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTrans
 import { ballistic, hasLanded, JUMP_SPEED, MAX_FALL } from './jump.js';
 import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
+import { buildCollisionIndex } from './collision.js';
 import {
   settle, easeTo, runFraction, bobGain, bobHeight,
   RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
@@ -154,6 +155,16 @@ export function install(ctx) {
   const fall = new THREE.Raycaster();
   fall.far = EYE + MAX_FALL;
   fall.camera = camera;
+
+  // What the walker's rays test: the world's static geometry, gridded, with
+  // instanced sets split into local proxies - see src/ui/collision.js. Built
+  // once; controls install after buildWorld, so the world is complete here.
+  // Moving things are left out, as issue #6 asked: a car or a crowd is not a
+  // floor to stand on or a wall to slide along.
+  const MOVING = new Set(['pedestrians', 'vehicles', 'trains']);
+  const collision = buildCollisionIndex(scene.getObjectByName('downtown-toronto') ?? scene, {
+    skip: (o) => MOVING.has(o.name),
+  });
 
   // Last surface ground() actually found. The low collision ray is hung off
   // this rather than off the eye, because the camera eases toward the floor and
@@ -293,7 +304,7 @@ export function install(ctx) {
     // tolerance, so street level read as floorless and Q/E skipped it - and
     // because traffic moves, the same key gave different answers second to
     // second.
-    for (const hit of down.intersectObject(scene, true)) {
+    for (const hit of collision.intersect(down)) {
       if (ignoreHit(hit)) continue;
       if (Math.abs(hit.point.y - y) <= LEVEL_TOLERANCE[index]) return true;
       if (hit.point.y < y - LEVEL_TOLERANCE[index]) return false;   // sorted: past the level
@@ -343,7 +354,9 @@ export function install(ctx) {
  */
 function ignoreHit(hit) {
   if (!hit.face) return true;              // lines, sprites, helpers
-  for (let o = hit.object; o; o = o.parent) {
+  // An instanced proxy from the collision index is not in the scene graph; its
+  // source is, and that is whose visibility streaming and LOD toggle.
+  for (let o = hit.object.userData.collisionSource ?? hit.object; o; o = o.parent) {
     if (o.visible === false || o.userData?.noCollide) return true;
   }
   return false;
@@ -376,7 +389,7 @@ function ignoreHit(hit) {
    */
   function floorBelow() {
     fall.set(camera.position, DOWN_VEC);
-    for (const hit of fall.intersectObject(scene, true)) {
+    for (const hit of collision.intersect(fall)) {
       if (ignoreHit(hit)) continue;
       return hit.point.y;
     }
@@ -427,16 +440,11 @@ function ignoreHit(hit) {
     camera.position.y = next.y;
   }
 
-  /**
-   * Floor height under a point on the current level, or null when there is none.
-   *
-   * ponytail: brute-force scene raycast. Swap for a dedicated collision layer if
-   * the draw list grows past a few thousand.
-   */
+  /** Floor height under a point on the current level, or null when there is none. */
   function floorUnder(x, z) {
     tmpOrigin.set(x, LEVEL_ORDER[levelIndex].y + PROBE_ABOVE, z);
     down.set(tmpOrigin, DOWN_VEC);
-    for (const hit of down.intersectObject(scene, true)) {
+    for (const hit of collision.intersect(down)) {
       if (ignoreHit(hit)) continue;
       if (hit.point.y + EYE - camera.position.y > STEP_UP + PROBE_ABOVE) continue;
       return hit.point.y;
@@ -506,7 +514,7 @@ function ignoreHit(hit) {
   function castBlocker(originY) {
     tmpOrigin.copy(camera.position).setY(originY);
     forward.set(tmpOrigin, tmpDir);
-    const hits = forward.intersectObject(scene, true);
+    const hits = collision.intersect(forward);
     for (const hit of hits) {
       if (ignoreHit(hit)) continue;
       if (hit.distance >= BODY_RADIUS) return null;

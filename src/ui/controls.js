@@ -25,13 +25,13 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { LEVELS } from '../data/grid.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
 import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
 import { ballistic, hasLanded, JUMP_SPEED, MAX_FALL } from './jump.js';
 import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
 import { buildCollisionIndex } from './collision.js';
+import { LEVEL_ORDER, STREET_LEVEL, nearestLevel, floorAtLevel, substeps, slide } from './walkMath.js';
 import {
   settle, easeTo, runFraction, bobGain, bobHeight,
   RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
@@ -60,17 +60,6 @@ const BODY_RADIUS = 0.55;  // horizontal clearance kept from walls
 const GROUND_SETTLE = 12;    // 1/s, lands on a real floor in ~120 ms
 const FALLBACK_SETTLE = 4;   // 1/s, softer hold when nothing is underfoot
 
-/** Walkable levels, low to high. Q/E steps through these. */
-const LEVEL_ORDER = [
-  { name: 'PATH', y: LEVELS.path },
-  { name: 'concourse', y: LEVELS.unionConcourse },
-  { name: 'street', y: LEVELS.street },
-  { name: 'viaduct deck', y: LEVELS.viaductDeck },
-  { name: 'platform', y: LEVELS.platform },
-  { name: 'SkyWalk', y: LEVELS.skywalk },
-  { name: 'Gardiner deck', y: LEVELS.gardinerDeck },
-];
-const STREET_LEVEL = LEVEL_ORDER.findIndex((l) => l.name === 'street');
 /**
  * How far a surface may sit from a level's nominal height and still count as it.
  * Every real floor in the model lands within 0.2 m of nominal, and the default
@@ -81,15 +70,7 @@ const STREET_LEVEL = LEVEL_ORDER.findIndex((l) => l.name === 'street');
  */
 const LEVEL_TOLERANCE = levelTolerances(LEVEL_ORDER);
 
-const nearestLevelIndex = (y) => {
-  let best = STREET_LEVEL;
-  let bestD = Infinity;
-  for (let i = 0; i < LEVEL_ORDER.length; i++) {
-    const d = Math.abs(LEVEL_ORDER[i].y - y);
-    if (d < bestD) { bestD = d; best = i; }
-  }
-  return best;
-};
+const nearestLevelIndex = (y) => nearestLevel(y, LEVEL_ORDER, STREET_LEVEL);
 
 const isTouchDevice = () =>
   typeof window !== 'undefined' &&
@@ -298,18 +279,10 @@ export function install(ctx) {
     const y = LEVEL_ORDER[index].y;
     tmpOrigin.set(camera.position.x, y + PROBE_ABOVE, camera.position.z);
     down.set(tmpOrigin, DOWN_VEC);
-    // Scan for a surface near the level rather than judging the first hit.
-    // Judging only the first, anything standing on the pavement shadowed it: a
-    // planter top at 1.51 m or a passing vehicle roof at 1.58 m is outside the
-    // tolerance, so street level read as floorless and Q/E skipped it - and
-    // because traffic moves, the same key gave different answers second to
-    // second.
-    for (const hit of collision.intersect(down)) {
-      if (ignoreHit(hit)) continue;
-      if (Math.abs(hit.point.y - y) <= LEVEL_TOLERANCE[index]) return true;
-      if (hit.point.y < y - LEVEL_TOLERANCE[index]) return false;   // sorted: past the level
-    }
-    return false;
+    // Every surface down the probe, not only the first - see floorAtLevel().
+    const ys = [];
+    for (const hit of collision.intersect(down)) if (!ignoreHit(hit)) ys.push(hit.point.y);
+    return floorAtLevel(ys, y, LEVEL_TOLERANCE[index]);
   }
 
   /**
@@ -606,20 +579,12 @@ function ignoreHit(hit) {
     // Work in the walker's true eye height: ground() eases toward the floor and
     // fly() integrates the arc, and neither can see a bob baked into the value.
     camera.position.y -= bobY;
-    // Substep long frames rather than trusting the caller's dt clamp.
-    //
-    // The bound is the speed the walker could REACH this frame, not the speed it
-    // currently has: acceleration saturates (`min(1, ACCEL * dt)`) for any dt at
-    // or above 1/12 s, so a walker starting from a dead stop jumps to full speed
-    // within the same frame. Reading the stale velocity here said "span 0, no
-    // substep needed" and then took a 1.7 m step at dt 0.5 s - exactly the
-    // tunnelling this guard exists to prevent.
-    const attainable = Math.max(Math.hypot(velocity.x, velocity.z), RUN_SPEED);
-    const span = attainable * dt;
-    const parts = Math.min(16, Math.max(
-      span > MAX_STEP ? Math.ceil(span / MAX_STEP) : 1,
-      airborne ? Math.ceil(dt / MAX_AIR_DT) : 1,
-    ));
+    // Substep long frames rather than trusting the caller's dt clamp, bounded by
+    // the speed the walker could reach this frame, not the speed it has - see
+    // substeps() for the tunnelling that distinction prevents.
+    const parts = substeps(Math.hypot(velocity.x, velocity.z), dt, {
+      runSpeed: RUN_SPEED, maxStep: MAX_STEP, airborne, maxAirDt: MAX_AIR_DT,
+    });
     for (let i = 0; i < parts; i++) walkStep(dt / parts);
     applyBob(dt);
   }
@@ -660,23 +625,14 @@ function ignoreHit(hit) {
     velocity.x += (wish.x - velocity.x) * Math.min(1, ACCEL * dt);
     velocity.z += (wish.z - velocity.z) * Math.min(1, ACCEL * dt);
 
-    // Move, and if something is in the way slide along it rather than stopping.
-    // Two passes: the first slide can put the walker into a second surface (an
-    // inside corner), and the second resolves it. A third would buy nothing -
-    // if two surfaces still block, the walker is genuinely wedged.
-    // The blocking test is carried between passes instead of being repeated at
-    // the end. Walking is the hot path - each call raycasts the whole scene, and
-    // re-testing cost about a third of the frame on the forecourt - so the
-    // unobstructed case, which is nearly every frame, now costs one ray.
-    step.set(velocity.x * dt, 0, velocity.z * dt);
-    let blocker = step.lengthSq() > 1e-10 ? blockingNormal(step.x, step.z) : null;
-    for (let pass = 0; pass < 2 && blocker; pass++) {
-      // Project the step onto the surface plane, and drop the velocity the same
-      // way so the walker does not build up speed into a wall.
-      step.addScaledVector(blocker, -step.dot(blocker));
-      velocity.addScaledVector(blocker, -velocity.dot(blocker));
-      blocker = step.lengthSq() > 1e-10 ? blockingNormal(step.x, step.z) : null;
-    }
+    // Move, and if something is in the way slide along it rather than stopping:
+    // two passes, for inside corners - see slide(). It hands back x and z only,
+    // so a jump's vertical velocity is never touched.
+    const slid = slide({ x: velocity.x * dt, z: velocity.z * dt }, velocity, blockingNormal);
+    step.set(slid.step.x, 0, slid.step.z);
+    velocity.x = slid.velocity.x;
+    velocity.z = slid.velocity.z;
+    const blocker = slid.blocker;
     if (step.lengthSq() <= 1e-10) {
       // Horizontal only. Zeroing the whole vector here killed the jump's
       // vertical velocity on every frame the walker was not also moving, so a

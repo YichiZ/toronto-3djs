@@ -32,6 +32,7 @@ import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
 import { buildCollisionIndex } from './collision.js';
 import { LEVEL_ORDER, STREET_LEVEL, nearestLevel, floorAtLevel, substeps, slide } from './walkMath.js';
+import { TOUCH_LOOK_RATE, browserStorage, loadLookSpeed, saveLookSpeed, clampLookSpeed } from './lookSpeed.js';
 import {
   settle, easeTo, runFraction, bobGain, bobHeight,
   RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
@@ -72,9 +73,6 @@ const LEVEL_TOLERANCE = levelTolerances(LEVEL_ORDER);
 
 const nearestLevelIndex = (y) => nearestLevel(y, LEVEL_ORDER, STREET_LEVEL);
 
-const isTouchDevice = () =>
-  typeof window !== 'undefined' &&
-  ('ontouchstart' in window || (navigator.maxTouchPoints ?? 0) > 0);
 
 /** @param {import('../core/context.js').Context} ctx */
 export function install(ctx) {
@@ -115,6 +113,9 @@ export function install(ctx) {
 
   // --- walk rig -----------------------------------------------------------
   const pointer = new PointerLockControls(camera, dom);
+  // One look speed for touch drags and the mouse, remembered (#14).
+  let lookSpeed = loadLookSpeed(browserStorage());
+  pointer.pointerSpeed = lookSpeed;
   // PointerLockControls binds its own listeners; we only ask for the lock on a
   // deliberate click so the HUD stays clickable.
   const velocity = new THREE.Vector3();
@@ -179,7 +180,25 @@ export function install(ctx) {
   // --- touch --------------------------------------------------------------
   const touch = { active: false, moveX: 0, moveY: 0, lookX: 0, lookY: 0 };
   let joystickEl = null;
-  if (isTouchDevice()) joystickEl = installTouch();
+  /**
+   * Touch or mouse is decided by the pointer actually used, not by what the
+   * hardware could do. Checked once at install, a touchscreen laptop driven by
+   * a mouse got the joystick for good and could never capture the pointer
+   * (#14). Now the touch controls arrive with the first touch, and a mouse puts
+   * them away again.
+   */
+  let lastPointer = 'mouse';
+  const showTouch = () => {
+    if (joystickEl) joystickEl.style.display = lastPointer === 'touch' && mode === 'walk' ? '' : 'none';
+  };
+  function onAnyPointerDown(e) {
+    if (e.pointerType !== 'touch' && e.pointerType !== 'mouse') return;   // pens keep whatever is showing
+    lastPointer = e.pointerType;
+    if (lastPointer === 'touch') joystickEl ??= installTouch();
+    else { touch.moveX = 0; touch.moveY = 0; }   // no drifting on a stick that is gone
+    showTouch();
+  }
+  window.addEventListener('pointerdown', onAnyPointerDown, true);
 
   function installTouch() {
     const root = document.createElement('div');
@@ -229,8 +248,8 @@ export function install(ctx) {
     });
     pad.addEventListener('pointermove', (e) => {
       if (e.pointerId !== lookId) return;
-      touch.lookX += (e.clientX - lastX) * 0.0035;
-      touch.lookY += (e.clientY - lastY) * 0.0035;
+      touch.lookX += (e.clientX - lastX) * TOUCH_LOOK_RATE * lookSpeed;
+      touch.lookY += (e.clientY - lastY) * TOUCH_LOOK_RATE * lookSpeed;
       lastX = e.clientX; lastY = e.clientY;
     });
     const lookEnd = (e) => { if (e.pointerId === lookId) lookId = null; };
@@ -266,8 +285,9 @@ export function install(ctx) {
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
-  function onCanvasClick() {
-    if (mode === 'walk' && !isTouchDevice() && !pointer.isLocked) {
+  function onCanvasClick(e) {
+    // A tap is not a request to capture a pointer; a mouse click is, touchscreen or not.
+    if (mode === 'walk' && e.pointerType !== 'touch' && !pointer.isLocked) {
       try { pointer.lock(); } catch { /* lock can be refused; walking still works via touch/keys */ }
     }
   }
@@ -772,7 +792,7 @@ function ignoreHit(hit) {
       airborne = false;
       levelChangeTo = null;
     }
-    if (joystickEl) joystickEl.style.display = name === 'walk' ? '' : 'none';
+    showTouch();
     return mode;
   }
 
@@ -809,6 +829,14 @@ function ignoreHit(hit) {
     get mode() { return mode; },
     get level() { return LEVEL_ORDER[levelIndex].name; },
     get airborne() { return airborne; },
+    get lookSpeed() { return lookSpeed; },
+    /** Set the look speed for touch and mouse alike, and remember it. */
+    setLookSpeed(v) {
+      lookSpeed = clampLookSpeed(v);
+      pointer.pointerSpeed = lookSpeed;
+      saveLookSpeed(browserStorage(), lookSpeed);
+      return lookSpeed;
+    },
     /** The head-bob offset currently added to the camera height. For qa/modes.e2e.mjs. */
     get bobOffset() { return bobY; },
     get changingLevel() { return levelChangeTo !== null; },
@@ -832,6 +860,7 @@ function ignoreHit(hit) {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       dom.removeEventListener('click', onCanvasClick);
+      window.removeEventListener('pointerdown', onAnyPointerDown, true);
       joystickEl?.remove();
       orbit.dispose();
       pointer.disconnect?.();

@@ -21,15 +21,14 @@
  * PATH spot under Front Street the walker is inside a 373 m2 corridor, the
  * 6,962 m2 forecourt whose stairs reach down to it, the 20,672 m2 Union cluster
  * and the 84,988 m2 PATH network - all at 0 m. The smallest footprint is the
- * most specific place you are in, and city-wide sets (a record for every street
- * tree downtown, 700,000 m2) lose every tie.
+ * most specific place you are in.
  *
  * ponytail: a flat penalty by kind plus a footprint tie-break is a heuristic. It
- * is right on every spot probed along Front Street and in the PATH. Its known
- * ceiling: a record that is really a scattered set - instanced street furniture,
- * merged signage - has a city-sized box, so far from any building it can still
- * take the headline outright. The fix for that is per-part distance or splitting
- * those sets in the registry, not a bigger table here.
+ * is right on every spot probed along Front Street and in the PATH, and no
+ * scattered set wins anywhere on the city grid. Its ceiling is that a box is a
+ * box: a long single structure (the rail viaduct) names everything along its
+ * length, and an L-shaped building claims its empty corner. The fix for that is
+ * distance to real geometry, not a bigger table here.
  *
  * Pure, so `npm test` covers it without WebGL: hud.js imports Three.
  */
@@ -57,6 +56,14 @@ export function pickPlace(entries, belowGrade) {
   let best = null;
   let bestRank = Infinity;
   for (const e of entries) {
+    // Props never name the place. Most are scattered sets - one record for every
+    // parking machine or street tree downtown - whose box covers the city, so
+    // one sat "0 m" away almost everywhere: on a 25 m grid across the model a set
+    // took the headline at 174 of 1,035 street points. The rest are signage bands
+    // and cornices. Dropping props changed no park or monument spot: each already
+    // had its landmark named. Dropping only the instanced ones was tried, and the
+    // merged "Storefront fascia signs" took 76 of those points instead.
+    if (e.record.kind === 'prop') continue;
     const rank = e.distance + (places.has(e.record.kind) ? 0 : HEADLINE_PENALTY);
     const tied = Math.abs(rank - bestRank) < 1e-6;
     if (!best || (rank < bestRank && !tied) || (tied && footprintOf(e) < footprintOf(best))) {

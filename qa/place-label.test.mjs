@@ -6,7 +6,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickPlace, nearestIntersection, HEADLINE_PENALTY } from '../src/ui/placeLabel.js';
+import { pickPlace, nearestIntersection } from '../src/ui/placeLabel.js';
 import { INTERSECTIONS } from '../src/data/grid.js';
 
 const rec = (name, kind) => ({ name, kind });
@@ -57,16 +57,6 @@ test('below grade, nested boxes all at 0 m: the most specific place names it', (
   assert.equal(near.record.name, 'PATH — Union Station north to Front Street');
 });
 
-test('a city-wide set loses the tie to the place you are standing in', () => {
-  // Illustrative footprints: a lawn you are on, and one record for every street
-  // tree downtown, both at 0 m and both props.
-  const near = pickPlace([
-    { record: rec('Street tree - maple', 'prop'), distance: 0, footprint: 713370 },
-    { record: rec('Roundhouse Park lawn', 'prop'), distance: 0, footprint: 12000 },
-  ], false);
-  assert.equal(near.record.name, 'Roundhouse Park lawn');
-});
-
 test('a tie-break never overrides a real difference in distance', () => {
   const near = pickPlace([
     { record: UNION, distance: 4, footprint: 11519 },
@@ -83,14 +73,20 @@ test('a sign right beside you does not outrank the building you are standing at'
   assert.equal(near.record, UNION);
 });
 
-test('with no place anywhere near, the nearest thing is still named', () => {
-  // Out on open ground the label must not go blank or name a building 200 m off.
+test('props never take the headline - a scattered set has a city-sized box', () => {
+  // Real numbers from the model's west edge: "Pay-and-display parking machine"
+  // is one record for every machine downtown, 651,165 m2, 0 m from almost
+  // anywhere; the nearest building there is 72 m off.
   const near = pickPlace([
-    { record: UNION, distance: 200 },
-    { record: SIGN, distance: 3 },
+    { record: rec('Pay-and-display parking machine', 'prop'), distance: 0, footprint: 651165 },
+    { record: rec('a building', 'building'), distance: 72, footprint: 900 },
   ], false);
-  assert.equal(near.record, SIGN);
-  assert.ok(3 + HEADLINE_PENALTY < 200);
+  assert.equal(near.record.kind, 'building');
+  assert.equal(near.distance, 72, 'and it says honestly how far away that is');
+});
+
+test('with only props around, nothing is named rather than a prop', () => {
+  assert.equal(pickPlace([{ record: SIGN, distance: 0.5, footprint: 1 }], false), null);
 });
 
 test('an empty scene names nothing', () => {

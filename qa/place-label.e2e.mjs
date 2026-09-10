@@ -63,6 +63,18 @@ test('below grade in the PATH, the HUD names the PATH - not Union Station above 
   assert.match(place.name, /^PATH/, `the HUD said "${place.name}"`);
 });
 
+test('far from any building, a scattered street-furniture set does not take the headline', async () => {
+  // A record like "Pay-and-display parking machine" is one entry for every
+  // machine downtown, so its box covers the whole city and the walker is
+  // "inside" it almost everywhere. At this spot on the model's west edge, 72 m
+  // from the nearest building, the HUD named it at 0 m. On a 25 m grid across
+  // the model, a set like it took the headline at 174 of 1,035 street points.
+  const place = await placeAt(-700, 1.7, -150);
+  assert.doesNotMatch(place.name, /Pay-and-display|wayfinding pylon|signal head|shrubs|Transit shelter|Storefront fascia/,
+    `the HUD named a scattered set: "${place.name}"`);
+  assert.doesNotMatch(place.name, / 0 m$/, `claimed to be right at something: "${place.name}"`);
+});
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

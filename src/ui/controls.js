@@ -796,12 +796,16 @@ function ignoreHit(hit) {
     return mode;
   }
 
+  /** The viewpoint last teleported to: what a shared link names (#31). */
+  let lastViewpoint = null;
+
   function teleport(name) {
     const vp = typeof name === 'string' ? getViewpoint(name) : name;
     if (!vp) {
       console.warn(`[controls] teleport: no viewpoint "${name}"`);
       return null;
     }
+    lastViewpoint = vp.id ?? null;
     // The mode switch is made FIRST and the position second: setMode now moves
     // the camera itself on an orbit -> walk switch, which would otherwise
     // overwrite the viewpoint we were asked to teleport to.
@@ -827,6 +831,7 @@ function ignoreHit(hit) {
 
   return {
     get mode() { return mode; },
+    get viewpoint() { return lastViewpoint; },
     get level() { return LEVEL_ORDER[levelIndex].name; },
     get airborne() { return airborne; },
     get lookSpeed() { return lookSpeed; },

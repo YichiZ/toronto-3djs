@@ -839,6 +839,9 @@ function ignoreHit(hit) {
     viewpoints: VIEWPOINTS,
     orbitControls: orbit,
     pointerLock: pointer,
+    // The collision index, so the HUD's aim probe can test occlusion without
+    // raycasting the whole scene - see src/ui/aim.js.
+    collision,
     setLevelByY: (y) => {
       levelIndex = nearestLevelIndex(y);
       levelChangeTo = null;

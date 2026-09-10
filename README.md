@@ -81,6 +81,7 @@ automated check in [`qa/traps.mjs`](qa/traps.mjs):
 | `T` | start the tour |
 | `H` | help |
 | click a storefront | tenant card, with its verification grade |
+| `F` | open the storefront under the reticle (walking, pointer captured) |
 
 ---
 

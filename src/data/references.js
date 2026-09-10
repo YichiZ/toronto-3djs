@@ -47,7 +47,9 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'union-forecourt',
     name: 'Union Station forecourt',
-    position: { x: -126, y: EYE, z: 6 },
+    // 2 m west of the portico's axis: on it, a twin-lantern pole stood dead
+    // centre of frame; 2 m east puts a wayfinding pylon there instead (#28).
+    position: { x: -128, y: EYE, z: 6 },
     lookAt: { x: -126, y: 9, z: 46 },
     mode: 'walk',
     description: 'Centred on the portico from the widened south promenade.',

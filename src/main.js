@@ -51,7 +51,25 @@ async function boot() {
   ctx.start();
   stage('ready', 1);
   overlay?.classList.add('done');
-  setTimeout(() => overlay?.remove(), 700);
+  const overlayGone = setTimeout(() => overlay?.remove(), 700);
+
+  // WebGL context loss (#30): integrated GPUs and phones reclaim contexts, and
+  // the canvas froze under a live HUD with no word said. Pause, bring the
+  // overlay back to say so, and reload when the context is restored - an
+  // in-place restore re-uploads every buffer, texture and shader of the city.
+  // preventDefault is what makes the browser offer a restore at all.
+  const canvas = ctx.renderer.domElement;
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    ctx.stop();
+    clearTimeout(overlayGone);
+    if (overlay) {
+      document.body.appendChild(overlay);
+      overlay.classList.remove('done');
+    }
+    stage('Graphics context lost — reloading as soon as it is restored', 1);
+  });
+  canvas.addEventListener('webglcontextrestored', () => location.reload());
 
   // Exposed for the QA harness driving the page through a headless browser.
   window.__TWIN__ = {

@@ -65,7 +65,12 @@ export function createContext(mount) {
   function start() {
     if (running) return;
     running = true;
+    const gl = renderer.getContext();
     renderer.setAnimationLoop(() => {
+      // A context is lost at once but the event reporting it comes later, so
+      // three's own guard lags a frame: in that frame it compiled a shader on
+      // the dead context and threw (#30). isContextLost() is synchronous.
+      if (gl.isContextLost()) return;
       const dt = Math.min(clock.getDelta(), 0.1);
       const elapsed = clock.elapsedTime;
       for (const fn of onFrame) {

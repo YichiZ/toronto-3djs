@@ -86,10 +86,14 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'path-corridor',
     name: 'PATH corridor under Bay',
-    position: { x: -3, y: LEVELS.path + EYE, z: -60 },
-    lookAt: { x: -3, y: LEVELS.path + 2, z: -170 },
+    // On the centreline of path-bay-north, the corridor it describes. It was at
+    // (-3, -60), about 8 m outside every corridor, in solid ground: the visitor
+    // saw the street from underneath (#24). From here the corridor runs 54 m
+    // clear to the Royal Bank Plaza turn.
+    position: { x: -30, y: LEVELS.path + EYE, z: 8 },
+    lookAt: { x: -30, y: LEVELS.path + 2, z: -40 },
     mode: 'walk',
-    description: 'PATH concourse level heading north under Bay Street toward Royal Bank Plaza.',
+    description: 'PATH concourse level on the Bay Street corridor, heading north toward Royal Bank Plaza.',
     realWorld: 'Low 3.6 m ceiling, continuous retail on both sides, the PATH colour-letter wayfinding, no daylight at all.',
   },
   {

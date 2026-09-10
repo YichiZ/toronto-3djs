@@ -57,6 +57,36 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   const callsEl = statsPanel.querySelector('.calls');
   const trisEl = statsPanel.querySelector('.tris');
 
+  // --- level toast --------------------------------------------------------
+  /*
+   * Q/E can be refused outright (nothing above the Gardiner deck) or fall back
+   * onto a level with no floor at this spot, and grounding then pulls you off
+   * it within the second. Both used to be silent: the level chip simply kept
+   * saying what it already said, so the key read as broken. controls.js
+   * dispatches `twin:level` rather than calling in here, the same decoupling
+   * `twin:crowd-density` uses in the other direction.
+   */
+  const toast = el('div', 'hud-panel hud-toast');
+  toast.hidden = true;
+  hud.appendChild(toast);
+  let toastTimer = 0;
+  function onLevel(e) {
+    const { name, outcome, delta } = e.detail ?? {};
+    const refused = outcome !== 'ok';
+    toast.textContent = outcome === 'refused'
+      ? `no level ${delta > 0 ? 'above' : 'below'}`
+      : outcome === 'fallback' ? `${name} — none modelled here` : name;
+    toast.classList.toggle('warn', refused);
+    toast.hidden = false;
+    // Restart the flash rather than letting a second press inherit a
+    // half-finished animation, which showed as no flash at all.
+    levelEl.classList.remove('flash');
+    if (refused) { void levelEl.offsetWidth; levelEl.classList.add('flash'); }
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 1600);
+  }
+  window.addEventListener('twin:level', onLevel);
+
   // --- failure chip -------------------------------------------------------
   if (failures.length) {
     const chip = el('div', 'hud-panel hud-fail',
@@ -124,7 +154,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>Mouse / drag</dt><dd>look (click the view to capture the pointer)</dd>
       <dt>Shift</dt><dd>run</dd>
       <dt>Space</dt><dd>jump</dd>
-      <dt>Q / E, PgDn / PgUp</dt><dd>change level — PATH, concourse, street, viaduct, SkyWalk, Gardiner</dd>
+      <dt>Q / E, PgDn / PgUp</dt><dd>change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gardiner</dd>
       <dt>1 / 2 / 3</dt><dd>walk / orbit / tour</dd>
       <dt>R</dt><dd>reference mode (labels, x-ray, grid, section)</dd>
       <dt>T</dt><dd>start or stop the cinematic tour</dd>
@@ -415,6 +445,8 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     toggleHelp: () => { help.hidden = !help.hidden; return !help.hidden; },
     dispose() {
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('twin:level', onLevel);
+      clearTimeout(toastTimer);
       hud.remove();
     },
   };

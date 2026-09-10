@@ -34,6 +34,8 @@ const SLAB = 0.6;
 const SPRING_Y = 12.2;            // where the glazing stops and the roof springs
 const RISE = 1.2;                 // shallow crown over a 9 m span
 const HALF = 4.5;
+/** Deck width, for the minimap's plan. */
+export const SKYWALK_WIDTH = HALF * 2;
 
 // Circle through the two springings and the crown.
 const ARC_R = (HALF * HALF + RISE * RISE) / (2 * RISE);

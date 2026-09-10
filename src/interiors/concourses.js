@@ -34,7 +34,7 @@ const LINK_CEIL = FLOOR + 3.2;         // the low passage beneath the Great Hall
 const GREAT_HALL_Y = 0.2;
 
 /** The three rooms, in grid metres. Sizes are inferred from the block geometry. */
-const ROOMS = Object.freeze([
+export const ROOMS = Object.freeze([
   {
     id: 'union-york-concourse', name: 'York Concourse', short: 'york',
     x: -215, z: 46, w: 62, d: 42, face: 'west', ceiling: HALL_CEIL,

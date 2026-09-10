@@ -26,6 +26,8 @@ const MID_X = (X0 + X1) / 2;
 const Z = EW.lakeShore;
 const DECK_Y = LEVELS.gardinerDeck;   // 12.0, top of pavement
 const DECK_W = 26;                    // six lanes plus shoulders
+/** Plan extent of the deck, for the minimap. */
+export const GARDINER_DECK = Object.freeze({ west: X0, east: X1, z: Z, width: DECK_W });
 const GIRDER = 1.6;                   // deck structural depth
 const SOFFIT = DECK_Y - GIRDER;
 

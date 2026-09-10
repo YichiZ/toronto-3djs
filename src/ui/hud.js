@@ -167,6 +167,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>Esc</dt><dd>close panels, release the pointer</dd>
       <dt>Click a storefront</dt><dd>tenant, category, address and confidence grade</dd>
       <dt>F</dt><dd>open the storefront under the reticle (walking, pointer captured)</dd>
+      <dt>M</dt><dd>minimap while walking — click a dot to jump to that viewpoint</dd>
     </dl>
     <div class="hud-reflayers"></div>
     <p class="hud-note">The jump is a hop &mdash; enough for a bollard, not for a

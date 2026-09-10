@@ -129,7 +129,10 @@ export function install(ctx, controls) {
   const textEl = caption.querySelector('.tour-text');
   const progEl = caption.querySelector('.tour-progress');
 
-  const aim = new THREE.Object3D();
+  // A Camera, not a bare Object3D: Object3D.lookAt points +Z at the target,
+  // cameras look down -Z, so copying a bare aim's rotation filmed every beat
+  // facing directly away from what its caption describes (#25).
+  const aim = new THREE.Camera();
   const target = new THREE.Vector3();
   const lookPoint = new THREE.Vector3();
 
@@ -184,7 +187,9 @@ export function install(ctx, controls) {
     aim.up.set(0, 1, 0);
     aim.lookAt(lookPoint);
     // Reduced motion: snap orientation instead of easing into it.
-    const k = reduceMotion.matches ? 1 : Math.min(1, dt * 3.2);
+    // The first frame snaps too, so the tour opens framed rather than easing
+    // round from wherever the walker happened to be facing.
+    const k = reduceMotion.matches || elapsed <= dt ? 1 : Math.min(1, dt * 3.2);
     camera.quaternion.slerp(aim.quaternion, k);
 
     if (progEl) progEl.style.width = `${(elapsed / TOTAL_SECONDS) * 100}%`;

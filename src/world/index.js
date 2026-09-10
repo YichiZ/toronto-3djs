@@ -81,6 +81,15 @@ export function registerInterior({ id, group, centre, radius = 70 }) {
 
 export const interiorStates = () => interiors.map((i) => ({ id: i.id, visible: i.group.visible }));
 
+/** An interior's ambient lights, each with the box of the room that holds it. */
+const ambientsOf = (group) => {
+  const out = [];
+  group.traverse((o) => {
+    if (o.isAmbientLight) out.push({ light: o, box: new THREE.Box3().setFromObject(o.parent).expandByScalar(0.5) });
+  });
+  return out;
+};
+
 export async function buildWorld(ctx, onProgress = () => {}) {
   const root = new THREE.Group();
   root.name = 'downtown-toronto';
@@ -122,7 +131,31 @@ export async function buildWorld(ctx, onProgress = () => {}) {
         || it.box.distanceToPoint(ctx.camera.position) < CONTACT;
       if (near !== it.group.visible) it.group.visible = near;
     }
+    lightIndoors(ctx.camera.position);
   });
+
+  /**
+   * Interior ambient light is for indoors only (#27). three.js ambient light is
+   * global, so an interior's AmbientLight lit the whole city whenever that
+   * interior streamed in: the forecourt stood under the Great Hall's and two
+   * concourses' ambient at midnight, mean luminance 131 against 10 without it,
+   * while the aerial - out of streaming range - was correctly dark. Now every
+   * streamed interior's ambient is on only while the camera is inside a room
+   * that carries one. Indoors nothing changes: rooms still share each other's.
+   *
+   * ponytail: one indoors flag off bounding boxes, on the 0.25 s streaming tick,
+   * so the light steps at a doorway rather than fading; per-room fades if that
+   * step ever reads as a pop.
+   */
+  function lightIndoors(cam) {
+    let indoors = false;
+    for (const it of interiors) {
+      if (!it.group.visible) continue;
+      it.ambients ??= ambientsOf(it.group);
+      if (it.ambients.some((a) => a.box.containsPoint(cam))) indoors = true;
+    }
+    for (const it of interiors) for (const a of it.ambients ?? []) a.light.visible = indoors;
+  }
 
   // Detail streaming must be installed after every module has contributed its
   // geometry, so it sees the whole tagged set in one traversal.

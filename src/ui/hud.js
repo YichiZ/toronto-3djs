@@ -16,6 +16,7 @@ import { VIEWPOINTS } from '../data/references.js';
 import { INTERSECTIONS } from '../data/grid.js';
 import { pickPlace, nearestIntersection } from './placeLabel.js';
 import { aimAt } from './aim.js';
+import { browserStorage } from './lookSpeed.js';
 
 const CONFIDENCE_CLASS = {
   surveyed: 'c-surveyed',
@@ -177,6 +178,34 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     this place actually is.</p>`);
   help.hidden = true;
   hud.appendChild(help);
+
+  // First visit: the help panel doubles as a click-to-start card (#26). Pointer
+  // lock needs a user gesture anyway, so the click that dismisses the card is
+  // the one that captures the pointer. Storage that refuses shows it again.
+  const INTRO_KEY = 'twin.introSeen';
+  const storage = browserStorage();
+  let introSeen = false;
+  try { introSeen = storage?.getItem(INTRO_KEY) != null; } catch { /* show it */ }
+  function dismissIntro() {
+    if (!help.classList.contains('hud-intro')) return false;
+    help.classList.remove('hud-intro');
+    help.querySelector('.hud-intro-go')?.remove();
+    help.hidden = true;
+    try { storage?.setItem(INTRO_KEY, '1'); } catch { /* shown again next visit */ }
+    return true;
+  }
+  if (!introSeen) {
+    help.classList.add('hud-intro');
+    help.insertAdjacentHTML('beforeend', '<button class="hud-btn hud-intro-go" type="button">Click to walk</button>');
+    help.hidden = false;
+    help.addEventListener('click', (e) => {
+      if (!dismissIntro()) return;
+      selectMode('walk');
+      if (e.pointerType !== 'touch') {
+        try { controls?.pointerLock?.lock(); } catch { /* refused: keys still walk */ }
+      }
+    });
+  }
 
   // Look speed, for touch drags and the mouse alike (#14). Controls owns and
   // remembers it; this is only the knob.
@@ -394,6 +423,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       // any HUD button that happens to have focus.
       case 'KeyF': if (aimed) openCard(aimed.node); break;
       case 'Escape':
+        dismissIntro();
         help.hidden = true;
         card.hidden = true;
         if (tour?.isRunning?.()) { tour.stop(); refreshModeButtons(); }

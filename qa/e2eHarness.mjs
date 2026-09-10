@@ -41,8 +41,13 @@ export async function launchBrowser() {
   }
 }
 
-/** Server + browser + a page with the world already built. */
-export async function openWorld({ consoleErrors = [], contextOptions } = {}) {
+/**
+ * Server + browser + a page with the world already built.
+ *
+ * The first-visit card (#26) is marked seen unless `intro` is set: it sits over
+ * the middle of the view, and no other suite is testing it.
+ */
+export async function openWorld({ consoleErrors = [], contextOptions, intro = false } = {}) {
   const { server, url } = await startServer();
   const browser = await launchBrowser();
   const viewport = { width: 1280, height: 800 };
@@ -52,6 +57,7 @@ export async function openWorld({ consoleErrors = [], contextOptions } = {}) {
     : await browser.newPage({ viewport });
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
+  if (!intro) await page.addInitScript(() => { try { localStorage.setItem('twin.introSeen', '1'); } catch { /* card shows */ } });
   await page.goto(url);
   // The world builds asynchronously; __TWIN__ appears only once it is running.
   await page.waitForFunction(() => Boolean(window.__TWIN__), null, { timeout: 60_000 });

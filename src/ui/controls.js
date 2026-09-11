@@ -33,6 +33,7 @@ import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
 import { buildCollisionIndex } from './collision.js';
 import { LEVEL_ORDER, STREET_LEVEL, nearestLevel, floorAtLevel, substeps, slide } from './walkMath.js';
+import { push as vehiclePush, AHEAD, CLEARANCE, PUSH_RATE } from '../systems/vehiclePush.js';
 import { TOUCH_LOOK_RATE, browserStorage, loadLookSpeed, saveLookSpeed, clampLookSpeed } from './lookSpeed.js';
 import {
   settle, easeTo, runFraction, bobGain, bobHeight,
@@ -152,6 +153,46 @@ export function install(ctx) {
   const collision = buildCollisionIndex(scene.getObjectByName('downtown-toronto') ?? scene, {
     skip: (o) => MOVING.has(o.name),
   });
+
+  // ...which left traffic driving straight through the walker. Instead of
+  // indexing the fleet, ask it each frame for the handful of cars in reach and
+  // do a flat 2D test - see src/systems/vehiclePush.js. The system publishes
+  // this on its group's userData, the same route main.js reads count() by.
+  const nearbyVehicles = scene.getObjectByName('vehicles')?.userData?.nearby;
+  /** Search radius round the walker: the push window plus the body. nearby() adds the car's own half length. */
+  const PUSH_REACH = AHEAD + CLEARANCE + BODY_RADIUS;
+  /** This frame's shove from traffic, summed over cars and capped at PUSH_RATE. */
+  const framePush = { x: 0, z: 0 };
+  const here = { cx: 0, cz: 0 };
+  const addPush = (car) => {
+    const p = vehiclePush(car, here, framePushDt);
+    framePush.x += p.x;
+    framePush.z += p.z;
+  };
+  let framePushDt = 0;
+
+  /**
+   * Traffic does not stop for anyone: any car whose footprint has reached the
+   * walker shoves them sideways. Once per frame, not per substep - the cars
+   * move ~0.2 m a frame - and only at street level, since every lane is at
+   * y = 0 and a car under the viaduct deck or over the PATH is nowhere near.
+   * The per-car cap in push() is not a total, so the sum is capped here.
+   */
+  function trafficPush(dt) {
+    framePush.x = 0;
+    framePush.z = 0;
+    if (!nearbyVehicles || airborne || levelIndex !== STREET_LEVEL) return;
+    here.cx = camera.position.x;
+    here.cz = camera.position.z;
+    framePushDt = dt;
+    nearbyVehicles(here.cx, here.cz, PUSH_REACH, addPush);
+    const mag = Math.hypot(framePush.x, framePush.z);
+    const cap = PUSH_RATE * dt;
+    if (mag > cap) {
+      framePush.x *= cap / mag;
+      framePush.z *= cap / mag;
+    }
+  }
 
   // Last surface ground() actually found. The low collision ray is hung off
   // this rather than off the eye, because the camera eases toward the floor and
@@ -640,14 +681,19 @@ function ignoreHit(hit) {
     // Substep long frames rather than trusting the caller's dt clamp, bounded by
     // the speed the walker could reach this frame, not the speed it has - see
     // substeps() for the tunnelling that distinction prevents.
-    const parts = substeps(Math.hypot(velocity.x, velocity.z), dt, {
+    // The shove from traffic is part of this frame's motion, so it counts
+    // toward the bound too - otherwise a long frame with a car in reach could
+    // step further than the wall probe looks.
+    trafficPush(dt);
+    const pushSpeed = Math.hypot(framePush.x, framePush.z) / dt;
+    const parts = substeps(Math.hypot(velocity.x, velocity.z) + pushSpeed, dt, {
       runSpeed: RUN_SPEED, maxStep: MAX_STEP, airborne, maxAirDt: MAX_AIR_DT,
     });
-    for (let i = 0; i < parts; i++) walkStep(dt / parts);
+    for (let i = 0; i < parts; i++) walkStep(dt / parts, framePush.x / parts, framePush.z / parts);
     applyBob(dt);
   }
 
-  function walkStep(dt) {
+  function walkStep(dt, pushX, pushZ) {
     if (touch.lookX || touch.lookY) {
       // PointerLockControls exposes the same yaw/pitch path used by the mouse.
       const euler = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(camera.quaternion);
@@ -686,7 +732,14 @@ function ignoreHit(hit) {
     // Move, and if something is in the way slide along it rather than stopping:
     // two passes, for inside corners - see slide(). It hands back x and z only,
     // so a jump's vertical velocity is never touched.
-    const slid = slide({ x: velocity.x * dt, z: velocity.z * dt }, velocity, blockingNormal);
+    //
+    // This substep's share of the traffic shove (see trafficPush) is added to
+    // the step, not the velocity, so a clip adds no momentum of its own. It is
+    // probed and slid with the rest of the step: beside a building the walker
+    // goes along the wall; wedged in an inside corner the step is dropped and
+    // the car passes through. slide() does still project velocity against
+    // whatever the combined step runs into, as it always has.
+    const slid = slide({ x: velocity.x * dt + pushX, z: velocity.z * dt + pushZ }, velocity, blockingNormal);
     step.set(slid.step.x, 0, slid.step.z);
     velocity.x = slid.velocity.x;
     velocity.z = slid.velocity.z;

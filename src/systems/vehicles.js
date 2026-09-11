@@ -181,6 +181,9 @@ const TYPES = [
 
 const typeIndex = Object.fromEntries(TYPES.map((t, i) => [t.id, i]));
 
+/** Widest half-width of a body, wheels included - the footprint the walker feels. */
+const halfWidthOf = (type) => Math.max(...type.parts.map(([, , d, , , z]) => Math.abs(z) + d / 2));
+
 // ---------------------------------------------------------------------------
 // lanes
 // ---------------------------------------------------------------------------
@@ -385,7 +388,9 @@ export function build(ctx) {
         planned[t].push({
           lane, s: k * step + Math.random() * step * 0.5,
           cruise: type.cruise[0] + Math.random() * (type.cruise[1] - type.cruise[0]),
-          half: type.len / 2, speed: type.cruise[0], sig: 0,
+          half: type.len / 2, halfWidth: halfWidthOf(type), speed: type.cruise[0], sig: 0,
+          // Streetcars and trains are out of scope for the walker push (#6).
+          pushes: type.id !== 'streetcar',
         });
       }
     }
@@ -439,6 +444,7 @@ export function build(ctx) {
 
   group.userData.setDensity = setDensity;
   group.userData.count = count;
+  group.userData.nearby = nearby;
   // Same slider as the crowd: emptying the sidewalks while the traffic stays
   // bumper to bumper reads as a bug, not as a setting.
   if (typeof window !== 'undefined') {
@@ -478,6 +484,42 @@ export function setDensity(multiplier) {
   headlights.instanceMatrix.needsUpdate = true;
   taillights.instanceMatrix.needsUpdate = true;
   return density;
+}
+
+/**
+ * Every moving vehicle currently drawn whose centre is within `r` metres of
+ * (x, z), handed to `fn` as a pose that is REUSED between calls - read it,
+ * don't keep it. Lanes sit at y = 0; the caller decides whether its level
+ * is the street.
+ *
+ * This is what the walker gets instead of a raycast: vehicles are not in the
+ * collision index on purpose (#6), so controls.js does a flat 2D test against
+ * the lane position and heading already computed here.
+ *
+ * ponytail: a linear scan of the fleet (a few hundred), not a spatial index.
+ * The fleet is already walked once per frame to write its matrices.
+ */
+const _pose = { x: 0, z: 0, dx: 0, dz: 0, speed: 0, half: 0, halfWidth: 0, s: 0, len: 0 };
+export function nearby(x, z, r, fn) {
+  for (const v of vehicles) {
+    if (!v.lane || !v.pushes || v.slot >= v.im.count) continue;   // parked taxis and the Flexity sit this out
+    // laneXZ() inlined: no allocation for the ~150 cars the radius rejects.
+    const lane = v.lane;
+    const along = lane.dir > 0 ? lane.lo + v.s : lane.hi - v.s;
+    const px = lane.axis === 'ew' ? along : lane.cross;
+    const pz = lane.axis === 'ew' ? lane.cross : along;
+    const dx = px - x;
+    const dz = pz - z;
+    const reach = r + v.half;
+    if (dx * dx + dz * dz > reach * reach) continue;
+    _pose.x = px; _pose.z = pz;
+    _pose.dx = lane.axis === 'ew' ? lane.dir : 0;
+    _pose.dz = lane.axis === 'ew' ? 0 : lane.dir;
+    _pose.speed = v.speed;
+    _pose.s = v.s; _pose.len = lane.len;   // where on its lane, for anyone predicting its path
+    _pose.half = v.half; _pose.halfWidth = v.halfWidth;
+    fn(_pose);
+  }
 }
 
 /** Vehicles currently drawn and simulated. */

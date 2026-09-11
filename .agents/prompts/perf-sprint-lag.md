@@ -21,10 +21,10 @@ hypothesis, not the conclusion.
 - **`npm install` first in a fresh worktree.** Without `node_modules` the build
   resolves `three` from a parent directory and dies with a Rolldown "failed to
   resolve import".
-- **`npm run e2e:perf` exits 0 even when assertions fail** - and even when the
-  *build* fails. Read the `pass`/`fail` counts, never the exit code, and do not
-  pipe it through `tail`: the 60 s sprint's report lines are the first thing to
-  scroll off.
+- **`npm run e2e:perf` exits non-zero on a failed assertion or build** (verified:
+  `node --test` returns 1). Piping it through `grep`/`tail` replaces that with
+  the pipe's exit code, so read the `pass`/`fail` counts too, and do not `tail`
+  it: the 60 s sprint's report lines are the first thing to scroll off.
 - **The perf e2e already exists**: `qa/perf-sprint.perf.mjs` (four scenarios)
   and `qa/perfProbe.mjs` (in-page rAF probe + `summarise`/`growth`/`report`).
   **Run it first and extend it. Do not rewrite it.**
@@ -214,8 +214,8 @@ starts smarter than this one.
   check and said explicitly not to re-profile it — CDP allocation sampling put
   app code under 3% of samples, and the last two runs both spent time there.
 - 2026-09-10 (run 2): Project facts now warn that a fresh worktree needs
-  `npm install`, that `npm run e2e:perf` exits 0 on failure, and that piping it
-  through `tail` hides the sprint scenario. Each cost a wasted run.
+  `npm install`, that a piped `npm run e2e:perf` loses its exit code, and that
+  `tail` hides the sprint scenario. Each cost a wasted run.
 - 2026-09-10 (run 2): "Start here" now points at issues #60/#61/#62 and lists
   the eleven hypotheses run 2 closed with numbers, so the next run neither
   rediscovers them nor re-tests them.

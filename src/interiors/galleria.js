@@ -186,7 +186,7 @@ function buildRoof(g, B) {
   const mat = local('glazing', () =>
     new THREE.MeshPhysicalMaterial({
       map: glazingTexture(), color: 0xffffff, roughness: 0.08, metalness: 0.0,
-      transmission: 0.55, thickness: 0.05, transparent: true, opacity: 0.55,
+      transparent: true, opacity: 0.55,
       side: THREE.DoubleSide, emissive: 0xdce9f2, emissiveIntensity: 0.55,
     }));
   // shallow gable: two panes meeting on the centre line
@@ -245,7 +245,7 @@ function buildBalconies(g, B) {
   const cx = (B.minX + B.maxX) / 2;
   const slabMat = M.concretePlain();
   const glassMat = local('balGlass', () => new THREE.MeshPhysicalMaterial({
-    color: 0xd9e7ef, roughness: 0.05, transmission: 0.75, thickness: 0.05,
+    color: 0xd9e7ef, roughness: 0.05,
     transparent: true, opacity: 0.34, side: THREE.DoubleSide,
   }));
 

@@ -125,7 +125,7 @@ export function storefrontBand({ width, height = 4.2, bayWidth = 5.5, depth = 0.
   const actual = width / count;
   const frameMat = M.paintedSteel(0x24282d);
   const glassMat = new THREE.MeshPhysicalMaterial({
-    color: glass, metalness: 0.3, roughness: 0.1, transmission: 0.35, thickness: 0.2, transparent: true, opacity: 0.72,
+    color: glass, metalness: 0.3, roughness: 0.1, transparent: true, opacity: 0.72,
   });
 
   const glassGeo = box(actual - 0.35, height - 0.9, 0.06);

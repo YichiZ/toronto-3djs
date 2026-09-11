@@ -173,8 +173,7 @@ function balustrade(length, axis = 'x') {
     new THREE.BoxGeometry(axis === 'x' ? length : 0.06, 1.1, axis === 'x' ? 0.06 : length),
     local('balGlass', () => new THREE.MeshPhysicalMaterial({
       color: 0xd8e6ee, roughness: 0.05, metalness: 0.0,
-      // FrontSide, not DoubleSide: see glazingClear in core/materials.js (#60).
-      transmission: 0.75, thickness: 0.05, transparent: true, opacity: 0.35, side: THREE.FrontSide,
+      transparent: true, opacity: 0.35, side: THREE.FrontSide,
     }))
   );
   glass.position.y = 0.6;

@@ -327,7 +327,7 @@ function buildEssoGreatHall() {
   // trophy cases around the perimeter, instanced glass over a dark base
   const CASES = 16;
   const caseGlass = local('caseGlass', () => new THREE.MeshPhysicalMaterial({
-    color: 0xdce8ee, roughness: 0.04, transmission: 0.8, thickness: 0.04,
+    color: 0xdce8ee, roughness: 0.04,
     transparent: true, opacity: 0.3, side: THREE.DoubleSide,
   }));
   const cases = new THREE.InstancedMesh(new THREE.BoxGeometry(1.5, 2.1, 0.9), caseGlass, CASES);
@@ -398,7 +398,7 @@ function buildGallery(spec, index) {
   const cases = new THREE.InstancedMesh(
     new THREE.BoxGeometry(1.8, 2.0, 0.8),
     local('exhibitGlass', () => new THREE.MeshPhysicalMaterial({
-      color: 0xd2e0e8, roughness: 0.05, transmission: 0.8, thickness: 0.04,
+      color: 0xd2e0e8, roughness: 0.05,
       transparent: true, opacity: 0.28, side: THREE.DoubleSide,
     })),
     CASES

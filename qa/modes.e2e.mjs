@@ -122,6 +122,44 @@ test('orbiting the PATH and switching to walk puts you on the PATH', async () =>
   assert.ok(cam.pos[1] < 0, `still below grade after grounding, got y ${cam.pos[1].toFixed(2)}`);
 });
 
+test('orbit -> walk after only turning and zooming puts you back where you stood (#84)', async () => {
+  await page.evaluate(() => window.__TWIN__.controls.teleport('union-forecourt'));
+  await page.waitForTimeout(400);
+  const stood = await readCamera();
+  await clickMode('Orbit');
+  // Turn and zoom the way a visitor does - drag across the view, then scroll
+  // in. Neither moves the pivot, which entering orbit put ~60 m ahead, inside
+  // the station.
+  const box = await page.locator('canvas').first().boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 200, cy, { steps: 10 });
+  await page.mouse.up();
+  await page.mouse.wheel(0, -400);
+  // Orbit eases to a stop after a drag or a scroll; read its heading only once
+  // it has stopped turning, or the switch captures a slightly later one.
+  await page.waitForFunction(() => {
+    const q = window.__TWIN__.ctx.camera.quaternion;
+    const last = window.__orbitSettle;
+    window.__orbitSettle = [q.x, q.y, q.z, q.w];
+    return last !== undefined && last.every((v, i) => Math.abs(v - window.__orbitSettle[i]) < 1e-6);
+  }, null, { timeout: 10_000, polling: 'raf' });
+  const orbiting = await readCamera();
+  await clickMode('Walk');
+
+  const cam = await readCamera();
+  const back = Math.hypot(cam.pos[0] - stood.pos[0], cam.pos[2] - stood.pos[2]);
+  // Unfixed: set down at the untouched pivot, in a white void by the viaduct.
+  assert.ok(back < 1, `landed ${back.toFixed(1)} m from where the walk left off`);
+  assert.equal(cam.level, 'street');
+  // Facing the way the orbit camera was looking, and level.
+  const turned = Math.abs(Math.atan2(Math.sin(cam.yaw - orbiting.yaw), Math.cos(cam.yaw - orbiting.yaw)));
+  assert.ok(turned < 0.01, `faces ${(turned * 180 / Math.PI).toFixed(1)} degrees off the orbit view`);
+  assert.ok(Math.abs(cam.pitch) < 1e-6, 'arrives looking level');
+});
+
 test('Space hops, and the walker comes back down to the same floor', async () => {
   // Stand somewhere flat and known: the street outside Union.
   await orbitFrom([0, 120, 220], [-16, 0, 40]);

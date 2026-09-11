@@ -18,7 +18,8 @@ import { pickPlace, nearestIntersection } from './placeLabel.js';
 import { aimAt } from './aim.js';
 import { browserStorage } from './lookSpeed.js';
 import { DESTINATIONS, guide, getTarget, setTarget, setRoute } from './wayfinding.js';
-import { route, nextWaypoint, streetGraph } from './route.js';
+import { route, nextWaypoint, buildWalkGraph, routable } from './route.js';
+import { PATH_SEGMENTS } from '../interiors/path.js';
 import { isTyping } from './typing.js';
 import { nearbyPlaces, nearestAccess, accessText, arrowFor } from './nearby.js';
 
@@ -222,6 +223,8 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   let arrivedUntil = 0;
 
   /** Arrow and distance to the destination; walk mode only, like the level chip. */
+  /** Street and PATH joined by their stairs and lifts, built on first use. */
+  let walkGraph = null;
   function updateGuide() {
     const dest = getTarget();
     const walking = controls?.mode === 'walk';
@@ -233,7 +236,10 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
     if (!walking) return;
     camera.getWorldDirection(guideDir);
     const g = guide(camera.position, guideDir, dest);
-    if (g.arrived) {
+    const floor = camera.position.y - 1.7;
+    // Arrived means on its floor too: the PATH corridor viewpoint is 7 m from
+    // Front & Bay in plan and 6.5 m straight down.
+    if (g.arrived && Math.abs(floor - dest.y) < 2) {
       guideArrow.textContent = '✓';
       guideArrow.style.transform = '';
       guideText.textContent = `Arrived · ${dest.name}`;
@@ -241,14 +247,14 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
       arrivedUntil = performance.now() + 2500;
       return;
     }
-    // On the street, to somewhere on the street: walk the sidewalks, and aim
-    // at the next corner. Anywhere else, the straight line (routing below
-    // grade is still to come).
+    // On the street or in the PATH, to somewhere on either: walk it -
+    // sidewalks, corridors and the stairs between - aiming at the next corner.
+    // Anywhere else (the concourses, the SkyWalk), the straight line.
     let aim = dest;
     let distance = g.distance;
-    const onStreet = Math.abs(camera.position.y - 1.7) < 1.2;
-    if (dest.street && onStreet) {
-      const r = route(streetGraph(), camera.position, dest);
+    if (routable(floor) && routable(dest.y)) {
+      walkGraph ??= buildWalkGraph({ pathSegments: PATH_SEGMENTS, access: accessPoints });
+      const r = route(walkGraph, camera.position, dest, { fromY: floor, toY: dest.y });
       setRoute(r.points);
       aim = nextWaypoint(r.points, camera.position);
       distance = r.length;

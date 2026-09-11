@@ -8,7 +8,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { probeHeights, LOW_PROBE, HIGH_DROP } from '../src/ui/probes.js';
+import { probeHeights, LOW_PROBE, HIGH_DROP, AIR_LIFT } from '../src/ui/probes.js';
 
 const EYE = 1.7;
 const BODY_RADIUS = 0.55;
@@ -50,6 +50,18 @@ test('the low ray is measured from the floor, not the eye', () => {
   // so the low one is dropped rather than duplicating the high one. That is the
   // right side to err on: it is the stair case, where a low ray is a liability.
   assert.equal(probeHeights(floorY + EYE - 0.5, floorY).low, null);
+});
+
+test('mid-air the low ray stays below the top of the furniture until the feet are near it', () => {
+  // Hung LOW_PROBE off rising feet, it cleared a 0.98 m bollard with the feet
+  // only 0.25 m up and the walker passed through the post's top.
+  const bollardTop = 0.15 + 0.98;
+  const feet = 0.15 + 0.5;
+  const { low } = probeHeights(feet + EYE, feet, AIR_LIFT);
+  assert.ok(low < bollardTop, `a hop 0.5 m up ghosts through the bollard (low ray at ${low})`);
+  // ...and still clears it once the feet are within AIR_LIFT of the top, so a
+  // 0.9 m hop can get over.
+  assert.ok(probeHeights(bollardTop + EYE - 0.1, bollardTop - 0.1, AIR_LIFT).low > bollardTop);
 });
 
 test('no low ray when it would sit on top of the high one', () => {

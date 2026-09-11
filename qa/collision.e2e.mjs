@@ -163,7 +163,9 @@ test('a hop carries over a bollard without freezing on it mid-air', async () => 
       const now = performance.now();
       const d = Math.hypot(c.x - p.x, c.z - p.z);
       minDist = Math.min(minDist, d);
-      if (!hopped && d <= 1.0) {
+      // Far enough out that the feet are near the top of the arc at the post:
+      // a hop taken at the post itself is stopped by it (next test).
+      if (!hopped && d <= 1.5) {
         controls.jump();
         hopped = true;
       }
@@ -177,11 +179,62 @@ test('a hop carries over a bollard without freezing on it mid-air', async () => 
   }, prop);
   await page.keyboard.up('KeyW');
 
-  assert.ok(result.hopped, 'never got within a metre of the bollard to take off');
+  assert.ok(result.hopped, 'never got within 1.5 m of the bollard to take off');
   assert.ok(result.minDist < 0.2, `went around the post rather than over it (closest ${result.minDist.toFixed(2)} m)`);
   // Fixed: never below ~0.57 m/s. Unfixed: 0.00, a dead stop in mid-air.
   assert.ok(result.minAirSpeed > 0.3,
     `froze in mid-air on the bollard (min airborne speed ${result.minAirSpeed.toFixed(2)} m/s)`);
+});
+
+test('a hop taken at the post does not pass through it', async () => {
+  // Mid-air the knee ray was hung 0.75 m off the FEET, so once they were ~0.4 m
+  // up both rays cleared a 0.98 m bollard and the walker's body went through
+  // its top half: centre 0.02 m from the post with the feet 0.1 m below its
+  // top. Take off too late to clear it, and the walker must stay a body's
+  // width off the post for as long as the feet are below its top.
+  const { prop, alongRow } = await targetProp('bollard');
+  const start = { x: prop.x + alongRow.x * 3.0, z: prop.z + alongRow.z * 3.0 };
+  await page.evaluate(([s, p]) => {
+    const { ctx, controls } = window.__TWIN__;
+    controls.setMode('walk');
+    ctx.camera.position.set(s.x, 0.15 + 1.7, s.z);
+    controls.setLevelByY(0.15);
+    ctx.camera.lookAt(p.x, 0.15 + 1.7, p.z);
+  }, [start, prop]);
+  await page.waitForTimeout(200);
+
+  await page.keyboard.down('KeyW');
+  const result = await page.evaluate(async (p) => {
+    const { ctx, controls } = window.__TWIN__;
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+    const BOLLARD_TOP = p.y + 0.98;
+    let hopped = false;
+    // Closest to the post while RISING with the feet well below its top. The
+    // way down is left out: a hop that only just clears the post comes down
+    // beside it, and the landing ray down the walker's centre does not see it.
+    let minDistLow = Infinity;
+    let prevFeet = -Infinity;
+    const t0 = performance.now();
+    while (performance.now() - t0 < 1500) {
+      const c = ctx.camera.position;
+      const d = Math.hypot(c.x - p.x, c.z - p.z);
+      if (!hopped && d <= 0.65) {
+        controls.jump();
+        hopped = true;
+      }
+      const feet = c.y - 1.7;
+      if (hopped && controls.airborne && feet > prevFeet && feet < BOLLARD_TOP - 0.2) minDistLow = Math.min(minDistLow, d);
+      prevFeet = feet;
+      await frame();
+    }
+    return { hopped, minDistLow };
+  }, prop);
+  await page.keyboard.up('KeyW');
+
+  assert.ok(result.hopped, 'never got within 0.65 m of the bollard to take off');
+  // Unfixed: 0.33 m. Fixed: held at the ~0.6 m the grounded walker stops at.
+  assert.ok(result.minDistLow > 0.45,
+    `went into the bollard mid-hop (${result.minDistLow.toFixed(2)} m from its centre, feet below its top)`);
 });
 
 test('a curb is still a step and not a wall', async () => {

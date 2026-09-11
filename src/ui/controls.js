@@ -29,7 +29,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
 import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
 import { ballistic, hasLanded, underCeiling, JUMP_SPEED, MAX_FALL, HEAD_CLEARANCE } from './jump.js';
-import { probeHeights } from './probes.js';
+import { probeHeights, AIR_LIFT } from './probes.js';
 import { stepAtEdge } from './edge.js';
 import { buildCollisionIndex } from './collision.js';
 import { LEVEL_ORDER, STREET_LEVEL, nearestLevel, floorAtLevel, substeps, slide } from './walkMath.js';
@@ -600,9 +600,11 @@ function ignoreHit(hit) {
     // pavement. Measured against three bollards: the walker froze dead in
     // mid-air on the post (0.00 m/s, every run) until the arc rose far enough
     // for probeHeights to drop the knee ray as stale, then carried on over. Hung
-    // off the feet, it never falls below ~0.6 m/s.
-    const floorForProbe = airborne ? camera.position.y - EYE : floorUnderfoot;
-    const { high, low } = probeHeights(camera.position.y, floorForProbe);
+    // off the feet it never froze - but at LOW_PROBE over rising feet it sailed
+    // over the post's top half instead, so mid-air it hangs AIR_LIFT off them.
+    const { high, low } = airborne
+      ? probeHeights(camera.position.y, camera.position.y - EYE, AIR_LIFT)
+      : probeHeights(camera.position.y, floorUnderfoot);
     return castBlocker(high) ?? (low === null ? null : castBlocker(low));
   }
 

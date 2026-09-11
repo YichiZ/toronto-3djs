@@ -122,10 +122,13 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'hhof-front-yonge',
     name: 'Hockey Hall of Fame, Front & Yonge',
-    position: { x: 176, y: EYE, z: -11 },
-    lookAt: { x: 155, y: 12, z: -32 },
+    // From (176, -11) it stood 6 m off the corner pier, craning up; neither the
+    // facade nor the roofline read (#79). Across Front, on the south sidewalk,
+    // the whole 1885 front and its plain skylight roofline sit in one frame.
+    position: { x: 172, y: EYE, z: 15 },
+    lookAt: { x: 156, y: 8, z: -32 },
     mode: 'walk',
-    description: 'SE corner of Front and Yonge, looking north-west at the old Bank of Montreal.',
+    description: 'Across Front Street at Yonge, looking north-west at the old Bank of Montreal.',
     realWorld: 'Carved Ohio freestone, 1885, columned corner entrance. The roofline is a plain skylight enclosure — the stained-glass dome is INTERIOR and not visible from the street.',
   },
   {

@@ -73,8 +73,9 @@ export const M = {
   glassCool: () =>
     memo('glassCool', () =>
       new THREE.MeshPhysicalMaterial({
-        color: 0x86a3b4, metalness: 0.55, roughness: 0.12,
-        transmission: 0.25, thickness: 0.4, envMapIntensity: 1.3,
+        // No `transmission` anywhere in the city: any transmissive material in
+        // view makes three.js render the whole scene a second time (#61).
+        color: 0x86a3b4, metalness: 0.55, roughness: 0.12, envMapIntensity: 1.3,
       })),
 
   glassDark: () =>
@@ -86,10 +87,8 @@ export const M = {
     memo('glazingClear', () =>
       new THREE.MeshPhysicalMaterial({
         color: 0xdfeaf0, metalness: 0.0, roughness: 0.06,
-        // FrontSide: three r171 re-derives a DoubleSide transmissive material's
-        // program twice per object per frame in its transmission pass (#60).
-        transmission: 0.86, thickness: 0.05, side: THREE.FrontSide,
-        transparent: true, opacity: 0.42,
+        // Plain alpha, not `transmission`: see glassCool (#61).
+        side: THREE.FrontSide, transparent: true, opacity: 0.42,
       })),
 
   steelWhite: () =>
@@ -132,7 +131,7 @@ export const M = {
 
   water: () =>
     memo('water', () =>
-      new THREE.MeshPhysicalMaterial({ color: 0x2b4a5c, roughness: 0.08, metalness: 0.1, transmission: 0.4, thickness: 1 })),
+      new THREE.MeshPhysicalMaterial({ color: 0x2b4a5c, roughness: 0.08, metalness: 0.1 })),
 
   /** Warm interior/shop glow. Intensity is driven by the time-of-day system. */
   litInterior: (color = 0xffd9a0) =>

@@ -68,6 +68,30 @@ test('streetlamps throw a pool of light on the pavement (#76)', async () => {
   assert.ok(square > 12, `Maple Leaf Square at 23:30 is ${square.toFixed(1)}`);
 });
 
+test('the head house is floodlit after dark (#85)', async () => {
+  // Unfixed at 22:30: the forecourt 26 and Front & Bay 22, the colonnade near
+  // black. Floodlit: 74 and 48, still under half of noon (the test above).
+  const forecourt = await luminance('union-forecourt', 22.5);
+  assert.ok(forecourt > 50, `the forecourt at 22:30 is ${forecourt.toFixed(1)}`);
+  const frontBay = await luminance('front-bay-west', 22.5);
+  assert.ok(frontBay > 35, `Front & Bay at 22:30 is ${frontBay.toFixed(1)}`);
+});
+
+test('the Great Hall lunettes follow the clock (#85)', async () => {
+  const lunette = async (hour) => {
+    await luminance('great-hall', hour);
+    return page.evaluate(() => {
+      let v = null;
+      window.__TWIN__.ctx.scene.traverse((o) => { if (/lunette/.test(o.material?.name ?? '')) v = o.material.emissiveIntensity; });
+      return v;
+    });
+  };
+  const day = await lunette(13);
+  const night = await lunette(22.5);
+  // Unfixed: 1.5 at every hour, daylight-white glass at 22:30.
+  assert.ok(night < day * 0.3, `lunette emissive ${night} at 22:30 against ${day} at 13:00`);
+});
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

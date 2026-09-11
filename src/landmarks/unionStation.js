@@ -45,6 +45,26 @@ const CENTRE_W = 150;      // central block; the two wings share the remainder
 
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 
+/**
+ * The head house is floodlit after dark (#85). A Union-only copy of the stone
+ * with a warm wash that carries the stone's own texture, so the courses still
+ * read. Its meshes are tagged `nightLight`, and the time-of-day system brings
+ * the wash up after sunset like any lamp; by day it is 2% of this.
+ */
+const FLOOD = new Map();
+function floodlit(base) {
+  let m = FLOOD.get(base);
+  if (!m) {
+    m = base.clone();
+    m.name = `${base.name}:floodlit`;
+    m.emissive = new THREE.Color(0xffe6c4);
+    m.emissiveMap = base.map ?? null;
+    m.emissiveIntensity = 0.12;
+    FLOOD.set(base, m);
+  }
+  return m;
+}
+
 /** Solid limestone volume with its base on y = 0. */
 function stoneBlock(w, h, d, material = M.limestone()) {
   const mesh = new THREE.Mesh(box(w, h, d), material);
@@ -388,6 +408,14 @@ export function build() {
         : '',
     });
   }
+
+  // Floodlighting (#85): the head house's stone, and only its stone.
+  const stone = new Set([M.limestone(), M.limestonePlain()]);
+  root.traverse((o) => {
+    if (!o.isMesh || !stone.has(o.material)) return;
+    o.material = floodlit(o.material);
+    o.userData.nightLight = true;
+  });
 
   return root;
 }

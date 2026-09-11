@@ -518,7 +518,8 @@ html, body {
    it - and M toggles it. Bottom-left, above the bar. */
 .hud-minimap {
   left: 14px;
-  bottom: 78px;
+  /* On the bar's real height (#29), which the wayfinding row (#11) adds to. */
+  bottom: calc(var(--hud-bar-h, 50px) + 28px);
   padding: 6px;
   line-height: 0;
 }
@@ -579,5 +580,27 @@ html, body {
 .hud-help .hud-intro-go:hover { background: #2a3644; }
 @media (max-width: 720px) {
   /* The compact bar wraps to two rows; hang the card from the top instead. */
-  .hud-help.hud-intro { top: 12px; transform: translateX(-50%); max-height: calc(100vh - 230px); }
+  /* Capped on the bar's real height: a fixed 230 px ran into it once the bar
+     grew a "Go to…" control (#11). 40 px is the 12 px top, 10 px bar margin and gap. */
+  .hud-help.hud-intro { top: 12px; transform: translateX(-50%); max-height: calc(100vh - var(--hud-bar-h, 190px) - 40px); }
 }
+
+/* Wayfinding guide (#11): a full-width first row of the HUD bar. */
+.hud-guide {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+.hud-guide .guide-arrow {
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+  font-size: 18px;
+  color: var(--accent);
+  transition: transform 200ms ease;
+}
+.hud-guide .guide-text { flex: 1; }
+/* display:flex above outranks the browser's own [hidden] rule. */
+.hud-guide[hidden] { display: none; }

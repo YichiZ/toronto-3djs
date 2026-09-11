@@ -63,6 +63,35 @@ export function levelTolerances(levels, max = MAX_LEVEL_TOLERANCE) {
  * @param {(index:number) => boolean} hasFloorAt
  * @returns {{index:number, outcome:'ok'|'fallback'|'refused'}}
  */
+/**
+ * Metres of clear walking that count as "not facing a wall" after a level
+ * change: about 2.5 s at a walk. Measured at the York Concourse's E: the old
+ * heading had 5.9 m, an open 11.9 m was a 23 degree turn away.
+ */
+export const FACE_CLEAR = 8;
+
+/**
+ * Which way to face on arriving at a new level (#72).
+ *
+ * A level change lifts or drops the walker straight up or down on the spot, so
+ * they kept facing whatever they faced below - in the York Concourse, E landed
+ * them nose to a blank stone wall. So: keep the heading if it is open, else take
+ * the smallest turn that is, else the most open direction there is.
+ *
+ * @param {number[]} clear metres of clear walking along each of n headings,
+ *   evenly spaced round a full turn, index 0 being the current one
+ * @param {number} [min] what counts as open
+ * @returns {number} the index to face
+ */
+export function openHeading(clear, min = FACE_CLEAR) {
+  const n = clear.length;
+  const turn = (i) => Math.min(i, n - i);
+  const bySmallestTurn = [...clear.keys()].sort((a, b) => turn(a) - turn(b));
+  const open = bySmallestTurn.find((i) => clear[i] >= min);
+  if (open !== undefined) return open;
+  return clear.indexOf(Math.max(...clear));
+}
+
 export function pickLevel(index, delta, count, hasFloorAt) {
   for (let i = index + delta; i >= 0 && i < count; i += delta) {
     if (hasFloorAt(i)) return { index: i, outcome: 'ok' };

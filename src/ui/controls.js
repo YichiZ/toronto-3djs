@@ -40,7 +40,7 @@ import {
   RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
 } from './runFeel.js';
 import {
-  pickLevel, levelTolerances, LEVEL_SETTLE, LEVEL_ARRIVED, MAX_LEVEL_TOLERANCE,
+  pickLevel, levelTolerances, openHeading, LEVEL_SETTLE, LEVEL_ARRIVED, MAX_LEVEL_TOLERANCE,
 } from './levelChange.js';
 
 const EYE = 1.7;
@@ -380,6 +380,37 @@ export function install(ctx) {
     levelChangeTo = LEVEL_ORDER[levelIndex].y + EYE;
     velocity.set(0, 0, 0);
     clearBob();
+  }
+
+  /** Headings sampled on arrival, and how far each looks. */
+  const FACE_SAMPLES = 16;
+  const faceRay = new THREE.Raycaster();
+  faceRay.far = 30;
+  faceRay.camera = camera;   // sprites throw without it
+
+  /**
+   * On arriving at a new level, turn to face somewhere walkable (#72). A level
+   * change is a lift or a drop on the spot, so the walker kept facing whatever
+   * they faced below - often a wall up here. Looking level, at chest height, in
+   * FACE_SAMPLES directions; see openHeading() for which one wins.
+   */
+  function faceOpen() {
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ').setFromQuaternion(camera.quaternion);
+    const clear = [];
+    for (let i = 0; i < FACE_SAMPLES; i++) {
+      const yaw = euler.y + (i * 2 * Math.PI) / FACE_SAMPLES;
+      tmpDir.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+      tmpOrigin.copy(camera.position).setY(camera.position.y - 0.5);
+      faceRay.set(tmpOrigin, tmpDir);
+      const hit = collision.intersect(faceRay).find((h) => !ignoreHit(h));
+      clear.push(hit ? hit.distance : faceRay.far);
+    }
+    const i = openHeading(clear);
+    if (i === 0) return;
+    euler.y += (i * 2 * Math.PI) / FACE_SAMPLES;
+    euler.x = 0;
+    euler.z = 0;
+    camera.quaternion.setFromEuler(euler);
   }
 
 /**
@@ -785,7 +816,10 @@ function ignoreHit(hit) {
     // mid-flight (pressing E twice) just moves the destination.
     if (levelChangeTo !== null) {
       camera.position.y += (levelChangeTo - camera.position.y) * settle(LEVEL_SETTLE, dt);
-      if (Math.abs(levelChangeTo - camera.position.y) < LEVEL_ARRIVED) levelChangeTo = null;
+      if (Math.abs(levelChangeTo - camera.position.y) < LEVEL_ARRIVED) {
+        levelChangeTo = null;
+        faceOpen();
+      }
       return;
     }
 

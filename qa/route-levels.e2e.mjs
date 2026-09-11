@@ -41,6 +41,15 @@ test('from Front Street to the PATH corridor, the route goes down a stair or lif
   assert.match(r.text, /· \d+ m$/);
 });
 
+test('from Front & Bay the PATH under your feet is a short walk, down the forecourt stairs (#72)', async () => {
+  // The corridor is about 10 m below Front & Bay. With only the station's
+  // escalators and lifts tagged, the guide sent you 241 m round by them.
+  const r = await goFrom('front-bay-west', 'vp:path-corridor');
+  const metres = Number(r.text.match(/· (\d+) m$/)?.[1]);
+  assert.ok(metres < 120, `the guide says ${metres} m: "${r.text}"`);
+  assert.ok(r.climbs.some((c) => c.startsWith('Stairs')), `not down a forecourt stair: ${r.climbs.join(', ')}`);
+});
+
 test('from the PATH up to a street corner', async () => {
   const r = await goFrom('path-corridor', 'x:front-york');
   assert.ok(r.climbs.length >= 1, `no way up on the route (${r.points} points): "${r.text}"`);

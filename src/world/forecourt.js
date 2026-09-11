@@ -284,6 +284,13 @@ export function build() {
   });
 
   // --- PATH / subway stair headhouses -------------------------------------
+  // Each is tagged as a way between the street and the PATH (#72), so the
+  // guide can route down it and the nearby strip can name it. Untagged, the
+  // walk from Front & Bay to the corridor 10 m below went 241 m round by the
+  // station's escalator.
+  const stairAccess = (x, z) => ({
+    kind: 'Stairs', x, z, lowY: LEVELS.path, highY: 0, lowName: 'the PATH', highName: 'street level',
+  });
   const pathSpots = [
     { id: 'forecourt-path-entrance-east', x: -68, label: 'PATH / TTC Union subway entrance', name: 'Forecourt PATH entrance (east)' },
     { id: 'forecourt-path-entrance-west', x: -196, label: 'PATH / York Concourse entrance', name: 'Forecourt PATH entrance (west)' },
@@ -291,6 +298,7 @@ export function build() {
   for (const spot of pathSpots) {
     const h = stairHeadhouse({ width: 7.0, depth: 5.0, floorY: LEVELS.path, steps: 20, label: spot.label });
     h.position.set(spot.x, 0, 18.0);
+    h.userData.access = stairAccess(spot.x, 18.0);
     root.add(h);
     register({
       id: spot.id, name: spot.name, kind: 'infrastructure', object: h,
@@ -306,6 +314,7 @@ export function build() {
     label: 'Union Station Loop — 509/510 streetcars',
   });
   loop.position.set(-24, 0, 17.5);
+  loop.userData.access = stairAccess(-24, 17.5);
   root.add(loop);
   register({
     id: 'forecourt-loop-headhouse', name: 'Union Station Loop streetcar entrance', kind: 'infrastructure',

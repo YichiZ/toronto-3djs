@@ -110,6 +110,26 @@ test('a refused level change tells you so', async () => {
   assert.equal(toast.level, 'Gardiner deck', 'the level changed after all');
 });
 
+test('after a level change the walker faces somewhere walkable, not a wall (#72)', async () => {
+  // The issue's repro: in the York Concourse, E rose to street level on the
+  // spot, still facing the way it faced below - into a blank stone wall.
+  await page.evaluate(() => window.__TWIN__.controls.teleport('york-concourse'));
+  await page.waitForTimeout(500);
+  await pressAndTrace('KeyE', 1500);
+  const r = await page.evaluate(async () => {
+    const THREE = await import('/node_modules/three/build/three.module.js');
+    const { ctx, controls } = window.__TWIN__;
+    const shown = (h) => { for (let o = h.object.userData?.collisionSource ?? h.object; o; o = o.parent) if (!o.visible || o.userData?.noCollide) return false; return true; };
+    const dir = ctx.camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+    const rc = new THREE.Raycaster(ctx.camera.position.clone().setY(ctx.camera.position.y - 0.5), dir, 0, 30);
+    rc.camera = ctx.camera;
+    const hit = controls.collision.intersect(rc).find((h) => h.face && shown(h));
+    return { level: controls.level, clear: hit ? hit.distance : 30 };
+  });
+  // FACE_CLEAR in src/ui/levelChange.js. Unfixed: 5.9 m, a wall.
+  assert.ok(r.clear >= 8, `after E, on ${r.level}, only ${r.clear.toFixed(1)} m clear ahead`);
+});
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

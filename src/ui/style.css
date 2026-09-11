@@ -652,3 +652,24 @@ html, body {
   color: var(--ink-dim);
 }
 .hud-place .place-nearby li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Phone and touch layout (#83). Keys mean nothing on a touchscreen: lines and
+   hints that name one hide, and the touch lines show instead. */
+.only-touch { display: none; }
+.hud-more { display: none; }
+@media (pointer: coarse) {
+  .only-key, .hud-btn kbd { display: none; }
+  .only-touch { display: revert; }
+  /* The move stick sits on the bar's real height; at a fixed 96 px the bar
+     covered all but a sliver of it. */
+  .touch-controls .stick { bottom: calc(var(--hud-bar-h, 80px) + 26px); }
+  /* The first-visit card has the screen: the minimap drew on top of it. */
+  .hud-help.hud-intro:not([hidden]) ~ .hud-minimap { display: none; }
+}
+@media (pointer: coarse) and (max-width: 720px) {
+  .hud-more { display: inline-flex; }
+  .hud-bar:not(.more) .hud-extra { display: none; }
+  /* A renderer counter is no use on a phone, and it squeezed the place label. */
+  .hud-stats { display: none; }
+  .hud-place { max-width: calc(100vw - 28px); }
+}

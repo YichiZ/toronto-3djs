@@ -283,6 +283,16 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
 
   const helpButton = el('button', 'hud-btn', 'Help<kbd>H</kbd>');
   bar.appendChild(helpButton);
+  // On a phone (#83) the bar keeps what you use while walking - the modes, Go
+  // to, Map - and folds the rest behind More: all of it took the bottom third
+  // of the screen and sat on the move stick. style.css decides when.
+  const moreButton = el('button', 'hud-btn hud-more', 'More ⋯');
+  moreButton.setAttribute('aria-expanded', 'false');
+  for (const extra of [timeGroup, crowdGroup, refButton, jump, helpButton]) extra.classList.add('hud-extra');
+  moreButton.addEventListener('click', () => {
+    moreButton.setAttribute('aria-expanded', String(bar.classList.toggle('more')));
+  });
+  bar.appendChild(moreButton);
   // The bar wraps to one, two or three rows with the width; panels that float
   // above it (tour caption, help) sit on its real height, not a guess (#29).
   new ResizeObserver(() => {
@@ -293,19 +303,24 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   const help = el('div', 'hud-panel hud-help', `
     <h2>Controls</h2>
     <dl>
-      <dt>W A S D / arrows</dt><dd>walk</dd>
-      <dt>Mouse / drag</dt><dd>look (click the view to capture the pointer)</dd>
-      <dt>Shift</dt><dd>run</dd>
-      <dt>Space</dt><dd>jump</dd>
-      <dt>Q / E, PgDn / PgUp</dt><dd>change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gardiner</dd>
-      <dt>1 / 2 / 3</dt><dd>walk / orbit / tour</dd>
-      <dt>R</dt><dd>reference mode (labels, x-ray, grid, section)</dd>
-      <dt>T</dt><dd>start or stop the cinematic tour</dd>
-      <dt>H</dt><dd>this panel</dd>
-      <dt>Esc</dt><dd>close panels, release the pointer</dd>
-      <dt>Click a storefront</dt><dd>tenant, category, address and confidence grade</dd>
-      <dt>F</dt><dd>open the storefront under the reticle (walking, pointer captured)</dd>
-      <dt>M</dt><dd>hide or show the minimap (a Map button on touch) — it is on while walking; click a dot to jump to that viewpoint</dd>
+      <dt class="only-key">W A S D / arrows</dt><dd class="only-key">walk</dd>
+      <dt class="only-key">Mouse / drag</dt><dd class="only-key">look (click the view to capture the pointer)</dd>
+      <dt class="only-touch">Stick, bottom left</dt><dd class="only-touch">walk</dd>
+      <dt class="only-touch">Drag the view</dt><dd class="only-touch">look around</dd>
+      <dt class="only-key">Shift</dt><dd class="only-key">run</dd>
+      <dt class="only-key">Space</dt><dd class="only-key">jump</dd>
+      <dt class="only-key">Q / E, PgDn / PgUp</dt><dd class="only-key">change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gardiner</dd>
+      <dt class="only-key">1 / 2 / 3</dt><dd class="only-key">walk / orbit / tour</dd>
+      <dt class="only-touch">Walk · Orbit · Tour</dt><dd class="only-touch">on foot, from above, or the guided tour</dd>
+      <dt class="only-key">R</dt><dd class="only-key">reference mode (labels, x-ray, grid, section)</dd>
+      <dt class="only-key">T</dt><dd class="only-key">start or stop the cinematic tour</dd>
+      <dt class="only-key">H</dt><dd class="only-key">this panel</dd>
+      <dt class="only-key">Esc</dt><dd class="only-key">close panels, release the pointer</dd>
+      <dt>Tap or click a storefront</dt><dd>tenant, category, address and confidence grade</dd>
+      <dt class="only-key">F</dt><dd class="only-key">open the storefront under the reticle (walking, pointer captured)</dd>
+      <dt class="only-key">M</dt><dd class="only-key">hide or show the minimap — it is on while walking; click a dot to jump to that viewpoint</dd>
+      <dt class="only-touch">Map</dt><dd class="only-touch">hide or show the minimap — tap a dot to jump to that viewpoint</dd>
+      <dt class="only-touch">More ⋯</dt><dd class="only-touch">time of day, crowd, reference mode, Jump to, and this help</dd>
       <dt>Go to…</dt><dd>pick a destination: an arrow and the distance to it, and a ring on the minimap</dd>
     </dl>
     <div class="hud-look"><label>Look speed<input type="range" min="0.25" max="3" step="0.05"><output></output></label></div>
@@ -344,7 +359,8 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   }
   if (!introSeen) {
     help.classList.add('hud-intro');
-    help.insertAdjacentHTML('beforeend', '<button class="hud-btn hud-intro-go" type="button">Click to walk</button>');
+    help.insertAdjacentHTML('beforeend',
+      '<button class="hud-btn hud-intro-go" type="button"><span class="only-key">Click to walk</span><span class="only-touch">Tap to walk</span></button>');
     help.hidden = false;
     help.addEventListener('click', (e) => {
       if (!dismissIntro()) return;

@@ -1,0 +1,1044 @@
+[
+  {
+    "t": 2089,
+    "k": "time-to-__TWIN__-ms",
+    "v": 2089
+  },
+  {
+    "t": 3731,
+    "k": "p1:cold-hud",
+    "v": {
+      "shot": "01-cold-open.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m 60 fps 1335 calls 1462k tris Walk 1 Orbit 2 Tour 3 TIME 18",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".place-nearby": "→ Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".hud-panel.hud-stats": "60 fps 1335 calls 1462k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-help.hud-intro": "CONTROLS W A S D / arrows walk Mouse / drag look (click the view to capture the pointer) Shift run Space jump Q / E, PgDn / PgUp change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gar",
+          ".hud-btn.hud-intro-go": "Click to walk",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 11862,
+    "k": "p1:after-10s-idle",
+    "v": {
+      "shot": "02-cold-10s-idle.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m 60 fps 1335 calls 1462k tris Walk 1 Orbit 2 Tour 3 TIME 18",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".place-nearby": "→ Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".hud-panel.hud-stats": "60 fps 1335 calls 1462k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-help.hud-intro": "CONTROLS W A S D / arrows walk Mouse / drag look (click the view to capture the pointer) Shift run Space jump Q / E, PgDn / PgUp change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gar",
+          ".hud-btn.hud-intro-go": "Click to walk",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 13366,
+    "k": "p1:walk-before-click",
+    "v": {
+      "moved": 4.9
+    }
+  },
+  {
+    "t": 14714,
+    "k": "p1:after-click",
+    "v": {
+      "shot": "03-after-first-click.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 4 m near Front & Bay · 39 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 51 m 60 fps 1332 calls 1458k tris Walk 1 Orbit 2 Tour 3 TIME 18",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & Bay · 39 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 51 m",
+          ".place-nearby": "→ Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 51 m",
+          ".hud-panel.hud-stats": "60 fps 1332 calls 1458k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-hint": "Monument to Multiculturalism F",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 15446,
+    "k": "p1:help",
+    "v": {
+      "shot": "04-help-panel.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 4 m near Front & Bay · 39 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 51 m 60 fps 1332 calls 1458k tris Walk 1 Orbit 2 Tour 3 TIME 18",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & Bay · 39 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 51 m",
+          ".place-nearby": "→ Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 51 m",
+          ".hud-panel.hud-stats": "60 fps 1332 calls 1458k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-help": "CONTROLS W A S D / arrows walk Mouse / drag look (click the view to capture the pointer) Shift run Space jump Q / E, PgDn / PgUp change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gar",
+          ".hud-look": "Look speed1.00×",
+          ".hud-sound": "Footsteps",
+          ".hud-reflayers": "REFERENCE LAYERS labels xray grid section",
+          ".hud-btn.small.on": "section",
+          ".hud-btn.small": "xray",
+          ".hud-note": "The jump is a hop — enough for a bollard, not for a storey. Height is still a level change, because the layering — PATH under the street, tracks on a viaduct above it, the SkyWalk above that — is what",
+          ".hud-hint": "Monument to Multiculturalism F"
+        }
+      }
+    }
+  },
+  {
+    "t": 15447,
+    "k": "p1:goto-options",
+    "v": [
+      "=Go to…",
+      "vp:front-bay-west=Front & Bay, looking west",
+      "vp:union-forecourt=Union Station forecourt",
+      "vp:great-hall=Great Hall interior",
+      "vp:york-concourse=York Concourse",
+      "vp:bay-concourse=Bay Concourse",
+      "vp:path-corridor=PATH corridor under Bay",
+      "vp:galleria-interior=Allen Lambert Galleria",
+      "vp:hhof-front-yonge=Hockey Hall of Fame, Front & Yonge",
+      "vp:royal-york-porte-cochere=Royal York porte-cochère",
+      "vp:front-york-east=Front & York, looking east",
+      "vp:bay-north-of-front=Bay Street north of Front",
+      "vp:cn-tower-base=CN Tower base",
+      "vp:bremner-lower-simcoe=Bremner & Lower Simcoe",
+      "vp:bay-underpass=Bay Street rail underpass",
+      "vp:lakeshore-under-gardiner=Lake Shore under the Gardiner",
+      "vp:arena-bay-heritage=Scotiabank Arena, Bay Street elevation",
+      "vp:the-park-cibc=The Park at CIBC SQUARE",
+      "vp:maple-leaf-square=Maple Leaf Square",
+      "vp:skywalk-east=Inside the SkyWalk, looking east",
+      "vp:roundhouse-park=Roundhouse Park",
+      "vp:gooderham-flatiron=Gooderham Flatiron from Front",
+      "vp:front-street-establishing=Front Street establishing (aerial)",
+      "vp:union-trainshed-orbit=Train shed from above",
+      "vp:royal-bank-plaza-orbit=Royal Bank Plaza gold glass",
+      "x:front-bay=Front & Bay",
+      "x:front-yonge=Front & Yonge",
+      "x:front-church=Front & Church",
+      "x:front-york=Front & York",
+      "x:front-simcoe=Front & Simcoe",
+      "x:wellington-bay=Wellington & Bay",
+      "x:wellington-yonge=Wellington & Yonge",
+      "x:wellington-york=Wellington & York",
+      "x:king-bay=King & Bay",
+      "x:king-yonge=King & Yonge",
+      "x:king-york=King & York",
+      "x:bremner-york=Bremner & York",
+      "x:bremner-simcoe=Bremner & Lower Simcoe",
+      "x:lakeshore-bay=Lake Shore & Bay",
+      "x:lakeshore-york=Lake Shore & York",
+      "x:lakeshore-simcoe=Lake Shore & Lower Simcoe"
+    ]
+  },
+  {
+    "t": 20028,
+    "k": "step:r1-front-bay",
+    "v": {
+      "s1": "05-r1-front-bay.jpg",
+      "s2": "06-r1-front-bay-after-walk.jpg",
+      "before": {
+        "x": -31,
+        "y": 1.9,
+        "z": 15
+      },
+      "after": {
+        "x": -39.5,
+        "y": 1.9,
+        "z": 15.2
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m 60 fps 1336 calls 1462k tris Walk 1 Orbit 2 Tour 3 TIME 18",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".place-nearby": "→ Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".hud-panel.hud-stats": "60 fps 1336 calls 1462k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-hint": "Monument to Multiculturalism F",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 24603,
+    "k": "step:r1-forecourt",
+    "v": {
+      "s1": "07-r1-forecourt.jpg",
+      "s2": "08-r1-forecourt-after-walk.jpg",
+      "before": {
+        "x": -128,
+        "y": 1.7,
+        "z": 6
+      },
+      "after": {
+        "x": -127.6,
+        "y": 1.9,
+        "z": 14.5
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 13 m near Front & Bay · 128 m 160° SSE true · street ↓ Fairmont Royal York · 19 m ↓ Royal York porte-cochère · 20 m ↖ Lift down to the PATH ⇣ · 17 m 60 fps 1123 calls 1394k tri",
+          ".hud-panel.hud-place": "Union Station REFERENCE 13 m near Front & Bay · 128 m 160° SSE true · street ↓ Fairmont Royal York · 19 m ↓ Royal York porte-cochère · 20 m ↖ Lift down to the PATH ⇣ · 17 m",
+          ".place-nearby": "↓ Fairmont Royal York · 19 m ↓ Royal York porte-cochère · 20 m ↖ Lift down to the PATH ⇣ · 17 m",
+          ".hud-panel.hud-stats": "60 fps 1123 calls 1394k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-hint": "Union Station Front Street entrance F",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 29131,
+    "k": "step:r1-great-hall",
+    "v": {
+      "s1": "09-r1-great-hall.jpg",
+      "s2": "10-r1-great-hall-after-walk.jpg",
+      "before": {
+        "x": -162,
+        "y": 1.9,
+        "z": 45
+      },
+      "after": {
+        "x": -153.5,
+        "y": 1.9,
+        "z": 44.9
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station east and west wings INFERRED 0 m near Front & York · 117 m 73° ENE true · street ← Union Station Front Street colonnade · 21 m ← Union Station entablature and incised frieze · 24 m ↖ Lif",
+          ".hud-panel.hud-place": "Union Station east and west wings INFERRED 0 m near Front & York · 117 m 73° ENE true · street ← Union Station Front Street colonnade · 21 m ← Union Station entablature and incised frieze · 24 m ↖ Lif",
+          ".place-nearby": "← Union Station Front Street colonnade · 21 m ← Union Station entablature and incised frieze · 24 m ↖ Lift down to the PATH ⇣ · 60 m",
+          ".hud-panel.hud-stats": "60 fps 1305 calls 1453k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 33620,
+    "k": "step:r1-york-concourse",
+    "v": {
+      "s1": "11-r1-york-concourse.jpg",
+      "s2": "12-r1-york-concourse-after-walk.jpg",
+      "before": {
+        "x": -214,
+        "y": -1.8,
+        "z": 58
+      },
+      "after": {
+        "x": -205.5,
+        "y": -1.8,
+        "z": 58
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "concourse",
+        "text": {
+          ".hud": "Union Station York Concourse INFERRED 0 m near Front & York · 81 m 73° ENE true · concourse ↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m 60 fps 1318 calls 1453k tris Walk 1 Orbit 2 Tour 3 ",
+          ".hud-panel.hud-place": "Union Station York Concourse INFERRED 0 m near Front & York · 81 m 73° ENE true · concourse ↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m",
+          ".place-nearby": "↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m",
+          ".hud-panel.hud-stats": "60 fps 1318 calls 1453k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "CONCOURSE",
+          ".minimap-level": "CONCOURSE"
+        }
+      }
+    }
+  },
+  {
+    "t": 34531,
+    "k": "r1:guide-to-street",
+    "v": {
+      "shot": "13-r1-guide-back-to-street.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "concourse",
+        "text": {
+          ".hud": "Union Station York Concourse INFERRED 0 m near Front & York · 87 m 73° ENE true · concourse ↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m 60 fps 1286 calls 1452k tris ↑ Front & York · 87 m ",
+          ".hud-panel.hud-place": "Union Station York Concourse INFERRED 0 m near Front & York · 87 m 73° ENE true · concourse ↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m",
+          ".place-nearby": "↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m",
+          ".hud-panel.hud-stats": "60 fps 1286 calls 1452k tris",
+          ".hud-panel.hud-bar": "↑ Front & York · 87 m ✕ Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH co",
+          ".hud-guide": "↑ Front & York · 87 m ✕",
+          ".guide-arrow": "↑",
+          ".guide-text": "Front & York · 87 m",
+          ".hud-btn.small.guide-clear": "✕",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "CONCOURSE",
+          ".minimap-level": "CONCOURSE"
+        }
+      }
+    }
+  },
+  {
+    "t": 36345,
+    "k": "r1:level-up-from-concourse",
+    "v": {
+      "from": "concourse",
+      "to": "street",
+      "shot": "14-r1-level-up.jpg"
+    }
+  },
+  {
+    "t": 38782,
+    "k": "r2:guide-to-path",
+    "v": {
+      "shot": "15-r2-guide-to-path.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m 60 fps 1336 calls 1462k tris ↑ PATH corridor under Bay · 2",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".place-nearby": "→ Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+          ".hud-panel.hud-stats": "60 fps 1336 calls 1462k tris",
+          ".hud-panel.hud-bar": "↑ PATH corridor under Bay · 241 m ✕ Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Conco",
+          ".hud-guide": "↑ PATH corridor under Bay · 241 m ✕",
+          ".guide-arrow": "↑",
+          ".guide-text": "PATH corridor under Bay · 241 m",
+          ".hud-btn.small.guide-clear": "✕",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-hint": "Monument to Multiculturalism F",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 44675,
+    "k": "step:r2-path-corridor",
+    "v": {
+      "s1": "16-r2-path-corridor.jpg",
+      "s2": "17-r2-path-corridor-after-walk.jpg",
+      "before": {
+        "x": -30,
+        "y": -4.8,
+        "z": 8
+      },
+      "after": {
+        "x": -30,
+        "y": -4.8,
+        "z": -5.7
+      },
+      "moved": 13.7,
+      "hud": {
+        "mode": "walk",
+        "level": "PATH",
+        "text": {
+          ".hud": "PATH — Bay Street north to Royal Bank Plaza INFERRED 0 m near Front & Bay · 31 m 343° NNW true · PATH ↓ PATH — Union Station east to Bay Street · 5 m ↓ Union Station forecourt paving · 5 m ↙ Stairs up",
+          ".hud-panel.hud-place": "PATH — Bay Street north to Royal Bank Plaza INFERRED 0 m near Front & Bay · 31 m 343° NNW true · PATH ↓ PATH — Union Station east to Bay Street · 5 m ↓ Union Station forecourt paving · 5 m ↙ Stairs up",
+          ".place-nearby": "↓ PATH — Union Station east to Bay Street · 5 m ↓ Union Station forecourt paving · 5 m ↙ Stairs up to the concourses ⇡ · 21 m",
+          ".hud-panel.hud-stats": "60 fps 764 calls 1377k tris",
+          ".hud-panel.hud-bar": "✓ Arrived · PATH corridor under Bay ✕ Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Con",
+          ".hud-guide": "✓ Arrived · PATH corridor under Bay ✕",
+          ".guide-arrow": "✓",
+          ".guide-text": "Arrived · PATH corridor under Bay",
+          ".hud-btn.small.guide-clear": "✕",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "PATH",
+          ".minimap-level": "PATH"
+        }
+      }
+    }
+  },
+  {
+    "t": 46467,
+    "k": "r2:level-up-from-path",
+    "v": {
+      "from": "PATH",
+      "to": "street",
+      "shot": "18-r2-level-up.jpg"
+    }
+  },
+  {
+    "t": 53444,
+    "k": "step:r3-skywalk",
+    "v": {
+      "s1": "19-r3-skywalk.jpg",
+      "s2": "20-r3-skywalk-after-walk.jpg",
+      "before": {
+        "x": -400,
+        "y": 10.7,
+        "z": 58
+      },
+      "after": {
+        "x": -382.9,
+        "y": 10.7,
+        "z": 57.9
+      },
+      "moved": 17.1,
+      "hud": {
+        "mode": "walk",
+        "level": "SkyWalk",
+        "text": {
+          ".hud": "Metro Toronto Convention Centre - North Building INFERRED 17 m near Front & Simcoe · 70 m 73° ENE true · SkyWalk ← Front Street West hotel · 82 m ← Front Street West offices · 91 m 60 fps 1469 calls 1",
+          ".hud-panel.hud-place": "Metro Toronto Convention Centre - North Building INFERRED 17 m near Front & Simcoe · 70 m 73° ENE true · SkyWalk ← Front Street West hotel · 82 m ← Front Street West offices · 91 m",
+          ".place-nearby": "← Front Street West hotel · 82 m ← Front Street West offices · 91 m",
+          ".hud-panel.hud-stats": "60 fps 1469 calls 1524k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "SKYWALK",
+          ".minimap-level": "SKYWALK"
+        }
+      }
+    }
+  },
+  {
+    "t": 54329,
+    "k": "r3:skywalk-turned",
+    "v": {
+      "shot": "21-r3-skywalk-turned.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "SkyWalk",
+        "text": {
+          ".hud": "SkyWalk pedestrian corridor REFERENCE 0 m near Front & Simcoe · 81 m 73° ENE true · SkyWalk ↓ Metro Toronto Convention Centre - North Building · 34 m ← Front Street West hotel · 82 m 60 fps 1429 calls",
+          ".hud-panel.hud-place": "SkyWalk pedestrian corridor REFERENCE 0 m near Front & Simcoe · 81 m 73° ENE true · SkyWalk ↓ Metro Toronto Convention Centre - North Building · 34 m ← Front Street West hotel · 82 m",
+          ".place-nearby": "↓ Metro Toronto Convention Centre - North Building · 34 m ← Front Street West hotel · 82 m",
+          ".hud-panel.hud-stats": "60 fps 1429 calls 1520k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "SKYWALK",
+          ".minimap-level": "SKYWALK"
+        }
+      }
+    }
+  },
+  {
+    "t": 58793,
+    "k": "step:x-bay-underpass",
+    "v": {
+      "s1": "22-x-bay-underpass.jpg",
+      "s2": "23-x-bay-underpass-after-walk.jpg",
+      "before": {
+        "x": -4,
+        "y": 1.7,
+        "z": 118
+      },
+      "after": {
+        "x": -4,
+        "y": 1.7,
+        "z": 109.5
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Bay Street underpass REFERENCE 0 m near Front & Bay · 118 m 343° NNW true · street → CIBC Square - 141 Bay Street · 31 m → The Park at CIBC SQUARE · 34 m 60 fps 946 calls 1412k tris Walk 1 Orbit 2 Tou",
+          ".hud-panel.hud-place": "Bay Street underpass REFERENCE 0 m near Front & Bay · 118 m 343° NNW true · street → CIBC Square - 141 Bay Street · 31 m → The Park at CIBC SQUARE · 34 m",
+          ".place-nearby": "→ CIBC Square - 141 Bay Street · 31 m → The Park at CIBC SQUARE · 34 m",
+          ".hud-panel.hud-stats": "60 fps 946 calls 1412k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 63363,
+    "k": "step:x-hhof",
+    "v": {
+      "s1": "24-x-hhof.jpg",
+      "s2": "25-x-hhof-after-walk.jpg",
+      "before": {
+        "x": 176,
+        "y": 1.8,
+        "z": -11
+      },
+      "after": {
+        "x": 170,
+        "y": 1.6,
+        "z": -17
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Hockey Hall of Fame (Esso Great Hall) REFERENCE 6 m near Front & Yonge · 14 m 298° WNW true · street ↘ Meridian Hall · 29 m ↘ Fly tower and auditorium mass · 49 m 60 fps 1067 calls 1501k tris Walk 1 O",
+          ".hud-panel.hud-place": "Hockey Hall of Fame (Esso Great Hall) REFERENCE 6 m near Front & Yonge · 14 m 298° WNW true · street ↘ Meridian Hall · 29 m ↘ Fly tower and auditorium mass · 49 m",
+          ".place-nearby": "↘ Meridian Hall · 29 m ↘ Fly tower and auditorium mass · 49 m",
+          ".hud-panel.hud-stats": "60 fps 1067 calls 1501k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 67935,
+    "k": "step:x-lakeshore",
+    "v": {
+      "s1": "26-x-lakeshore.jpg",
+      "s2": "27-x-lakeshore-after-walk.jpg",
+      "before": {
+        "x": -60,
+        "y": 1.7,
+        "z": 372
+      },
+      "after": {
+        "x": -51.5,
+        "y": 1.7,
+        "z": 372.1
+      },
+      "moved": 8.5,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "text": {
+          ".hud": "Toronto Postal Delivery Building - Lake Shore elevation REFERENCE 20 m near Lake Shore & Bay · 61 m 74° ENE true · street ← Scotiabank Arena bowl · 31 m ↖ Toronto Postal Delivery Building - Bay Street",
+          ".hud-panel.hud-place": "Toronto Postal Delivery Building - Lake Shore elevation REFERENCE 20 m near Lake Shore & Bay · 61 m 74° ENE true · street ← Scotiabank Arena bowl · 31 m ↖ Toronto Postal Delivery Building - Bay Street",
+          ".place-nearby": "← Scotiabank Arena bowl · 31 m ↖ Toronto Postal Delivery Building - Bay Street elevation · 37 m",
+          ".hud-panel.hud-stats": "60 fps 478 calls 1304k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:40 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "STREET",
+          ".minimap-level": "STREET"
+        }
+      }
+    }
+  },
+  {
+    "t": 69947,
+    "k": "r4:tour-started-by-T",
+    "v": true
+  },
+  {
+    "t": 82077,
+    "k": "r4:beat-1-establishing",
+    "v": {
+      "shot": "28-r4-tour-1-establishing.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "1 / 13 · ESTABLISHING Front Street West. Union Station along the bottom, the CN Tower closing the west end — a grid rotated 16.7° off true north.",
+          ".hud": "CIBC Square - 81 Bay Street REFERENCE 34 m near Front & Bay · 186 m 282° WNW true 60 fps 1305 calls 1469k tris Walk 1 Orbit 2 Tour 3 TIME 16:30 · day CROWD 60% Reference R Jump to… Front & Bay, lookin",
+          ".hud-panel.hud-place": "CIBC Square - 81 Bay Street REFERENCE 34 m near Front & Bay · 186 m 282° WNW true",
+          ".hud-panel.hud-stats": "60 fps 1305 calls 1469k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 16:30 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 103847,
+    "k": "r4:beat-2-descend-front",
+    "v": {
+      "shot": "29-r4-tour-2-descend-front.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "2 / 13 · DESCEND-FRONT Dropping onto the promenade at Bay. The head house runs 226 m west and stops short of York.",
+          ".hud": "Union Station east and west wings INFERRED 0 m near Front & Bay · 57 m 260° W true 60 fps 1270 calls 1454k tris Walk 1 Orbit 2 Tour 3 TIME 16:48 · day CROWD 60% Reference R Jump to… Front & Bay, looki",
+          ".hud-panel.hud-place": "Union Station east and west wings INFERRED 0 m near Front & Bay · 57 m 260° W true",
+          ".hud-panel.hud-stats": "60 fps 1270 calls 1454k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 16:48 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 126081,
+    "k": "r4:beat-3-colonnade",
+    "v": {
+      "shot": "30-r4-tour-3-colonnade.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "3 / 13 · COLONNADE The colonnade: 22 Tuscan columns. The entablature above carries incised railway names — nothing more.",
+          ".hud": "Union Station east and west wings INFERRED 0 m near Front & Bay · 106 m 246° WSW true 60 fps 1357 calls 1461k tris Walk 1 Orbit 2 Tour 3 TIME 17:06 · day CROWD 60% Reference R Jump to… Front & Bay, lo",
+          ".hud-panel.hud-place": "Union Station east and west wings INFERRED 0 m near Front & Bay · 106 m 246° WSW true",
+          ".hud-panel.hud-stats": "60 fps 1357 calls 1461k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 17:06 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 149782,
+    "k": "r4:beat-4-great-hall",
+    "v": {
+      "shot": "31-r4-tour-4-great-hall.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "4 / 13 · GREAT-HALL Inside the Great Hall. Here — and only here — is the carved frieze of Canadian destination cities.",
+          ".hud": "Union Station east and west wings INFERRED 0 m near Front & York · 137 m 80° E true 60 fps 1216 calls 1448k tris Walk 1 Orbit 2 Tour 3 TIME 17:24 · day CROWD 60% Reference R Jump to… Front & Bay, look",
+          ".hud-panel.hud-place": "Union Station east and west wings INFERRED 0 m near Front & York · 137 m 80° E true",
+          ".hud-panel.hud-stats": "60 fps 1216 calls 1448k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 17:24 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 175032,
+    "k": "r4:beat-5-concourse",
+    "v": {
+      "shot": "32-r4-tour-5-concourse.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "5 / 13 · CONCOURSE Down to the York Concourse. Great Hall, York, Bay and VIA are four different rooms at three different levels.",
+          ".hud": "PATH — Union Station east to Bay Street INFERRED 0 m near Front & Bay · 59 m 306° NW true 60 fps 913 calls 1438k tris Walk 1 Orbit 2 Tour 3 TIME 17:42 · day CROWD 60% Reference R Jump to… Front & Bay,",
+          ".hud-panel.hud-place": "PATH — Union Station east to Bay Street INFERRED 0 m near Front & Bay · 59 m 306° NW true",
+          ".hud-panel.hud-stats": "60 fps 913 calls 1438k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 17:42 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 196728,
+    "k": "r4:beat-6-path",
+    "v": {
+      "shot": "33-r4-tour-6-path.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "6 / 13 · PATH Into the PATH, six and a half metres under Bay Street. Thirty kilometres of it, and no daylight anywhere.",
+          ".hud": "PATH stairs, escalators and elevators APPROXIMATED 0 m near Front & Bay · 64 m 24° NNE true 60 fps 839 calls 1395k tris Walk 1 Orbit 2 Tour 3 TIME 18:00 · day CROWD 60% Reference R Jump to… Front & Ba",
+          ".hud-panel.hud-place": "PATH stairs, escalators and elevators APPROXIMATED 0 m near Front & Bay · 64 m 24° NNE true",
+          ".hud-panel.hud-stats": "60 fps 839 calls 1395k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:00 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 220082,
+    "k": "r4:beat-7-galleria",
+    "v": {
+      "shot": "34-r4-tour-7-galleria.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "7 / 13 · GALLERIA Up into the Allen Lambert Galleria. Calatrava’s steel trees, and the 1845 bank facades rebuilt into the wall.",
+          ".hud": "Hockey Hall of Fame (Esso Great Hall) REFERENCE 21 m near Front & Yonge · 85 m 62° ENE true 38 fps 814 calls 1392k tris Walk 1 Orbit 2 Tour 3 TIME 18:12 · day CROWD 60% Reference R Jump to… Front & Ba",
+          ".hud-panel.hud-place": "Hockey Hall of Fame (Esso Great Hall) REFERENCE 21 m near Front & Yonge · 85 m 62° ENE true",
+          ".hud-panel.hud-stats": "38 fps 814 calls 1392k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:12 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 243884,
+    "k": "r4:beat-8-hhof",
+    "v": {
+      "shot": "35-r4-tour-8-hhof.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "8 / 13 · HHOF Front and Yonge: the 1885 Bank of Montreal. The stained-glass dome is inside — the street sees a plain skylight enclosure.",
+          ".hud": "Allen Lambert Galleria REFERENCE 8 m near Front & Bay · 109 m 190° S true 49 fps 1380 calls 1506k tris Walk 1 Orbit 2 Tour 3 TIME 18:24 · day CROWD 60% Reference R Jump to… Front & Bay, looking west U",
+          ".hud-panel.hud-place": "Allen Lambert Galleria REFERENCE 8 m near Front & Bay · 109 m 190° S true",
+          ".hud-panel.hud-stats": "49 fps 1380 calls 1506k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:24 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 263592,
+    "k": "r4:beat-9-bay-street",
+    "v": {
+      "shot": "36-r4-tour-9-bay-street.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "9 / 13 · BAY-STREET Out to Bay Street. The financial canyon funnels straight down onto the station.",
+          ".hud": "Royal Bank Plaza South Tower REFERENCE 22 m near Front & Bay · 31 m 174° S true 60 fps 1133 calls 1441k tris Walk 1 Orbit 2 Tour 3 TIME 18:36 · day CROWD 60% Reference R Jump to… Front & Bay, looking ",
+          ".hud-panel.hud-place": "Royal Bank Plaza South Tower REFERENCE 22 m near Front & Bay · 31 m 174° S true",
+          ".hud-panel.hud-stats": "60 fps 1133 calls 1441k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:36 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 283805,
+    "k": "r4:beat-10-underpass",
+    "v": {
+      "shot": "37-r4-tour-10-underpass.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "10 / 13 · UNDERPASS Under the viaduct on Bay. The corridor is carried on steel, and it is not electrified — no catenary, anywhere.",
+          ".hud": "Union Station REFERENCE 4 m near Front & York · 61 m 91° E true 59 fps 1220 calls 1505k tris Walk 1 Orbit 2 Tour 3 TIME 18:48 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Stati",
+          ".hud-panel.hud-place": "Union Station REFERENCE 4 m near Front & York · 61 m 91° E true",
+          ".hud-panel.hud-stats": "59 fps 1220 calls 1505k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 18:48 · day CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen L",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 305027,
+    "k": "r4:beat-11-skywalk",
+    "v": {
+      "shot": "38-r4-tour-11-skywalk.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "11 / 13 · SKYWALK The SkyWalk, nine metres up, running back east over the tracks toward the station.",
+          ".hud": "Scotiabank Arena REFERENCE 21 m near Bremner & York · 75 m 68° ENE true 60 fps 1008 calls 1426k tris Walk 1 Orbit 2 Tour 3 TIME 19:00 · golden hour CROWD 60% Reference R Jump to… Front & Bay, looking ",
+          ".hud-panel.hud-place": "Scotiabank Arena REFERENCE 21 m near Bremner & York · 75 m 68° ENE true",
+          ".hud-panel.hud-stats": "60 fps 1008 calls 1426k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 19:00 · golden hour CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 325708,
+    "k": "r4:beat-12-arena",
+    "v": {
+      "shot": "39-r4-tour-12-arena.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "12 / 13 · ARENA Scotiabank Arena on Bay: the 1941 Postal Delivery Building facade kept in place, on this elevation and on Lake Shore.",
+          ".hud": "The Park at CIBC SQUARE REFERENCE 6 m near Front & Bay · 170 m 253° WSW true 60 fps 1195 calls 1444k tris Walk 1 Orbit 2 Tour 3 TIME 19:18 · golden hour CROWD 60% Reference R Jump to… Front & Bay, loo",
+          ".hud-panel.hud-place": "The Park at CIBC SQUARE REFERENCE 6 m near Front & Bay · 170 m 253° WSW true",
+          ".hud-panel.hud-stats": "60 fps 1195 calls 1444k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 19:18 · golden hour CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 347952,
+    "k": "r4:beat-13-sunset",
+    "v": {
+      "shot": "40-r4-tour-13-sunset.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "street",
+        "text": {
+          "#tour-caption": "13 / 13 · SUNSET Sunset down Front Street. The grid was laid parallel to the shoreline in the 1790s; this is what that decision looks like.",
+          ".hud": "PATH stairs, escalators and elevators APPROXIMATED 15 m near Front & Bay · 32 m 251° WSW true 60 fps 1445 calls 1480k tris Walk 1 Orbit 2 Tour 3 TIME 20:36 · sunset CROWD 60% Reference R Jump to… Fron",
+          ".hud-panel.hud-place": "PATH stairs, escalators and elevators APPROXIMATED 15 m near Front & Bay · 32 m 251° WSW true",
+          ".hud-panel.hud-stats": "60 fps 1445 calls 1480k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 20:36 · sunset CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Alle",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn": "Help H",
+          ".hud-btn.on": "Tour 3",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p"
+        }
+      }
+    }
+  },
+  {
+    "t": 363720,
+    "k": "r4:tour-ended",
+    "v": {
+      "sec": 294,
+      "hud": {
+        "mode": "walk",
+        "level": "Gardiner deck",
+        "text": {
+          ".hud": "PATH stairs, escalators and elevators APPROXIMATED 15 m near Front & Bay · 32 m 251° WSW true · Gardiner deck → TD Canada Trust Tower · 41 m ← CIBC Square - 141 Bay Street · 41 m 60 fps 1445 calls 148",
+          ".hud-panel.hud-place": "PATH stairs, escalators and elevators APPROXIMATED 15 m near Front & Bay · 32 m 251° WSW true · Gardiner deck → TD Canada Trust Tower · 41 m ← CIBC Square - 141 Bay Street · 41 m",
+          ".place-nearby": "→ TD Canada Trust Tower · 41 m ← CIBC Square - 141 Bay Street · 41 m",
+          ".hud-panel.hud-stats": "60 fps 1445 calls 1480k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 20:36 · sunset CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Alle",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Walk 1",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "GARDINER DECK",
+          ".minimap-level": "GARDINER DECK"
+        }
+      },
+      "shot": "41-r4-tour-end.jpg"
+    }
+  },
+  {
+    "t": 366422,
+    "k": "r4:reference-on",
+    "v": {
+      "enabled": true,
+      "shot": "42-r4-reference-on.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "Gardiner deck",
+        "text": {
+          ".hud": "PATH stairs, escalators and elevators APPROXIMATED 13 m near Front & Bay · 32 m 251° WSW true · Gardiner deck → TD Canada Trust Tower · 41 m ← CIBC Square - 141 Bay Street · 41 m 60 fps 1598 calls 148",
+          ".hud-panel.hud-place": "PATH stairs, escalators and elevators APPROXIMATED 13 m near Front & Bay · 32 m 251° WSW true · Gardiner deck → TD Canada Trust Tower · 41 m ← CIBC Square - 141 Bay Street · 41 m",
+          ".place-nearby": "→ TD Canada Trust Tower · 41 m ← CIBC Square - 141 Bay Street · 41 m",
+          ".hud-panel.hud-stats": "60 fps 1598 calls 1481k tris",
+          ".hud-panel.hud-bar": "Walk 1 Orbit 2 Tour 3 TIME 20:36 · sunset CROWD 60% Reference R Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Alle",
+          ".hud-group": "Walk 1 Orbit 2 Tour 3",
+          ".hud-btn.on": "Reference R",
+          ".hud-btn": "Help H",
+          ".hud-group.hud-slider": "CROWD 60%",
+          ".hud-value": "60%",
+          ".hud-select": "Jump to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York",
+          ".hud-select.hud-goto": "Go to… Front & Bay, looking west Union Station forecourt Great Hall interior York Concourse Bay Concourse PATH corridor under Bay Allen Lambert Galleria Hockey Hall of Fame, Front & Yonge Royal York p",
+          ".hud-panel.hud-minimap": "GARDINER DECK",
+          ".minimap-level": "GARDINER DECK"
+        }
+      }
+    }
+  },
+  {
+    "t": 367550,
+    "k": "r4:reference-off",
+    "v": {
+      "enabled": false,
+      "shot": "43-r4-reference-off.jpg"
+    }
+  },
+  {
+    "t": 367550,
+    "k": "console-errors",
+    "v": []
+  }
+]

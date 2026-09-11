@@ -35,6 +35,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { STREETS, INTERSECTIONS, corridorAt, getStreet } from '../data/grid.js';
 import { BUILDINGS, footprint } from '../data/buildings.js';
 import { M } from '../core/materials.js';
+import { lightPool } from '../core/textures.js';
 import { register } from '../core/registry.js';
 
 /** Sidewalk slab top, matching CURB_HEIGHT in world/streets.js. */
@@ -86,6 +87,27 @@ const lampMat = () =>
     new THREE.MeshStandardMaterial({
       color: 0xfff2d8, emissive: 0xffd9a0, emissiveIntensity: 0.15, roughness: 0.4,
     }));
+
+/**
+ * The pool of light a lamp throws on the pavement (#76). Real lights are off
+ * the table (the program cache is keyed on light count), so it is a baked
+ * decal: black albedo, additive, the glow carried by an emissive radial map
+ * that the time-of-day system drives like any lamp head.
+ */
+const poolMat = () =>
+  propMaterial('lampPool', () =>
+    new THREE.MeshStandardMaterial({
+      color: 0x000000, emissive: 0xffc98a, emissiveMap: lightPool(), emissiveIntensity: 0.55,
+      roughness: 1, metalness: 0,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    }));
+
+/** A flat pool `size` metres across, 4 cm above the surface. */
+const poolPart = (size, x = 0, z = 0) => ({
+  geo: new THREE.PlaneGeometry(size, size), mat: poolMat(),
+  rot: [-Math.PI / 2, 0, 0], pos: [x, 0.04, z], nightLight: true, nightOnly: true,
+});
 
 /** Backlit advertising / map faces. Same switching contract as lamp heads. */
 const litPanel = (color) =>
@@ -224,7 +246,7 @@ export function buildType(parts, placements, { name, shadow = false }) {
     if (p.rot) g.rotateX(p.rot[0] || 0), g.rotateY(p.rot[1] || 0), g.rotateZ(p.rot[2] || 0);
     if (p.pos) g.translate(p.pos[0] || 0, p.pos[1] || 0, p.pos[2] || 0);
     const key = `${p.mat.uuid}${p.nightLight ? ':lit' : ''}`;
-    const slot = groups.get(key) ?? { mat: p.mat, night: !!p.nightLight, geos: [] };
+    const slot = groups.get(key) ?? { mat: p.mat, night: !!p.nightLight, nightOnly: !!p.nightOnly, geos: [] };
     slot.geos.push(g);
     groups.set(key, slot);
   }
@@ -254,6 +276,7 @@ export function buildType(parts, placements, { name, shadow = false }) {
     im.receiveShadow = false;
     im.frustumCulled = false; // one instanced mesh spans the whole downtown
     if (slot.night) im.userData.nightLight = true;
+    if (slot.nightOnly) im.userData.nightOnly = true;
     group.add(im);
   }
   return group;
@@ -479,6 +502,7 @@ const twinLanternParts = () => [
   { geo: cyl(0.3, 0.16, 0.62, 6), mat: lampMat(), pos: [1.0, 5.65, 0], nightLight: true },
   { geo: cyl(0.05, 0.09, 0.22, 6), mat: charcoal(), pos: [-1.0, 6.05, 0] },
   { geo: cyl(0.05, 0.09, 0.22, 6), mat: charcoal(), pos: [1.0, 6.05, 0] },
+  poolPart(13),
 ];
 
 /** Cobra-head pole for the outer streets. Arm reaches out over the roadway. */
@@ -488,6 +512,7 @@ const cobraHeadParts = () => [
   { geo: box(0.12, 0.12, 2.6), mat: charcoal(), pos: [0, 8.75, 1.2], rot: [-0.12, 0, 0] },
   { geo: box(0.42, 0.16, 0.9), mat: charcoal(), pos: [0, 8.95, 2.45] },
   { geo: box(0.34, 0.05, 0.72), mat: lampMat(), pos: [0, 8.85, 2.45], nightLight: true },
+  poolPart(16, 0, 2.45),
 ];
 
 // ---------------------------------------------------------------------------

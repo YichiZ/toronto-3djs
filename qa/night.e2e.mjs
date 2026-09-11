@@ -60,6 +60,14 @@ test('the Great Hall keeps its indoor light at night', async () => {
   assert.ok(night > 120, `the Great Hall at 23:30 is ${night.toFixed(0)}`);
 });
 
+test('streetlamps throw a pool of light on the pavement (#76)', async () => {
+  // Unlit pavement under the Bay lanterns read 4 at 23:30; with the pools, 13.
+  const bay = await luminance('bay-north-of-front', 23.5);
+  assert.ok(bay > 9, `Bay north of Front at 23:30 is ${bay.toFixed(1)}`);
+  const square = await luminance('maple-leaf-square', 23.5);
+  assert.ok(square > 12, `Maple Leaf Square at 23:30 is ${square.toFixed(1)}`);
+});
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

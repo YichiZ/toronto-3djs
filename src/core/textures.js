@@ -63,6 +63,22 @@ function grain(ctx, size, amount, seed = 0) {
   ctx.putImageData(img, 0, 0);
 }
 
+/**
+ * Soft radial falloff, white centre to black edge: the light a lamp throws on
+ * the pavement, for an additive emissive decal (#76). Black at the rim, so the
+ * repeat wrap never shows.
+ */
+export const lightPool = () =>
+  texture('lightPool', 128, (ctx, s) => {
+    const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(0.35, '#8a8a8a');
+    g.addColorStop(0.7, '#262626');
+    g.addColorStop(1, '#000000');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+  }, { anisotropy: 4 });
+
 /** Bedford limestone: Union Station's colonnade, entablature and wall plane. */
 export const limestone = (repeat = [4, 4]) =>
   texture('limestone', 512, (ctx, s) => {

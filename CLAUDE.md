@@ -46,7 +46,7 @@ No TypeScript, no linter. Vanilla ES modules, Three.js 0.171, Vite 6.
 - Footprints come from `src/data/buildings.js` via `getBuilding(id)`. Do not re-guess a footprint — change the database record and say so in a comment.
 - Reuse `src/world/buildingKit.js` (`massing`, `prism`, `cornice`, `colonnade`, `storefrontBand`, `windowGrid`, `setbackTower`, …) before writing new geometry.
 - Repeated geometry (columns, windows, trees, pedestrians, vehicles) must be `InstancedMesh`; budget is < 1800 draw calls at 60 fps.
-- Branch `<topic>-<issue#>` (e.g. `hud-29`) when there is an issue; agent branches use `claude/<topic>-<hash>`. Commit `type: lowercase summary`, append `(#issue)` when one exists; types per conventional commits (feat/fix/perf/test/docs/refactor/chore/ci). Merge via PR.
+- Branch `<topic>-<issue#>` (e.g. `hud-29`) when there is an issue; agent branches use `claude/<topic>-<hash>`. Commit `type: lowercase summary`, append `(#issue)` when one exists; types per conventional commits (feat/fix/perf/test/docs/refactor/chore/ci). Merge via PR, squash only (`gh pr merge --squash`).
 
 ## Pointers
 

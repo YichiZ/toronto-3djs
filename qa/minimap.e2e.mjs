@@ -48,19 +48,25 @@ const until = (want, timeout = 2000) => page.waitForFunction((w) => {
 
 /**
  * How many canvas pixels are accent-blue: the PATH spine, the rooms, the arrow.
- * getImageData reads the square backing store, not the CSS circle, so the
- * counts include whatever the turned plan painted into the corners.
+ * getImageData reads the square backing store; only the inscribed circle is
+ * counted, since that is all the CSS disc ever shows.
  */
 const bluePixels = () => page.evaluate(() => {
   const c = document.querySelector('.hud-minimap canvas');
-  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  const w = c.width;
+  const d = c.getContext('2d').getImageData(0, 0, w, c.height).data;
+  const r = w / 2;
   let blue = 0;
   let painted = 0;
+  let total = 0;
   for (let i = 0; i < d.length; i += 4) {
+    const p = i / 4;
+    if (Math.hypot((p % w) - r, Math.floor(p / w) - r) > r) continue;
+    total++;
     if (d[i] !== 0x0e || d[i + 1] !== 0x13 || d[i + 2] !== 0x1a) painted++;
     if (d[i + 2] > 200 && d[i + 1] > 170 && d[i] < 160) blue++;
   }
-  return { blue, painted, total: d.length / 4 };
+  return { blue, painted, total };
 });
 
 test('on by default while walking, with the street plan at street level', async () => {
@@ -131,7 +137,7 @@ test('on a touchscreen the disc sits under the place panel, whatever the nearby 
   // The desktop viewports in wayfinding.e2e.mjs never enter (pointer: coarse);
   // only a touch context does, and that is where the always-on disc used to
   // overlap the place panel once the nearby strip (#15) grew it.
-  const touch = await openWorld({ contextOptions: { hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } } });
+  const touch = await openWorld({ consoleErrors, contextOptions: { hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } } });
   try {
     await touch.page.evaluate(() => {
       const { ctx, controls } = window.__TWIN__;
@@ -144,14 +150,19 @@ test('on a touchscreen the disc sits under the place panel, whatever the nearby 
       return m && !m.hidden && document.querySelector('.hud-place')?.offsetHeight > 0;
     }, null, { timeout: 5000 });
     await touch.page.waitForTimeout(300);        // the strip fills in and the ResizeObserver publishes the height
+    await touch.page.touchscreen.tap(195, 500);    // the touch layer (stick + look pad) is built on the first touch
+    await touch.page.waitForSelector('.touch-controls .look-pad', { timeout: 3000 });
     const r = await touch.page.evaluate(() => {
-      const box = (sel) => document.querySelector(sel).getBoundingClientRect();
+      const box = (sel) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
       const place = box('.hud-place');
       const map = box('.hud-minimap');
-      return { coarse: matchMedia('(pointer: coarse)').matches, placeBottom: place.bottom, mapTop: map.top };
+      const pad = box('.touch-controls .look-pad');
+      return { coarse: matchMedia('(pointer: coarse)').matches, placeBottom: place.bottom, mapTop: map.top, mapRight: map.right, padLeft: pad?.left ?? null };
     });
     assert.equal(r.coarse, true, 'the touch context should be pointer: coarse');
     assert.ok(r.mapTop >= r.placeBottom, `the disc (top ${r.mapTop}) overlaps the place panel (bottom ${r.placeBottom})`);
+    assert.notEqual(r.padLeft, null, 'no look pad in a touch context');
+    assert.ok(r.mapRight <= r.padLeft, `the disc (right ${r.mapRight}) reaches under the look pad (left ${r.padLeft}), which would swallow look drags`);
   } finally {
     await touch.close();
   }

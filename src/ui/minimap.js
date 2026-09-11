@@ -68,8 +68,10 @@ export function install(ctx, { controls }) {
   const view = { x: 0, z: 0, heading: 0 };
 
   // The help panel lands on the same corner and is the thing you are reading,
-  // so the disc steps aside while it is open (#29 checks for the overlap).
-  const helpOpen = () => { const h = document.querySelector('.hud-help'); return !!h && !h.hidden; };
+  // so the disc steps aside while it is open (#29 checks for the overlap). Not
+  // for the first-visit card (#26): same element, but centred, so no collision.
+  const help = document.querySelector('.hud-help');
+  const helpOpen = () => !!help && !help.hidden && !help.classList.contains('hud-intro');
   const visible = () => wanted && controls.mode === 'walk' && !helpOpen();
 
   // The CSS circle is inscribed in the canvas square, so anything visible lies
@@ -82,7 +84,8 @@ export function install(ctx, { controls }) {
   /** Distance from the map centre, for culling to the circle. */
   const fromCentre = (m) => Math.hypot(m.x - SIZE / 2, m.y - SIZE / 2);
 
-  function draw() {
+  /** @param {number} heading radians, from headingOf(); the caller already has it */
+  function draw(heading) {
     const dpr = window.devicePixelRatio || 1;
     const px = Math.round(SIZE * dpr);
     if (canvas.width !== px) { canvas.width = px; canvas.height = px; }
@@ -99,8 +102,7 @@ export function install(ctx, { controls }) {
     }
     view.x = camera.position.x;
     view.z = camera.position.z;
-    camera.getWorldDirection(dir);
-    view.heading = headingOf(dir.x, dir.z);
+    view.heading = heading;
     const k = SIZE / VIEW_METRES;
 
     // Everything in grid metres is drawn through one rotation, so the walker's
@@ -200,15 +202,16 @@ export function install(ctx, { controls }) {
   ctx.onFrame.push((dt) => {
     const show = visible();
     if (root.hidden === show) root.hidden = !show;
-    if (!show) return;
+    if (!show) { accum = REFRESH; return; }   // so the first frame back is fresh, not the last one drawn
     accum += dt;
     // The whole map turns with the head, and looking around is faster than
     // walking: redraw at once while turning, at REFRESH otherwise.
     camera.getWorldDirection(dir);
-    const turning = Math.abs(headingOf(dir.x, dir.z) - view.heading) > TURN_EPS;
-    if (accum < REFRESH && !turning) return;
+    const heading = headingOf(dir.x, dir.z);
+    const turned = Math.atan2(Math.sin(heading - view.heading), Math.cos(heading - view.heading));   // wrapped, so facing south does not read as a full turn
+    if (accum < REFRESH && Math.abs(turned) < TURN_EPS) return;
     accum = 0;
-    draw();
+    draw(heading);
   });
 
   function toggle(force) {
@@ -221,13 +224,12 @@ export function install(ctx, { controls }) {
   function onKey(e) {
     const t = e.target;
     if (isTyping(t)) return;
-    if (e.code === 'KeyM' && !e.repeat) toggle();
+    if (e.code === 'KeyM' && !e.repeat && !helpOpen()) toggle();   // while help is up M would flip it unseen
   }
   window.addEventListener('keydown', onKey);
 
-  // Dots are not drawn on the rim, so nothing there is clickable either.
-  const viewpointAt = (e) => (fromCentre({ x: e.offsetX, y: e.offsetY }) > RADIUS - VIEWPOINT_R ? null
-    : pickViewpoint(e.offsetX, e.offsetY, VIEWPOINTS, view, SIZE, undefined, undefined, view.heading));
+  // The CSS circle clips hit-testing too, so no rim guard is needed here.
+  const viewpointAt = (e) => pickViewpoint(e.offsetX, e.offsetY, VIEWPOINTS, view, SIZE);
   canvas.addEventListener('click', (e) => {
     const v = viewpointAt(e);
     if (v) controls.teleport(v.id);

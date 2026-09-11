@@ -559,9 +559,15 @@ html, body {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   pointer-events: none;
 }
-/* On touch the joystick owns the bottom-left corner; sit under the place panel. */
+/* On touch the joystick owns the bottom-left corner and the look pad the right
+   55vw: sit under the place panel, scaled down so the disc clears the pad on a
+   phone (transform, not width - minimap.js maps taps against the 220 px box).
+   Short landscape viewports have no room between the place panel and the stick. */
 @media (pointer: coarse) {
-  .hud-minimap { bottom: auto; top: calc(var(--hud-place-h, 100px) + 26px); }
+  .hud-minimap { bottom: auto; top: calc(var(--hud-place-h, 100px) + 26px); transform: scale(0.6); transform-origin: top left; }
+}
+@media (pointer: coarse) and (max-height: 600px) {
+  .hud-minimap { display: none; }
 }
 
 /* Look speed in the help panel (#14). */

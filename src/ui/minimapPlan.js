@@ -85,16 +85,17 @@ function turn(x, y, heading) {
 
 /**
  * Grid position to map pixels, centred on `centre` and turned so `heading` is
- * up. At heading 0 that is grid north up: +x right, grid south (+z) down.
+ * up. At heading 0 that is grid north up: +x right, grid south (+z) down. A
+ * centre carrying its own `heading` (the minimap's view) supplies the default.
  */
-export function worldToMap(x, z, centre, sizePx, viewM = VIEW_METRES, heading = 0) {
+export function worldToMap(x, z, centre, sizePx, viewM = VIEW_METRES, heading = centre.heading ?? 0) {
   const k = sizePx / viewM;
   const t = turn((x - centre.x) * k, (z - centre.z) * k, heading);
   return { x: sizePx / 2 + t.x, y: sizePx / 2 + t.y };
 }
 
 /** Inverse of {@link worldToMap}: map pixels back to grid metres. */
-export function mapToWorld(px, py, centre, sizePx, viewM = VIEW_METRES, heading = 0) {
+export function mapToWorld(px, py, centre, sizePx, viewM = VIEW_METRES, heading = centre.heading ?? 0) {
   const k = sizePx / viewM;
   const t = turn(px - sizePx / 2, py - sizePx / 2, -heading);
   return { x: centre.x + t.x / k, z: centre.z + t.y / k };
@@ -119,7 +120,7 @@ export function gridNorthOnMap(heading = 0) {
  * The viewpoint whose dot is under a map pixel, within `radiusPx`, or null.
  * The nearest wins when two dots are close.
  */
-export function pickViewpoint(px, py, viewpoints, centre, sizePx, radiusPx = 7, viewM = VIEW_METRES, heading = 0) {
+export function pickViewpoint(px, py, viewpoints, centre, sizePx, radiusPx = 7, viewM = VIEW_METRES, heading = centre.heading ?? 0) {
   let best = null;
   let bestD = radiusPx;
   for (const v of viewpoints) {

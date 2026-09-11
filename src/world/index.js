@@ -115,6 +115,34 @@ export async function buildWorld(ctx, onProgress = () => {}) {
     await new Promise((r) => setTimeout(r, 0));
   }
 
+  /**
+   * The interiors' point lights, lifted out of the groups that stream.
+   *
+   * WHY. three.js keys its shader program cache on the NUMBER OF VISIBLE LIGHTS,
+   * so streaming a room in or out changed that number and every material drawn
+   * in that frame needed a program it had never compiled: two frozen frames of
+   * 283-316 ms per sprint across downtown, 43-44 programs each, the cache keys
+   * differing in exactly one field - the point-light count, 9 against 3. Dimming
+   * a light to zero is worth 0.25 ms a frame (measured, 5.66 -> 5.91 ms at street
+   * level); hiding it is worth a third of a second, once per room, mid-run.
+   *
+   * attach() keeps each light where it was in world space, and zero intensity
+   * lights nothing, so the picture is unchanged either way.
+   */
+  root.updateMatrixWorld(true);
+  const streamedLights = [];
+  for (const it of interiors) {
+    const found = [];
+    it.group.traverse((o) => { if (o.isPointLight) found.push(o); });
+    for (const light of found) {
+      streamedLights.push({ light, interior: it, intensity: light.intensity });
+      root.attach(light);
+      // Rooms stream in hidden, so start dark rather than lighting the city for
+      // the quarter second before the first streaming tick.
+      if (!it.group.visible) light.intensity = 0;
+    }
+  }
+
   // Proximity streaming for interiors, checked a few times a second rather than
   // every frame - the camera cannot cross a 70 m radius in 250 ms on foot.
   let accum = 0;
@@ -130,6 +158,9 @@ export async function buildWorld(ctx, onProgress = () => {}) {
       const near = ctx.camera.position.distanceTo(tmp) < it.radius
         || it.box.distanceToPoint(ctx.camera.position) < CONTACT;
       if (near !== it.group.visible) it.group.visible = near;
+    }
+    for (const s of streamedLights) {
+      s.light.intensity = s.interior.group.visible ? s.intensity : 0;
     }
     lightIndoors(ctx.camera.position);
   });

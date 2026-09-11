@@ -36,9 +36,14 @@ export const VIEWPOINTS = Object.freeze([
     // Not on the corner itself: from (-16, 16) the Union Station Loop entrance's
     // glazed canopy (x -27.8..-20.3) filled 39% of the frame as a white wash, and
     // every spot east of it on the corner has the canopy or a street tree in the
-    // lens. Three metres west of the canopy the view is 29% Union Station and
-    // clear (#23). This is also the boot frame.
-    position: { x: -31, y: EYE, z: 15 },
+    // lens. Three metres west of the canopy the view is clear of it (#23). This
+    // is also the boot frame. At z 15 it looked straight down the line of the
+    // Monument to Multiculturalism, 13 m ahead: its clickable volume sat under
+    // the reticle, so the aim highlight tinted a pale 3 m slab across every
+    // first frame, and the first walk stopped nose-to-stone (#68). At z 20,
+    // 4 m off the colonnade, the run west is 34 m clear and the frame is 36%
+    // Union Station.
+    position: { x: -31, y: EYE, z: 20 },
     lookAt: { x: -230, y: 10, z: 20 },
     mode: 'walk',
     description: 'South promenade at the Bay end, just west of the Loop entrance, the head house colonnade running away west.',

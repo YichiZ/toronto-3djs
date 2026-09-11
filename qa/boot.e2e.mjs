@@ -69,6 +69,42 @@ test('the first frame shows Union Station and the Front Street canyon', async ()
   assert.match(label, /^Union Station\b/, `the HUD opens on "${label}"`);
 });
 
+/**
+ * In-page: metres to the first thing a ray from the camera meets, along its
+ * view (`level` false) or straight ahead on the level at chest height. Counts
+ * invisible clickable volumes: those are what the aim highlight tints, and
+ * what the walker collides with.
+ */
+const CLEAR_AHEAD = `async (level) => {
+  const THREE = await import('/node_modules/three/build/three.module.js');
+  const { ctx } = window.__TWIN__;
+  const visible = (o) => { for (let p = o; p; p = p.parent) if (p.visible === false) return false; return true; };
+  const dir = ctx.camera.getWorldDirection(new THREE.Vector3());
+  const from = ctx.camera.position.clone();
+  if (level) { dir.setY(0).normalize(); from.y -= 0.5; }
+  const rc = new THREE.Raycaster(from, dir, 0, 200);
+  rc.camera = ctx.camera;   // sprites throw without it
+  const h = rc.intersectObject(ctx.scene, true).find((x) => x.face && visible(x.object) && !x.object.userData?.noCollide);
+  return h ? h.distance : 200;
+}`;
+
+test('nothing stands under the reticle in the first frame', async () => {
+  // At the old boot spot the Monument to Multiculturalism's clickable volume
+  // sat 11 m down the reticle, and the aim highlight painted it as a pale
+  // translucent slab over every visitor's first frame (#68).
+  const metres = await page.evaluate(`(${CLEAR_AHEAD})(false)`);
+  assert.ok(metres > 20, `the reticle meets something ${metres.toFixed(1)} m ahead`);
+});
+
+test('the first thing a visitor tries - holding W - is not walked into stone', async () => {
+  // From the old boot spot 2.5 s of W ended about 3 m from the plinth.
+  await page.keyboard.down('KeyW');
+  await page.waitForTimeout(2500);
+  await page.keyboard.up('KeyW');
+  const metres = await page.evaluate(`(${CLEAR_AHEAD})(true)`);
+  assert.ok(metres > 10, `after 2.5 s of walking, only ${metres.toFixed(1)} m is clear ahead`);
+});
+
 test('the first "Jump to" entry, Front & Bay, is not a wash of Loop-entrance glass', async () => {
   // From (-16, 16) the canopy's glazing filled 39% of the frame.
   await page.selectOption('.hud-bar select', 'front-bay-west');

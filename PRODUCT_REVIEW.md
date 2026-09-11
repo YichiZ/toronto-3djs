@@ -111,7 +111,7 @@ hits both, and neither needs new content.
   exit they would have used. Have the guide point to the nearest way down
   rather than a long street detour.
 
-### 6. Onboarding is a wall of text, with two look-alike menus — P3, S
+### 6. Onboarding is a wall of text, with two look-alike menus — P3, S · #78
 - **What a visitor sees:** a 13-row controls card, of which only WASD + mouse
   matter in the first minute; "Jump to…" and "Go to…" dropdowns side by side
   with no hint of the difference; an fps/draw-call counter on screen.
@@ -120,12 +120,12 @@ hits both, and neither needs new content.
   keys the first time you stand near a stair). Rename to "Teleport to…" and
   "Guide me to…". Hide the counter outside reference mode or a debug flag.
 
-### 7. The Hockey Hall of Fame viewpoint cranes up at a corner pier from 6 m — P3, S
+### 7. The Hockey Hall of Fame viewpoint cranes up at a corner pier from 6 m — P3, S · #79
 - **Evidence:** `24-x-hhof`. The street roofline and the building can't be
   read from here. **Direction:** step the viewpoint back across Front and
   level the gaze.
 
-### 8. Reference mode is a wall of overlapping labels, with a giant banner over the HUD — P3, S
+### 8. Reference mode is a wall of overlapping labels, with a giant banner over the HUD — P3, S · #80
 - **What a visitor sees:** press R and dozens of labels stack on top of each
   other across the skyline, while a huge pink "ORIGIN · Front & Bay · 0,0"
   runs across the lower third, over the HUD bar (`42-r4-reference-on`).

@@ -62,3 +62,8 @@ Driver: .agents/notes/product-review.driver.mjs -> product-review/*.png + log.js
 - Rejected: forecourt lamp post (#28 already nudged), fps dip on tour beat 7
   (perf-owned), arrow keys walk rather than turn (documented), 3.4 m/s walk
   speed (right for the map), "day" time label.
+
+### Update 2026-09-11: the user asked for every finding to be filed
+- The "Not filed" findings above are now filed: #78 onboarding card and
+  look-alike menus, #79 HHOF viewpoint framing, #80 reference-mode clutter
+  (all P3, label `product`). The rejected list stands.

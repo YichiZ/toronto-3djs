@@ -604,3 +604,8 @@ html, body {
 .hud-guide .guide-text { flex: 1; }
 /* display:flex above outranks the browser's own [hidden] rule. */
 .hud-guide[hidden] { display: none; }
+
+/* Footsteps mute (#12), in the help panel. */
+.hud-help .hud-sound { margin: 4px 0; font-size: 12px; color: var(--ink-dim); }
+.hud-help .hud-sound input { vertical-align: middle; margin: 0 6px 0 0; accent-color: var(--accent); }
+.hud-intro .hud-sound { display: none; }

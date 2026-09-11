@@ -18,6 +18,7 @@ import { pickPlace, nearestIntersection } from './placeLabel.js';
 import { aimAt } from './aim.js';
 import { browserStorage } from './lookSpeed.js';
 import { DESTINATIONS, guide, getTarget, setTarget } from './wayfinding.js';
+import { isTyping } from './typing.js';
 
 const CONFIDENCE_CLASS = {
   surveyed: 'c-surveyed',
@@ -40,7 +41,7 @@ const el = (tag, className, html) => {
  * @param {import('../core/context.js').Context} ctx
  * @param {{controls?:object, tour?:object, time?:object, reference?:object, failures?:Array}} deps
  */
-export function install(ctx, { controls, tour, time, reference, failures = [] } = {}) {
+export function install(ctx, { controls, tour, time, reference, footsteps, failures = [] } = {}) {
   const { camera, renderer, scene, stats } = ctx;
 
   const hud = el('div', 'hud');
@@ -245,6 +246,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>Go to…</dt><dd>pick a destination: an arrow and the distance to it, and a ring on the minimap</dd>
     </dl>
     <div class="hud-look"><label>Look speed<input type="range" min="0.25" max="3" step="0.05"><output></output></label></div>
+    <div class="hud-sound"><label><input type="checkbox">Footsteps</label></div>
     <div class="hud-reflayers"></div>
     <p class="hud-note">The jump is a hop &mdash; enough for a bollard, not for a
     storey. Height is still a level change, because the layering &mdash; PATH under
@@ -252,6 +254,15 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     this place actually is.</p>`);
   help.hidden = true;
   hud.appendChild(help);
+
+  // Footstep sound (#12): the master mute. footsteps.js remembers it.
+  const soundBox = help.querySelector('.hud-sound input');
+  if (footsteps) {
+    soundBox.checked = !footsteps.muted;
+    soundBox.addEventListener('change', () => footsteps.setMuted(!soundBox.checked));
+  } else {
+    help.querySelector('.hud-sound').hidden = true;
+  }
 
   // First visit: the help panel doubles as a click-to-start card (#26). Pointer
   // lock needs a user gesture anyway, so the click that dismisses the card is
@@ -485,7 +496,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   // --- keyboard -----------------------------------------------------------
   function onKey(e) {
     const t = e.target;
-    if (t && ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
+    if (isTyping(t)) return;
     switch (e.code) {
       case 'Digit1': selectMode('walk'); break;
       case 'Digit2': selectMode('orbit'); break;

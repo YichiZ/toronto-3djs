@@ -232,3 +232,77 @@ cannot catch it.
 - `npx vite build --minify false` gives real function names in a CDP allocation
   profile, and the harness's staleness check is happy with it. Rebuild with
   `npm run build` afterwards.
+
+---
+
+## Run 3 — 2026-09-11 (sprint-2026-09-11; fixes #60 and #62, #61 deferred)
+
+Machine loaded all run (load average 5.3-5.6): a single absolute p95 is a claim
+here, not a fact — read the paired numbers.
+
+### #60 — FrontSide on the three transmissive glass materials (3 lines)
+
+Paired A/B in the Great Hall, production build, render K = 30 + `gl.finish()`,
+6 alternating rounds, flipping `side` on the three materials at runtime (probe
+only):
+
+| | ms / render | `version` bumps / render | draw calls |
+|---|---|---|---|
+| FrontSide (shipped) | 5.61-7.12 | **0** | 1261 |
+| DoubleSide (old) | 7.03-8.69 | **88** | 1305 |
+| median paired diff | **+1.44 ms** (6/6 rounds positive, 1.11-1.57) | | |
+
+`renderer.info` before -> after (`teleport`, 2 s settle):
+
+| viewpoint | draw calls | programs |
+|---|---|---|
+| boot | 1335 -> **1307** | 62 -> **58** |
+| great-hall | 1305 -> **1261** | 62 -> **58** |
+| union-forecourt | 1122 -> **1090** | 62 -> **58** |
+| galleria-interior | 835 -> 823 | 65 -> 63 |
+| york-concourse | 1318 -> 1278 | 65 -> 63 |
+
+Programs fell because the DoubleSide variants no longer exist. Visual: Great Hall
+indistinguishable; Galleria roof glazing slightly clearer/bluer (one glass layer
+tints it, not two).
+
+**The Great Hall p95 did not go under 20 ms here.** `npm run e2e:perf`: 42.6 ms
+before (loaded), 29.2 ms after (quintiles 20.6 -> 26.1 while the sprint in the
+same run was flat at 16.7). The paired render cost says #60's share is gone
+(5.6-7.1 ms a render), so what is left is the transmission pass itself (#61:
+~640 of 1261 calls) meeting a loaded machine. Not closed by #60 alone on this
+hardware.
+
+### #62 — reference-mode labels drained 40 a tick
+
+- Before: first toggle builds all 221 labels + cages in one call (13.9 ms sync
+  JS here) and the first frame is **110 ms**.
+- After: labels per frame 40 80 120 160 200 221; sync JS 0.0 ms; frames 2-5 are
+  10-15 ms each.
+- **The first shown frame is still 59-77 ms (3 fresh loads) and it is not the
+  build.** Split: `renderer.compile(root)` + `gl.finish()` 1.8-2.1 ms,
+  `initTexture` over all 23 reference maps 0.2 ms, 8 new programs, next frame
+  59-76 ms. Inferred: first-use program linking under parallel shader compile.
+  Lever: `compileAsync` on first toggle. Unfiled; measure it first.
+- **The suite's mode-switching scenario could never see #62**: its 3 s warm-up
+  does the first toggle, unmeasured. Added `reference mode builds its labels
+  over several frames, not one (#62)`, which counts labels per frame (fails
+  before: 221 in one frame; passes after: 40).
+- Mode switching x10 after: p50 16.7 / p95 19.7 / max 38.3, **pass** (before,
+  loaded: p95 25.9 / max 33.9, fail). The max is steady reference-mode cost
+  with 221 labels on, not the build.
+
+### Dead ends / facts
+
+- `git archive` of main into the scratchpad plus `node` there is refused under
+  worktree isolation. Do fails-before checks in the worktree (recipe in prompt).
+- Fails-before check for the new #62 test, run in the worktree against main's
+  four files: `221 of 221 labels were built in one frame` — **fails**. After the
+  fix: 40 per frame — **passes**.
+- `qa/footsteps.e2e.mjs` "once captured, one footfall per 1.2 m stride" failed
+  twice with `no AudioContext after the pointer lock`, both times beside other
+  heavy processes. Bisected: passes with only `referenceMode.js` reverted, with
+  only the three material files reverted, on main's code (4/4), and on HEAD in
+  4 consecutive quiet runs (HEAD total 4/6). **Load-sensitive flake, not a
+  regression.** `qa/crowd.e2e.mjs` sidestep: failed once under contention,
+  passed alone.

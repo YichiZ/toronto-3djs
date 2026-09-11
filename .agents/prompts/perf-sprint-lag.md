@@ -36,6 +36,19 @@ hypothesis, not the conclusion.
   or materials.
 - Read `.agents/notes/perf-sprint-lag.md` before Phase 1. It has the previous
   run's numbers, its dead ends, and its open items.
+- **The mode-switching scenario cannot see reference mode's first toggle**: its
+  3 s warm-up cycle does it, unmeasured. The first-toggle check is the separate
+  `#62` test, which counts labels built per frame — a frame-time threshold
+  could not separate before from after on this machine.
+- **A worktree-isolated agent cannot run node outside its worktree** (a
+  `git archive` copy of main in the scratchpad is refused). For a
+  "fails before the fix" check, `git checkout origin/main -- <files>` inside the
+  worktree, `npm run build`, run the one test by `--test-name-pattern`, then
+  `git checkout HEAD -- <files>` — and never while a perf run is reading `dist/`.
+- **Two `npm run e2e` tests are load-sensitive**: footsteps "once captured"
+  (`no AudioContext after the pointer lock`) and crowd "steps round it". Both
+  failed in run 3 only beside another heavy process. Rerun the file alone, with
+  nothing else running, before bisecting your change for them.
 
 ## How to measure (learned in run 2; skipping this cost half a day)
 - **A frame gap cannot resolve render cost.** Under vsync every healthy
@@ -54,6 +67,11 @@ hypothesis, not the conclusion.
   If frame time is high and `onFrame` CPU is not, snapshot every material's
   `version`, trap the setter with `Object.defineProperty`, and read the stack.
   That found run 2's entire cause in one shot.
+- **Split a first-use spike before blaming app code.** Time
+  `renderer.compile(obj, camera, scene)` + `gl.finish()`, then `initTexture` over
+  its maps, then the next frame, and diff `renderer.info.programs`. In run 3 the
+  first reference frame was 2 ms compile call + 0.2 ms upload + 60-77 ms at
+  first draw with 8 new programs: link time, not the JS the issue blamed.
 
 ## Phase 1 — Reproduce and classify (use the systematic-debugging skill)
 - `npm run e2e:perf` runs the existing `qa/perf-sprint.perf.mjs`. Add a
@@ -121,21 +139,19 @@ Name the file and line for each confirmed cause.
 - /verify: `npm test`, `npm run e2e`, and `npm run e2e:perf` must pass.
 
 ## Start here
-Three issues are open against `YichiZ/toronto-3djs`, all filed with numbers by
-the run-2 audit. Fix them in order; do not re-derive them.
-- **#60 [P1]** — `side: THREE.DoubleSide` on the three transmissive glazing
-  materials (`src/core/materials.js:89`, `src/interiors/concourses.js:176`,
-  `src/interiors/path.js:404`) makes three re-derive their shader 56 times a
-  frame. Great Hall p95 25.8 -> 17.5 ms, frames over 20 ms 225/490 -> 0/599.
-  Three lines. **`qa/perf-sprint.perf.mjs:120` fails on main today and passes
-  after** — this is the one that turns the suite green.
+Run 3 fixed #60 (FrontSide on the three transmissive glass materials) and #62
+(reference-mode labels drained 40 per `onFrame` tick) — see the notes for the
+numbers. Still open:
 - **#61 [P2]** — the transmission pass is a second full render of the city:
   ~640 of 1335 draw calls and ~800 KB/frame of garbage. Demote the glass that
   does not need refraction to plain `transparent`/`opacity`. Visual change;
-  needs a `npm run capture` comparison.
-- **#62 [P3]** — reference mode's first toggle builds 442 objects and 125
-  textures in one 61 ms frame (`src/ui/referenceMode.js:229`). Drain a fixed
-  budget per `onFrame` tick.
+  needs before/after screenshots.
+- **Reference mode's first shown frame is still 60-77 ms** after #62, and it
+  is not the label build: `renderer.compile()` of the reference root takes 2 ms
+  and uploading all 23 of its textures 0.2 ms, but 8 new programs appear, so it
+  is (inferred) first-use program linking under parallel shader compile. The
+  lever is `renderer.compileAsync(root, camera, scene)` on the first toggle,
+  showing the root when it resolves. Measure it before filing.
 
 Closed by run 2, with numbers in the notes — do not reopen without new hardware:
 the LOD reveal budget (worst first-pass frame 21.0 ms), routing/wayfinding cost
@@ -219,3 +235,16 @@ starts smarter than this one.
 - 2026-09-10 (run 2): "Start here" now points at issues #60/#61/#62 and lists
   the eleven hypotheses run 2 closed with numbers, so the next run neither
   rediscovers them nor re-tests them.
+- 2026-09-11 (run 3): "Start here" drops #60 and #62 (fixed) and adds the
+  residual first-toggle frame, with its compile/upload split, so the next run
+  does not re-blame the label build for it.
+- 2026-09-11 (run 3): Project facts now say the mode-switching warm-up hides
+  the first reference toggle — the issue's suggested verification ("that
+  scenario's max falls under 20 ms") could never have moved, and finding that
+  out cost a probe.
+- 2026-09-11 (run 3): Project facts now give the in-worktree recipe for a
+  fails-before check; the scratchpad-copy approach is refused under isolation.
+- 2026-09-11 (run 3): Project facts now name the two load-sensitive e2e tests;
+  run 3 spent a full bisect proving footsteps was a flake (HEAD 4/6, main 4/4).
+- 2026-09-11 (run 3): How to measure now says to split a first-use frame with
+  `renderer.compile()` + `initTexture()` timed separately before blaming app code.

@@ -372,7 +372,9 @@ function buildVault(g) {
 function buildClerestory(g) {
   const glassMat = local('lunette', () =>
     new THREE.MeshStandardMaterial({
-      color: 0xdfeaf2, roughness: 0.15, metalness: 0.0,
+      // Dark glass lit by the sky: by day the emissive carries it; after dusk
+      // (dayLight, #85) the hall's own light on it reads as night glass.
+      color: 0x3a4a58, roughness: 0.15, metalness: 0.0,
       emissive: 0xbcd6ea, emissiveIntensity: 1.5, side: THREE.DoubleSide,
     }));
   const group = new THREE.Group();
@@ -383,6 +385,7 @@ function buildClerestory(g) {
     geo.rotateY(Math.PI / 2);
     const mesh = new THREE.Mesh(geo, glassMat);
     mesh.position.set(x, SPRING_Y, CZ);
+    mesh.userData.dayLight = true;   // the sky's light: it dims after dusk (#85)
     group.add(mesh);
 
     // radiating mullions, instanced

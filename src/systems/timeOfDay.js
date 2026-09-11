@@ -188,7 +188,7 @@ export function install(ctx) {
     lastChildCount = scene.children.length;
     const found = [];
     scene.traverse((o) => {
-      if (o.userData?.nightLight !== true) return;
+      if (o.userData?.nightLight !== true && o.userData?.dayLight !== true) return;
       let base = nightBase.get(o);
       if (!base) {
         const mat = o.material;
@@ -211,10 +211,13 @@ export function install(ctx) {
         o.intensity = rec.baseIntensity * amount;
       } else {
         // Storefronts and lit interiors stay as geometry all day; only their
-        // emissive contribution follows the clock.
+        // emissive contribution follows the clock. Glass lit by the sky
+        // (`dayLight`, the Great Hall lunettes) runs the other way: full by
+        // day, a tenth after dark (#85).
+        const k = o.userData.dayLight === true ? 1 - 0.9 * amount : 0.06 + 1.25 * amount;
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of mats) {
-          if (m && m.emissive) m.emissiveIntensity = rec.baseEmissive * (0.06 + 1.25 * amount);
+          if (m && m.emissive) m.emissiveIntensity = rec.baseEmissive * k;
         }
         if (o.userData.nightOnly === true) o.visible = amount > 0.05;
       }

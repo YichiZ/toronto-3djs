@@ -15,15 +15,18 @@ import { INTERSECTIONS } from '../data/grid.js';
 /** Within this many metres the destination counts as reached. */
 export const ARRIVE_METRES = 8;
 
+/** Eye height over the floor, to turn a walk viewpoint's camera into a floor. */
+const EYE = 1.7;
+
 export const DESTINATIONS = Object.freeze([
   ...VIEWPOINTS.map((v) => {
     const p = v.mode === 'orbit' ? v.lookAt : v.position;
-    // Routable on the sidewalks: street-level walk viewpoints, and an orbit
-    // viewpoint's subject, which stands on the street.
-    const street = v.mode === 'orbit' || (v.position.y > 0 && v.position.y < 3.5);
-    return Object.freeze({ id: `vp:${v.id}`, name: v.name, x: p.x, z: p.z, street, group: 'Places' });
+    // `y` is the floor it stands on, which decides how it can be routed to. An
+    // orbit viewpoint's subject stands on the street.
+    const y = v.mode === 'orbit' ? 0 : v.position.y - EYE;
+    return Object.freeze({ id: `vp:${v.id}`, name: v.name, x: p.x, z: p.z, y, group: 'Places' });
   }),
-  ...INTERSECTIONS.map((i) => Object.freeze({ id: `x:${i.id}`, name: i.name, x: i.x, z: i.z, street: true, group: 'Corners' })),
+  ...INTERSECTIONS.map((i) => Object.freeze({ id: `x:${i.id}`, name: i.name, x: i.x, z: i.z, y: 0, group: 'Corners' })),
 ]);
 
 export const getDestination = (id) => DESTINATIONS.find((d) => d.id === id) ?? null;

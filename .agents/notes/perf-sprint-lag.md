@@ -96,3 +96,138 @@ light count genuinely has to vary.
    objects 2935 → 3377, textures 175 → 356 in one frame. Was 197.1 ms, now
    **62.6 ms**. One-off, guarded by `builtEntities`, on a deliberate user
    action. Still the largest remaining single frame in the suite.
+
+---
+
+## Run 2 — 2026-09-10 (from 517bb21, the merged tip)
+
+Mode: investigate and file issues, no fixes to `src/`.
+Issues filed: **#60 (P1)**, **#61 (P2)**, **#62 (P3)**.
+
+### Baseline on an unmodified origin/main — the suite is RED
+
+`npm run e2e:perf`, twice, no code change between runs:
+
+| scenario | run 1 | run 2 |
+|---|---|---|
+| sprint 60 s | p50 16.7 / p95 17.6 / max 24.4, **pass** | same, **pass** |
+| great hall idle 20 s | p50 16.7 / p95 **25.7** / max 46.5, **fail** | p50 28.0 / p95 **34.1**, **fail** |
+| street walk 20 s | p95 17.5, pass | p95 31.6, **fail** (machine load) |
+| mode switching x10 | p95 24.3 / max 35.1, **fail** | p95 31.0 / max 55.4, **fail** |
+
+Sprint 60 s, run 2: geometries 1125 -> 1474, textures 112 -> 165, programs 62 -> 62,
+lights 11 -> 11, objects 2935 -> 2935, **heap 74.3 -> 213.6 MB**, draw calls 1271 -> 1233.
+
+Round 1's fix holds: programs and the visible-light count are still constant.
+The new failures are steady per-frame cost, not streaming or recompiles.
+
+### What it was: double-sided transmissive glazing (#60)
+
+`onFrame` JS in the Great Hall totals **0.21 ms a frame** - so the cost was inside
+`renderer.render`. Trapping `Material.version` in the page: **3 of 920 materials
+are re-versioned 6720 times in 2 s (56 a frame)**, and the stack is three's own
+`renderTransmissionPass` -> `set needsUpdate`. three r171 draws a **double-sided**
+transmissive material twice, flipping `side` and setting `needsUpdate` each time,
+per object per frame; every bump re-derives the program parameters and clones the
+uniforms.
+
+| material | bumps / 2 s | declared at |
+|---|---|---|
+| `glazingClear` | 5760 | `src/core/materials.js:89` |
+| `conc:balGlass` | 480 | `src/interiors/concourses.js:176` |
+| `path:liftGlass` | 480 | `src/interiors/path.js:404` |
+
+A/B/A paired in one session, Great Hall, production build:
+
+| | KB/frame | GC/s | p50 | p95 | max | >20 ms | calls |
+|---|---|---|---|---|---|---|---|
+| DoubleSide (shipped) | 2106 | 6.2 | 19.8 | **25.8** | 29.8 | **225/490** | 1305 |
+| FrontSide | 1846 | 6.7 | 16.6 | **17.5** | 18.5 | **0/599** | 1261 |
+| DoubleSide again | 2100 | 6.5 | 18.3 | 24.2 | 30.2 | 172/521 | 1305 |
+
+Three lines in three files. `qa/perf-sprint.perf.mjs:120` already fails before and
+passes after - no new assertion needed.
+
+### The heap climb, explained and closed (#61)
+
+The 80 -> 200 MB climb the sprint run shows is **not** an app leak and **not** app
+code. Per-frame `performance.memory` sampling (the committed probe's 5 s interval
+hides it - sample every frame):
+
+| | calls | KB/frame | MB/s | major GC/s |
+|---|---|---|---|---|
+| forecourt | 1335 | 1878 | 115 | 7.5 |
+| great-hall | 1305 | 2106 | 106 | 6.2 |
+| world root hidden | 1 | 40 | 2.5 | - |
+
+**~1.35 KB of JS garbage per draw call per frame**, all inside three's
+`WebGLRenderer`. CDP `HeapProfiler.startSampling` (interval 1024 B, unminified
+build) top frames: `onAnimationFrame` 16%, `setValueV1f` 10%, `setProgram` 8%,
+lights `setup` 7%, `update` 6.5%, `cloneUniforms` 5.6%,
+`getProgramCacheKeyParameters` 5.6%. App code totals **under 3%** (`hud.js` 2.1%,
+`controls.js` 0.5%). **There is no per-frame allocator in src/ worth naming.**
+
+Setting `transmission = 0` on the ten transmissive materials halves it: draw calls
+1335 -> **676**, garbage 1878 -> 1127 KB/frame, GC 7.5 -> **3.0/s**. So three's
+transmission pass is a second full opaque render of the city, ~640 of the 1335
+calls - and that is the lever, not any allocation in app code.
+
+### Ruled out this run, with numbers
+
+| Hypothesis | Evidence |
+|---|---|
+| Per-frame allocators in app code | CDP allocation sampling over a 20 s sprint: app code < 3% of samples; 97% is three's `WebGLRenderer`. The heap climb is 1.35 KB per draw call per frame |
+| Sidewalk routing / wayfinding costs per tick | Whole `onFrame` list forced at dt = 0.26: **0.155 ms** with no destination, **0.18-0.25 ms** with one set (5 destinations, nearest to farthest). Dijkstra at 4 Hz over a few hundred nodes is free |
+| Footsteps probing the surface per frame | `src/ui/footsteps.js` reads `controls.strideDistance` per frame and calls `surfaceFor` only on a stride boundary; it does not appear above 0.002 ms in the per-callback probe |
+| Nearby strip / HUD DOM churn per frame | The HUD writes DOM on its own 0.25 s tick, not per frame; the whole tick is 0.155 ms. In the per-callback probe the HUD callback is 0.015 ms a frame amortised |
+| Pedestrians sidestepping the walker (`crowdPush.js`) | The pedestrian callback is the most expensive one at **0.090 ms a frame** for ~900 agents; `clearance()` is scalar maths with no allocation |
+| `frustumCulled = false` meshes drawn out of view | 22-38 draw calls at three viewpoints; paired render-cost delta **0.05-0.11 ms**. All of them are the moving InstancedMesh sets, which is correct |
+| Shadow map frequency | Paired render-cost delta of turning the shadow map off: **0.89-1.08 ms** per render at three viewpoints. One directional light, one pass; nothing varies with speed or mode |
+| The 9 hoisted point lights (round 1's stated cost) | Paired delta **0.02-0.38 ms** per render - round 1's "+0.25 ms a frame" claim is confirmed, not a regression |
+| Minimap re-render frequency | Hidden by default, on its own throttle; 0.002 ms a frame in the per-callback probe |
+| Startup / slow `build()` modules | `window.__TWIN__` at **288-336 ms** over three cold loads, 309 KB transferred, DCL 30-54 ms. Slowest module is `buildings` at 23-25 ms; nothing else is over 22 ms |
+| Bundle / three tree-shaking | 545 kB min, **141 kB gzip**, one chunk. No loaders, no DRACO/KTX2, no WebGPU, no PMREMGenerator, no AnimationMixer. The app touches 59 distinct `THREE.*` symbols. Nothing actionable |
+| LOD reveal budget (round 1 open item) | Still no number to justify a fix: worst first-pass frame in a 45 s sprint is **21.0 ms** (+182 geometries / +45 textures at t = 6.0 s), then 19.4 ms, then 18.2 ms. Under the 25 ms hitch threshold. Closed until someone measures it on slower hardware |
+
+### Measurement technique - read this before Phase 1
+
+**Frame gaps cannot resolve render cost under vsync.** The first two attempts at an
+A/B were worthless: at 60 Hz every healthy condition reads exactly 16.7 ms, so the
+delta is 0.0 whatever you change, and the only numbers that *did* move were this
+machine's own background load drifting upward through the run (the same condition
+measured 16.7 ms early and 36.6 ms late).
+
+Two things fixed it, and both are worth keeping:
+
+1. **Measure render cost directly.** Render the same view K times in one go and
+   `gl.finish()` at the end; divide. That is CPU submit + GPU work per render,
+   with no vsync floor. Steady-state cost is **5.6-7.8 ms a render** at 1305-1335
+   calls, so the app has real headroom and is nowhere near GPU-bound here.
+2. **Pair everything A/B/A/B and report the median of per-round differences.**
+   This machine had other applications on it all run (load average 4.5-8.2, the
+   user's own Chrome at 40% of a core). Paired medians survive that; a sequence of
+   single measurements does not. Absolute p95 from `npm run e2e:perf` is only
+   trustworthy when it agrees across two runs - here "street walk" passed at
+   17.5 ms and failed at 31.6 ms with no code change, while the Great Hall failed
+   both times and then reproduced cleanly under pairing.
+
+**Finding a per-frame shader re-derivation:** snapshot every material's `version`,
+`Object.defineProperty` a trap on the setter, and read back the stack. That is what
+found #60 in one shot after the per-callback CPU probe had ruled out all of app
+code. `renderer.info.programs` stays flat through this - the program is *re-derived
+and re-looked-up*, not recompiled - so round 1's `delta.programs === 0` assertion
+cannot catch it.
+
+### Harness facts learned
+
+- **A fresh worktree has no `node_modules`.** `npm run build` then resolves `three`
+  from a parent directory's copy and fails with a Rolldown "failed to resolve
+  import" - run `npm install` first.
+- `npm run e2e:perf` **exits 0 even when assertions fail**; read the `pass`/`fail`
+  counts, not the exit code. It also exits 0 when the *build* fails, so a piped
+  `| tail` can hide the whole thing.
+- Don't pipe it through `tail -60`: the first scenario's four report lines scroll
+  off, and the 60 s sprint is the one you most want.
+- `npx vite build --minify false` gives real function names in a CDP allocation
+  profile, and the harness's staleness check is happy with it. Rebuild with
+  `npm run build` afterwards.

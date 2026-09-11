@@ -70,6 +70,13 @@ storey count, footprint extent, year, façade material, column count, span.
   figure, the source, the grade change, and a screenshot path. Add a
   "Verified unchanged" table for figures you checked and kept, and a
   "Could not verify" list with what source would settle each one.
+- Do not commit a FINAL_QA_REPORT.md regenerated without
+  qa/runtime-metrics.json: it replaces main's measured FPS, draw calls and
+  limitation notes with "not captured". Patch the grade table, trap rows and
+  notes by hand instead.
+- When you change a record's grade, grep its id in src/landmarks/: a module
+  that hard-codes `confidence` or quotes the old figure in its `note` must be
+  switched to read the record.
 - Propose new qa/traps.mjs checks for any fact you verified that a future
   edit could silently break, and add them.
 - File at most 5 GitHub issues (`gh issue create`, label `fidelity`, title
@@ -120,3 +127,6 @@ starts smarter than this one.
   allowlist had no place for them.
 - 2026-09-11 (run 1): check viewpoint coverage before picking; no street
   viewpoint framed any of the ten towers.
+- 2026-09-11 (review of run 1): don't commit a QA report regenerated without
+  runtime metrics; grep landmark modules for hard-coded grades after a
+  downgrade. Review caught both.

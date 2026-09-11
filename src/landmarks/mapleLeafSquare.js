@@ -229,15 +229,15 @@ export function build(ctx) {
 
   register({
     id: 'maple-leaf-square-w', name: west.name, kind: 'landmark', object: gWest,
-    confidence: 'inferred',
+    confidence: west.confidence,
     source: 'footprint from the building database; tower proportion from photographic reference',
-    note: 'West tower, 54 storeys, residential over the shared podium. Storey count is reference; the metric height is inferred from a 3.26 m residential floor-to-floor.',
+    note: `West tower, ${west.floors} storeys, residential over the shared podium. ${west.note}`,
     data: { address: west.address, height: west.height, floors: west.floors, frontages },
   });
   register({
     id: 'maple-leaf-square-e', name: east.name, kind: 'landmark', object: gEast,
-    confidence: 'inferred',
-    note: 'East tower, 50 storeys, hotel and residential. Shares the podium and the square with the west tower.',
+    confidence: east.confidence,
+    note: `East tower, ${east.floors} storeys, hotel and residential. ${east.note}`,
     data: { address: east.address, height: east.height, floors: east.floors },
   });
   register({

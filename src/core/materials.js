@@ -86,7 +86,9 @@ export const M = {
     memo('glazingClear', () =>
       new THREE.MeshPhysicalMaterial({
         color: 0xdfeaf0, metalness: 0.0, roughness: 0.06,
-        transmission: 0.86, thickness: 0.05, side: THREE.DoubleSide,
+        // FrontSide: three r171 re-derives a DoubleSide transmissive material's
+        // program twice per object per frame in its transmission pass (#60).
+        transmission: 0.86, thickness: 0.05, side: THREE.FrontSide,
         transparent: true, opacity: 0.42,
       })),
 

@@ -134,6 +134,30 @@ test('walking outdoors at street level is steady', async () => {
   assert.equal(s.over100, 0, `${s.over100} frames over 100 ms (worst ${s.max.toFixed(0)} ms)`);
 });
 
+// Must run before the mode-switching test, whose warm-up cycle does the first
+// toggle. A frame-time threshold cannot tell the fix apart on this hardware -
+// the first shown frame also links reference mode's own programs - so this
+// counts what is built in one frame, which is the thing #62 bounds.
+test('reference mode builds its labels over several frames, not one (#62)', async () => {
+  const counts = await page.evaluate(() => new Promise((resolve) => {
+    const { reference, ctx } = window.__TWIN__;
+    const labels = ctx.scene.getObjectByName('reference-labels');
+    const seen = [];
+    reference.toggle(true);
+    const tick = () => {
+      seen.push(labels.children.length);
+      if (seen.length < 30) requestAnimationFrame(tick); else resolve(seen);
+    };
+    requestAnimationFrame(tick);
+  }));
+  await page.evaluate(() => window.__TWIN__.reference.toggle(false));
+  const total = counts.at(-1);
+  const worst = Math.max(...counts.map((n, i) => n - (counts[i - 1] ?? 0)));
+  console.log(`[perf] first reference toggle: labels per frame ${counts.slice(0, 8).join(' ')} ... ${total}`);
+  assert.ok(total > 100, `only ${total} labels were built`);
+  assert.ok(worst < total / 2, `${worst} of ${total} labels were built in one frame`);
+});
+
 test('switching walk <-> tour <-> reference ten times leaves nothing behind', async () => {
   const CYCLE = `(elapsed) => {
     const { controls, tour, reference } = window.__TWIN__;

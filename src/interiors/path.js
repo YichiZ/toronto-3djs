@@ -401,7 +401,8 @@ function elevator(x, z) {
   const g = new THREE.Group();
   const glass = local('liftGlass', () => new THREE.MeshPhysicalMaterial({
     color: 0xd6e4ec, roughness: 0.06, transmission: 0.7, thickness: 0.05,
-    transparent: true, opacity: 0.4, side: THREE.DoubleSide,
+    // FrontSide, not DoubleSide: see glazingClear in core/materials.js (#60).
+    transparent: true, opacity: 0.4, side: THREE.FrontSide,
   }));
   const shaft = new THREE.Mesh(new THREE.BoxGeometry(2.6, -FLOOR + 0.4, 2.6), glass);
   shaft.position.set(x, FLOOR + (-FLOOR + 0.4) / 2, z);

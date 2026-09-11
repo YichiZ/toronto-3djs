@@ -37,6 +37,10 @@ const MAX_LABELS = 260;
 
 const LAYER_NAMES = ['labels', 'xray', 'grid', 'section'];
 
+// Labels + cages built per frame on first use (#62). Each label is its own
+// canvas texture uploaded on its first draw, so this bounds the upload burst too.
+const BUILD_PER_TICK = 40;
+
 function labelSprite(record) {
   const colour = CONFIDENCE_COLOUR[record.confidence] ?? '#cbd5e1';
   const canvas = document.createElement('canvas');
@@ -226,6 +230,12 @@ export function install(ctx) {
   const sizeCache = new THREE.Vector3();
   const centreCache = new THREE.Vector3();
 
+  // Records still to annotate. Building all ~260 labels + cages in one call was
+  // a 61 ms frame (#62); onFrame drains BUILD_PER_TICK of them per frame
+  // instead, so the layer fades in over a few frames. Not prebuilt at boot:
+  // that only moves the cost onto the load path.
+  let pending = [];
+
   function buildEntities() {
     if (builtEntities) return;
     builtEntities = true;
@@ -233,7 +243,13 @@ export function install(ctx) {
     if (records.length > MAX_LABELS) {
       console.warn(`[referenceMode] ${records.length} entities, labelling the first ${MAX_LABELS}`);
     }
-    for (const record of records.slice(0, MAX_LABELS)) {
+    pending = records.slice(0, MAX_LABELS);
+  }
+
+  function drainPending() {
+    const batch = pending.slice(0, BUILD_PER_TICK);
+    pending = pending.slice(BUILD_PER_TICK);
+    for (const record of batch) {
       try {
         boxCache.setFromObject(record.object);
         if (boxCache.isEmpty()) continue;
@@ -261,6 +277,7 @@ export function install(ctx) {
   // distance in a controlled way rather than vanish; scale mildly with range.
   const tmp = new THREE.Vector3();
   ctx.onFrame.push(() => {
+    if (pending.length) drainPending();
     if (!root.visible || !groups.labels.visible) return;
     for (const sprite of groups.labels.children) {
       sprite.getWorldPosition(tmp);

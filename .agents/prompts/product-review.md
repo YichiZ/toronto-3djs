@@ -19,6 +19,17 @@ requirements, not implementation details.
   do not investigate them.
 - Read .agents/notes/product-review.md before Phase 1: last run's findings,
   what was filed, what was rejected and why.
+- A ready driver lives at .agents/notes/product-review.driver.mjs (built on
+  `openWorld`); `node` it and it writes screenshots + log.json to
+  product-review/. Edit it rather than starting over. Full run ≈ 7 min, of
+  which the tour is 284 s real time (13 beats; `tour.beat()`, `isRunning()`).
+- Route hooks: `__TWIN__.controls.teleport('<viewpoint id>')` (ids in
+  src/data/references.js), the `.hud-goto` select (`vp:<id>` / `x:<corner>`),
+  `pressKey(page, 'keydown', 'KeyE')` for a level change.
+- Headless has no pointer lock and arrow keys walk rather than turn, so the
+  heading is whatever the viewpoint sets; judge framing from that.
+- The `product` label may not exist: `gh label create product` if
+  `gh label list` lacks it.
 
 ## Phase 1 — First sixty seconds
 Open the app cold. Record with screenshots and timestamps:
@@ -29,10 +40,14 @@ Open the app cold. Record with screenshots and timestamps:
 ## Phase 2 — Core loops (use the browser-qa and click-path-audit skills)
 Walk each of these routes once, screenshotting anything that would make a
 player stop, get lost, or lose trust:
-1. Front & Bay → into the Great Hall → a concourse → back to the street.
-2. Street → PATH → back up.
-3. SkyWalk across the tracks.
-4. One full tour-mode run, then one reference-mode toggle.
+1. One full tour-mode run, screenshotting each beat mid-beat (what a visitor
+   actually watches), plus where it leaves you when it ends; then one
+   reference-mode toggle.
+2. Front & Bay → into the Great Hall → a concourse → back to the street.
+3. Street → PATH → back up.
+4. SkyWalk across the tracks.
+Compare every caption and place label with what is actually on screen:
+run 1's biggest findings were mismatches between the two.
 For each route score 1-5 on: orientation, control feel, visual readability,
 sense of place (does it read as Toronto), and moments of delight.
 
@@ -81,3 +96,9 @@ starts smarter than this one.
 
 ## Changelog
 - 2026-09-11: initial version.
+- 2026-09-11 (run 1, after phases 1-2): added driver path, route hooks,
+  tour duration, headless heading limit and the missing-label check — each
+  cost a discovery step this run.
+- 2026-09-11 (run 1, after phase 3): routes reordered by findings produced
+  (tour 11, Route 1 four, PATH two, SkyWalk one); added mid-beat screenshots
+  and the caption-vs-screen check, where the top findings came from.

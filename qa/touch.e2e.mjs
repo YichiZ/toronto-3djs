@@ -87,13 +87,14 @@ test('a touch brings up the joystick, and the mouse puts it away again', async (
 });
 
 test('HUD panels take taps above the look pad', async () => {
+  // The place label, not the renderer counter: that is reference-mode only (#78).
   const hit = await page.evaluate(() => {
-    const r = document.querySelector('.hud-stats').getBoundingClientRect();
+    const r = document.querySelector('.hud-place').getBoundingClientRect();
     const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    return { stats: !!el?.closest('.hud-stats'), pad: !!el?.closest('.look-pad') };
+    return { panel: !!el?.closest('.hud-place'), pad: !!el?.closest('.look-pad') };
   });
-  assert.equal(hit.pad, false, 'the look pad is on top of the stats panel');
-  assert.equal(hit.stats, true);
+  assert.equal(hit.pad, false, 'the look pad is on top of the place panel');
+  assert.equal(hit.panel, true);
 });
 
 test('look speed: set in the help panel, it scales a touch drag, and it is remembered', async () => {

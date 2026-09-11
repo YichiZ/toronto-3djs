@@ -1,0 +1,670 @@
+[
+  {
+    "k": "vp:bay-concourse",
+    "v": {
+      "s": "01-d-vp-bay-concourse.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "concourse",
+        "place": "Union Station Bay Concourse INFERRED 0 m near Front & Bay · 66 m 253° WSW true · concourse ↑ Union Station rail viaduct · 2 m ↑ Union Station · 2 m → Stairs dow",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:galleria-interior",
+    "v": {
+      "s": "02-d-vp-galleria-interior.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Allen Lambert Galleria REFERENCE 0 m near Wellington & Bay · 91 m 73° ENE true · street → TD Canada Trust Tower · 13 m ← Bay Wellington Tower · 14 m ↘ Lift down",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:royal-york-porte-cochere",
+    "v": {
+      "s": "03-d-vp-royal-york-porte-cochere.jpg",
+      "moved": 6.2,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Royal York porte-cochère REFERENCE 0 m near Front & York · 121 m 343° NNW true · street ↑ Royal York base block · 6 m ↑ Royal York ground-storey arcade · 7 m ↘ ",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:front-york-east",
+    "v": {
+      "s": "04-d-vp-front-york-east.jpg",
+      "moved": 3.3,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 20 m near Front & York · 18 m 72° ENE true · street ↖ Fairmont Royal York · 50 m ↖ Royal York base block · 54 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:bay-north-of-front",
+    "v": {
+      "s": "05-d-vp-bay-north-of-front.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Royal Bank Plaza North Tower REFERENCE 13 m near Wellington & Bay · 57 m 174° S true · street ↗ Royal Bank Plaza banking hall · 17 m ↑ Royal Bank Plaza South To",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:cn-tower-base",
+    "v": {
+      "s": "06-d-vp-cn-tower-base.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "CN Tower REFERENCE 13 m near Bremner & Lower Simcoe · 289 m 163° SSE true · street → Rogers Centre · 27 m ↖ Ripley's Aquarium of Canada · 69 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:bremner-lower-simcoe",
+    "v": {
+      "s": "07-d-vp-bremner-lower-simcoe.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Metro Toronto Convention Centre - South Building APPROXIMATED 5 m near Bremner & Lower Simcoe · 13 m 264° W true · street ↘ ICE Condos East · 57 m ↗ Bremner Bou",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:arena-bay-heritage",
+    "v": {
+      "s": "08-d-vp-arena-bay-heritage.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Toronto Postal Delivery Building - Bay Street elevation REFERENCE 14 m near Lake Shore & Bay · 95 m 265° W true · street ↑ Scotiabank Arena bowl · 27 m ↓ CIBC S",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:the-park-cibc",
+    "v": {
+      "s": "09-d-vp-the-park-cibc.jpg",
+      "moved": 6.7,
+      "hud": {
+        "mode": "walk",
+        "level": "Gardiner deck",
+        "place": "The Park at CIBC SQUARE REFERENCE 0 m near Lake Shore & Bay · 182 m 277° W true · Gardiner deck ↙ CIBC Square - 81 Bay Street · 9 m ↖ Scotiabank Arena · 86 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:maple-leaf-square",
+    "v": {
+      "s": "10-d-vp-maple-leaf-square.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Maple Leaf Square podium INFERRED 0 m near Bremner & York · 50 m 73° ENE true · street → Maple Leaf Square East Tower · 21 m ← Maple Leaf Square West Tower · 21",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:roundhouse-park",
+    "v": {
+      "s": "11-d-vp-roundhouse-park.jpg",
+      "moved": 6.6,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "John Street Roundhouse REFERENCE 10 m near Bremner & Lower Simcoe · 238 m 163° SSE true · street ← Ripley's Aquarium of Canada · 34 m ↙ Ripley's Aquarium wave-p",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:gooderham-flatiron",
+    "v": {
+      "s": "12-d-vp-gooderham-flatiron.jpg",
+      "moved": 5.4,
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Front Street East retail block APPROXIMATED 4 m near Front & Church · 71 m 9° N true · street ← Meridian Hall · 13 m ↘ Berczy Condominiums · 34 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:front-street-establishing",
+    "v": {
+      "s": "13-d-vp-front-street-establishing.jpg",
+      "moved": 0,
+      "hud": {
+        "mode": "orbit",
+        "level": "street",
+        "place": "CIBC Square - 81 Bay Street REFERENCE 0 m near Lake Shore & Bay · 165 m 284° WNW true",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:union-trainshed-orbit",
+    "v": {
+      "s": "14-d-vp-union-trainshed-orbit.jpg",
+      "moved": 0,
+      "hud": {
+        "mode": "orbit",
+        "level": "street",
+        "place": "Scotiabank Arena bowl INFERRED 31 m near Bremner & York · 134 m 343° NNW true",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "vp:royal-bank-plaza-orbit",
+    "v": {
+      "s": "15-d-vp-royal-bank-plaza-orbit.jpg",
+      "moved": 0,
+      "hud": {
+        "mode": "orbit",
+        "level": "street",
+        "place": "CIBC Square - 141 Bay Street REFERENCE 12 m near Front & Bay · 58 m 300° WNW true",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "night:union-forecourt",
+    "v": {
+      "s": "16-d-night-union-forecourt.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 13 m near Front & Bay · 128 m 160° SSE true · street ↓ Fairmont Royal York · 19 m ↓ Royal York porte-cochère · 20 m ↖ Lift down to the P",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "night:front-bay-west",
+    "v": {
+      "s": "17-d-night-front-bay-west.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "night:great-hall",
+    "v": {
+      "s": "18-d-night-great-hall.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station east and west wings INFERRED 0 m near Front & York · 117 m 73° ENE true · street ← Union Station Front Street colonnade · 21 m ← Union Station ent",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "night:path-corridor",
+    "v": {
+      "s": "19-d-night-path-corridor.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "PATH",
+        "place": "PATH — Bay Street north to Royal Bank Plaza INFERRED 0 m near Front & Bay · 31 m 343° NNW true · PATH ↓ PATH — Union Station east to Bay Street · 5 m ↓ Union St",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "orbit:enter",
+    "v": {
+      "s": "20-d-orbit-enter.jpg",
+      "hud": {
+        "mode": "orbit",
+        "level": "street",
+        "place": "Union Station REFERENCE 13 m near Front & Bay · 128 m 160° SSE true",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "orbit:drag-zoom",
+    "v": {
+      "s": "21-d-orbit-drag-zoom.jpg",
+      "hud": {
+        "mode": "orbit",
+        "level": "street",
+        "place": "Union Station REFERENCE 9 m near Front & Bay · 120 m 274° W true",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "orbit:back-to-walk",
+    "v": {
+      "s": "22-d-orbit-back-to-walk.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station east and west wings INFERRED 0 m near Front & Bay · 141 m 275° W true · street → Union Station Front Street colonnade · 41 m → Union Station entab",
+        "guide": "↑✕",
+        "card": null
+      },
+      "pos": [
+        -125.1,
+        1.6,
+        65
+      ]
+    }
+  },
+  {
+    "k": "shop:found",
+    "v": {
+      "shop": {
+        "tenant": "Quick-service restaurant",
+        "tried": 1,
+        "total": 417
+      },
+      "s": "23-d-shop-hint.jpg"
+    }
+  },
+  {
+    "k": "shop:card",
+    "v": {
+      "s": "24-d-shop-card.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "1 Yonge / Toronto Star Building APPROXIMATED 5 m near Front & Yonge · 219 m 73° ENE true · street → Lake Shore East frontage · 87 m ↓ CIBC Square - 81 Bay Stree",
+        "guide": "↑✕",
+        "card": "× Quick-service restaurant CATEGORY restaurant BUILDING 1 Yonge / Toronto Star Building ADDRESS 1 Yonge Street SOURCE massing from block geometry; facade propor"
+      }
+    }
+  },
+  {
+    "k": "minimap:click",
+    "v": {
+      "inside": true,
+      "missBy": 0,
+      "s": "25-d-minimap-click.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 13 m near Front & Bay · 128 m 160° SSE true · street ↓ Fairmont Royal York · 19 m ↓ Royal York porte-cochère · 20 m ↖ Lift down to the P",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "goto:all",
+    "v": [
+      {
+        "v": "vp:front-bay-west",
+        "text": "Arrived · Front & Bay, looking west",
+        "points": 0
+      },
+      {
+        "v": "vp:union-forecourt",
+        "text": "Union Station forecourt · 110 m",
+        "points": 4
+      },
+      {
+        "v": "vp:great-hall",
+        "text": "Great Hall interior · 161 m",
+        "points": 4
+      },
+      {
+        "v": "vp:york-concourse",
+        "text": "York Concourse · 188 m",
+        "points": 0
+      },
+      {
+        "v": "vp:bay-concourse",
+        "text": "Bay Concourse · 38 m",
+        "points": 0
+      },
+      {
+        "v": "vp:path-corridor",
+        "text": "PATH corridor under Bay · 241 m",
+        "points": 8
+      },
+      {
+        "v": "vp:galleria-interior",
+        "text": "Allen Lambert Galleria · 186 m",
+        "points": 6
+      },
+      {
+        "v": "vp:hhof-front-yonge",
+        "text": "Hockey Hall of Fame, Front & Yonge · 247 m",
+        "points": 7
+      },
+      {
+        "v": "vp:royal-york-porte-cochere",
+        "text": "Royal York porte-cochère · 214 m",
+        "points": 6
+      },
+      {
+        "v": "vp:front-york-east",
+        "text": "Front & York, looking east · 234 m",
+        "points": 4
+      },
+      {
+        "v": "vp:bay-north-of-front",
+        "text": "Bay Street north of Front · 158 m",
+        "points": 6
+      },
+      {
+        "v": "vp:cn-tower-base",
+        "text": "CN Tower base · 827 m",
+        "points": 8
+      },
+      {
+        "v": "vp:bremner-lower-simcoe",
+        "text": "Bremner & Lower Simcoe · 690 m",
+        "points": 8
+      },
+      {
+        "v": "vp:bay-underpass",
+        "text": "Bay Street rail underpass · 179 m",
+        "points": 6
+      },
+      {
+        "v": "vp:lakeshore-under-gardiner",
+        "text": "Lake Shore under the Gardiner · 524 m",
+        "points": 8
+      },
+      {
+        "v": "vp:arena-bay-heritage",
+        "text": "Scotiabank Arena, Bay Street elevation · 340 m",
+        "points": 6
+      },
+      {
+        "v": "vp:the-park-cibc",
+        "text": "The Park at CIBC SQUARE · 214 m",
+        "points": 0
+      },
+      {
+        "v": "vp:maple-leaf-square",
+        "text": "Maple Leaf Square · 571 m",
+        "points": 7
+      },
+      {
+        "v": "vp:skywalk-east",
+        "text": "Inside the SkyWalk, looking east · 371 m",
+        "points": 0
+      },
+      {
+        "v": "vp:roundhouse-park",
+        "text": "Roundhouse Park · 939 m",
+        "points": 10
+      },
+      {
+        "v": "vp:gooderham-flatiron",
+        "text": "Gooderham Flatiron from Front · 370 m",
+        "points": 8
+      },
+      {
+        "v": "vp:front-street-establishing",
+        "text": "Front Street establishing (aerial) · 274 m",
+        "points": 5
+      },
+      {
+        "v": "vp:union-trainshed-orbit",
+        "text": "Train shed from above · 221 m",
+        "points": 4
+      },
+      {
+        "v": "vp:royal-bank-plaza-orbit",
+        "text": "Royal Bank Plaza gold glass · 142 m",
+        "points": 6
+      },
+      {
+        "v": "x:front-bay",
+        "text": "Front & Bay · 70 m",
+        "points": 6
+      },
+      {
+        "v": "x:front-yonge",
+        "text": "Front & Yonge · 272 m",
+        "points": 8
+      },
+      {
+        "v": "x:front-church",
+        "text": "Front & Church · 457 m",
+        "points": 9
+      },
+      {
+        "v": "x:front-york",
+        "text": "Front & York · 277 m",
+        "points": 6
+      },
+      {
+        "v": "x:front-simcoe",
+        "text": "Front & Simcoe · 434 m",
+        "points": 6
+      },
+      {
+        "v": "x:wellington-bay",
+        "text": "Wellington & Bay · 230 m",
+        "points": 7
+      },
+      {
+        "v": "x:wellington-yonge",
+        "text": "Wellington & Yonge · 426 m",
+        "points": 9
+      },
+      {
+        "v": "x:wellington-york",
+        "text": "Wellington & York · 437 m",
+        "points": 7
+      },
+      {
+        "v": "x:king-bay",
+        "text": "King & Bay · 370 m",
+        "points": 8
+      },
+      {
+        "v": "x:king-yonge",
+        "text": "King & Yonge · 568 m",
+        "points": 10
+      },
+      {
+        "v": "x:king-york",
+        "text": "King & York · 577 m",
+        "points": 8
+      },
+      {
+        "v": "x:bremner-york",
+        "text": "Bremner & York · 527 m",
+        "points": 7
+      },
+      {
+        "v": "x:bremner-simcoe",
+        "text": "Bremner & Lower Simcoe · 691 m",
+        "points": 8
+      },
+      {
+        "v": "x:lakeshore-bay",
+        "text": "Lake Shore & Bay · 449 m",
+        "points": 7
+      },
+      {
+        "v": "x:lakeshore-york",
+        "text": "Lake Shore & York · 656 m",
+        "points": 8
+      },
+      {
+        "v": "x:lakeshore-simcoe",
+        "text": "Lake Shore & Lower Simcoe · 821 m",
+        "points": 9
+      }
+    ]
+  },
+  {
+    "k": "goto:shot",
+    "v": "26-d-goto-last.jpg"
+  },
+  {
+    "k": "share:great-hall-21h",
+    "v": {
+      "s": "27-d-share-great-hall-21h.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+        "guide": "↑ Lake Shore & Lower Simcoe · 821 m ✕",
+        "card": null
+      },
+      "vp": "front-bay-west",
+      "hour": 18.7
+    }
+  },
+  {
+    "k": "desktop-console-errors",
+    "v": []
+  },
+  {
+    "k": "phone:cold",
+    "v": {
+      "s": "28-m-cold.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone:after-start",
+    "v": {
+      "s": "29-m-after-start.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 4 m near Front & Bay · 34 m 252° WSW true · street → Royal Bank Plaza South Tower · 44 m ↗ Fairmont Royal York · 56 m",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone:union-forecourt",
+    "v": {
+      "s": "30-m-union-forecourt.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station REFERENCE 13 m near Front & Bay · 128 m 160° SSE true · street ↓ Fairmont Royal York · 19 m ↓ Royal York porte-cochère · 20 m ↖ Lift down to the P",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone:great-hall",
+    "v": {
+      "s": "31-m-great-hall.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "street",
+        "place": "Union Station east and west wings INFERRED 0 m near Front & York · 117 m 73° ENE true · street ← Union Station Front Street colonnade · 21 m ← Union Station ent",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone:path-corridor",
+    "v": {
+      "s": "32-m-path-corridor.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "PATH",
+        "place": "PATH — Bay Street north to Royal Bank Plaza INFERRED 0 m near Front & Bay · 31 m 343° NNW true · PATH ↓ PATH — Union Station east to Bay Street · 5 m ↓ Union St",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone:tour",
+    "v": {
+      "s": "33-m-tour.jpg",
+      "hud": {
+        "mode": "cinematic",
+        "level": "PATH",
+        "place": "CIBC Square - 81 Bay Street REFERENCE 6 m near Lake Shore & Bay · 146 m 285° WNW true",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone:reference",
+    "v": {
+      "s": "34-m-reference.jpg",
+      "hud": {
+        "mode": "walk",
+        "level": "Gardiner deck",
+        "place": "CIBC Square - 81 Bay Street REFERENCE 6 m near Lake Shore & Bay · 147 m 285° WNW true · Gardiner deck ↙ Harbour Street offices · 35 m ↗ The Park at CIBC SQUARE ",
+        "guide": "↑✕",
+        "card": null
+      }
+    }
+  },
+  {
+    "k": "phone-console-errors",
+    "v": []
+  }
+]

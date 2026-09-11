@@ -67,3 +67,38 @@ Driver: .agents/notes/product-review.driver.mjs -> product-review/*.png + log.js
 - The "Not filed" findings above are now filed: #78 onboarding card and
   look-alike menus, #79 HHOF viewpoint framing, #80 reference-mode clutter
   (all P3, label `product`). The rejected list stands.
+
+## Run 2 — 2026-09-11 (surfaces run 1 skipped)
+
+Driver: .agents/notes/product-review.driver2.mjs -> product-review/run2/ (JPEG
+straight from Playwright, no conversion step). Scope: 15 unvisited viewpoints,
+night at 22:30, orbit mode, storefront card, minimap click, all 41 Go-to
+destinations, share link, phone (390x844 touch). No tour re-run (#67 open).
+Cap: 5 new issues; skip anything already in #67-#80.
+- Viewpoints (run2/01-11): good = galleria-interior, bremner-lower-simcoe
+  (CN Tower view), the-park-cibc, roundhouse-park. Bad framing = royal-york-
+  porte-cochere (on top of the canopy), cn-tower-base (straight up), arena-bay-
+  heritage (wall close-up), maple-leaf-square (podium wall); with #79 that is a
+  pattern. front-york-east: lamp post dead centre, walk stops at 3.3 m.
+  bay-concourse is as empty as York (adds to #70). The Park at CIBC's level
+  chip reads "Gardiner deck" for a park over the rail corridor.
+- gooderham-flatiron: faces a brick wall 4 m off, labelled "Front Street East
+  retail block"; the Flatiron is not in frame (run2/12). 5 of the 15 skipped
+  viewpoints are framed on a close wall.
+- Orbit (run2/13-15, 20-21): aerials look good; drag + zoom work. Pressing 1
+  from orbit drops the walker in a white void near the viaduct at (-125, 65),
+  not where they were (run2/22).
+- Night 22:30 (run2/16-19): station facade unlit; Great Hall skylight still
+  daylight-white; PATH is a grey void at night too (adds to #70).
+- Storefront (run2/23-24): hint + F card work; the first of 417 shops is named
+  "Quick-service restaurant", and the card shows "massing from block geometry".
+- Minimap dot click: lands exactly (missBy 0). Keep.
+- Go-to (all 41 from Front & Bay): no-route destinations are the concourses,
+  The Park at CIBC and the SkyWalk (straight line only); PATH 241 m already
+  covered by #72. Nothing new.
+- Share link: my in-page hash change did not reload (harness artefact). In a
+  fresh tab #v=great-hall&t=21 works. Lesson: test share links with
+  startServer + a new page, not page.goto on the same document.
+- Phone 390x844 (run2/28-34): the intro card is keyboard-only (WASD, Shift,
+  PgUp, F, M) and the minimap draws over it; after start, the HUD bar covers
+  the move stick at bottom-left and the place label truncates. 0 console errors.

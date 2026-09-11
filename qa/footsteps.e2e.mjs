@@ -61,6 +61,12 @@ test('once captured, one footfall per 1.2 m stride', async () => {
   await teleport('front-bay-west');
   await page.click('canvas');
   await page.waitForFunction(() => document.pointerLockElement !== null, null, { timeout: 3000 });
+  // The AudioContext is made on the controls' 'lock' event, which comes from
+  // pointerlockchange - dispatched a tick AFTER pointerLockElement is set. Read
+  // straight away, it was still 'none' on 2 of 3 runs. Wait for the event; a
+  // lock that never reaches footsteps.js still fails here, on the timeout.
+  await page.waitForFunction(() => window.__TWIN__.footsteps.audioState() !== 'none', null, { timeout: 3000 })
+    .catch(() => {});
   const a = await counters();
   assert.notEqual(a.audio, 'none', 'no AudioContext after the pointer lock');
   await walk(2000);

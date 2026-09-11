@@ -28,6 +28,20 @@ before(async () => {
 
 after(async () => { await world?.close(); });
 
+test('a Map button hides and shows the minimap, since touch has no M key', async () => {
+  await page.waitForFunction(() => !document.querySelector('.hud-minimap')?.hidden, null, { timeout: 3000 });
+  const shown = () => page.evaluate(() => !document.querySelector('.hud-minimap').hidden);
+  const visible = await page.evaluate(() => document.querySelector('.hud-minimap-btn').checkVisibility());
+  assert.equal(visible, true, 'the Map button should show on a coarse pointer');
+  await page.click('.hud-minimap-btn');
+  await page.waitForFunction(() => document.querySelector('.hud-minimap').hidden, null, { timeout: 2000 });
+  assert.equal(await shown(), false, 'tap hides');
+  assert.equal(await page.getAttribute('.hud-minimap-btn', 'aria-pressed'), 'false');
+  await page.click('.hud-minimap-btn');
+  await page.waitForFunction(() => !document.querySelector('.hud-minimap').hidden, null, { timeout: 2000 });
+  assert.equal(await shown(), true, 'tap again shows');
+});
+
 async function touchDrag(from, to, steps = 12) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: from.x, y: from.y }] });

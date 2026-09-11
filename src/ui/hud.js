@@ -305,7 +305,7 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
       <dt>Esc</dt><dd>close panels, release the pointer</dd>
       <dt>Click a storefront</dt><dd>tenant, category, address and confidence grade</dd>
       <dt>F</dt><dd>open the storefront under the reticle (walking, pointer captured)</dd>
-      <dt>M</dt><dd>hide or show the minimap — it is on while walking; click a dot to jump to that viewpoint</dd>
+      <dt>M</dt><dd>hide or show the minimap (a Map button on touch) — it is on while walking; click a dot to jump to that viewpoint</dd>
       <dt>Go to…</dt><dd>pick a destination: an arrow and the distance to it, and a ring on the minimap</dd>
     </dl>
     <div class="hud-look"><label>Look speed<input type="range" min="0.25" max="3" step="0.05"><output></output></label></div>

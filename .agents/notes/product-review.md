@@ -102,3 +102,22 @@ Cap: 5 new issues; skip anything already in #67-#80.
 - Phone 390x844 (run2/28-34): the intro card is keyboard-only (WASD, Shift,
   PgUp, F, M) and the minimap draws over it; after start, the HUD bar covers
   the move stick at bottom-left and the place label truncates. 0 console errors.
+
+### Filed (run 2)
+- #82 [P2] Jump-to landmarks open on a wall or lamp post (answers SPRINT.md
+  hand-off: spawn in street furniture)
+- #83 [P2] phone: HUD covers the move stick; intro teaches keys (answers the
+  HUD/minimap coverage hand-off)
+- #84 [P2] Orbit -> Walk drops you in a white void
+- #85 [P3] night: facade dark, Great Hall skylight white (technical-artist lane)
+- Comments: #70 (Bay Concourse, night PATH), #69 (The Park "Gardiner deck",
+  Gooderham label)
+- Rejected: generic tenant names (deliberate honesty rule), Go-to no-route
+  destinations (known gaps), UNION STATION band (historian's hand-off).
+- Push was rejected once: the director merged main into this branch (#71).
+  Fetch and rebase before pushing; never force.
+
+### Yield
+Run 1: 8 findings (2 P1). Run 2: 4 new (0 P1), 2 folded into existing issues.
+Stop rule met for new-surface loops: the next run should be a regression run
+after #67/#68 land, not another scouting loop.

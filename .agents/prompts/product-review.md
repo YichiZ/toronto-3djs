@@ -30,6 +30,16 @@ requirements, not implementation details.
   heading is whatever the viewpoint sets; judge framing from that.
 - The `product` label may not exist: `gh label create product` if
   `gh label list` lacks it.
+- Read SPRINT.md first: answer any hand-off addressed to product-review, and
+  route lighting to technical-artist and place names to historian (comment,
+  or note the owner) instead of filing duplicates in their lanes.
+- A second driver, .agents/notes/product-review.driver2.mjs, covers what
+  driver 1 skips: viewpoints, night, orbit, storefront, minimap, all Go-to
+  destinations, phone. Test share links in a fresh page (startServer + new
+  page); a hash change on the open page does not reload it.
+- Before pushing: `git fetch` and rebase. Other agents merge into this branch.
+- Stop rule: stop looping when a run finds no new P1/P2, or only repeats of
+  filed issues. Then wait for fixes and run a regression pass instead.
 
 ## Phase 1 — First sixty seconds
 Open the app cold. Record with screenshots and timestamps:
@@ -102,3 +112,6 @@ starts smarter than this one.
 - 2026-09-11 (run 1, after phase 3): routes reordered by findings produced
   (tour 11, Route 1 four, PATH two, SkyWalk one); added mid-beat screenshots
   and the caption-vs-screen check, where the top findings came from.
+- 2026-09-11 (run 2): added SPRINT.md lanes and hand-offs, driver 2, the
+  fresh-page share-link test, fetch-before-push and a stop rule. Run 2 cost a
+  false share-link alarm and a rejected push, and yielded 4 new with no P1.

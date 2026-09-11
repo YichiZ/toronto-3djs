@@ -134,7 +134,41 @@ hits both, and neither needs new content.
 - **Direction:** declutter by distance and screen overlap, and keep the
   origin marker small and in world space, clear of the HUD.
 
+## Run 2 — surfaces run 1 skipped (2026-09-11)
+
+Covered 15 unvisited viewpoints, night at 22:30, orbit mode, a storefront card,
+a minimap click, all 41 Go-to destinations, a share link, and a 390×844 touch
+pass. Evidence is in `product-review/run2/`. No console errors on desktop or
+phone.
+
+### 9. Jump-to landmarks open on a wall or a lamp post — P2, S–M · #82
+Porte-cochère, CN Tower base, Arena Bay elevation, Maple Leaf Square and
+Gooderham Flatiron are each framed on a close wall. Front & York has a lamp
+post dead centre (`run2/03`, `06`, `08`, `10`, `12`, `04`). Same pattern as #79.
+
+### 10. On a phone, the HUD covers the move stick, and the intro teaches keys you don't have — P2, M · #83
+The keyboard-only intro has the minimap drawn over it, and the HUD bar sits
+on the move stick (`run2/28`, `29`, `31`).
+
+### 11. Orbit → Walk drops you in a white void near the viaduct — P2, S · #84
+`run2/22`.
+
+### 12. At night the station facade goes dark, and the Great Hall skylight stays white — P3, M · #85
+`run2/16`–`18`. Technical-artist lane.
+
+Added to existing issues: an empty Bay Concourse and a night PATH void → #70;
+"Gardiner deck" at The Park at CIBC and the Gooderham label → #69.
+
 ## Working well, keep
+- **Allen Lambert Galleria interior:** the steel-tree vault, framed on the
+  Hockey Hall of Fame (`run2/02`).
+- **Aerial orbit viewpoints**, and orbit drag and zoom (`run2/13`, `20`, `21`).
+- **Bremner & Lower Simcoe's CN Tower view, The Park at CIBC, and the Roundhouse**
+  (`run2/07`, `09`, `11`).
+- **Minimap dot-click teleport:** lands exactly.
+- **Share links:** `#v=great-hall&t=21` opens in a fresh tab on the Great Hall
+  at 21:00.
+- **Storefront hint and the F card** (`run2/23`, `24`).
 - **Tour finale, sunset down Front Street:** the CN Tower against an orange sky,
   the Royal York and the gold RBP framing the canyon. The build's money shot (`40`).
 - **Union Station forecourt:** the lettering, the colonnade and the "Front Street
@@ -159,6 +193,13 @@ hits both, and neither needs new content.
   person, but right for a 1 km map with teleports. Keep.
 - **Keyboard works before the pointer is captured** (4.9 m walked before the
   first click), so a visitor who ignores the card isn't stuck.
+- **Generic shop names ("Quick-service restaurant"):** deliberate. The build
+  never shows a brand it hasn't verified (`src/data/tenants.js` honesty note).
+- **Go-to destinations with no walking route** (concourses, SkyWalk, The Park
+  at CIBC): known gaps in the walking network; the straight-line arrow still
+  guides.
+- **"UNION STATION" band on the entablature:** already handed to the historian
+  in SPRINT.md; not re-filed here.
 
 ## Run notes
 - World interactive 2.1 s after page load (dev server, headless Chrome).

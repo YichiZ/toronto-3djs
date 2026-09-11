@@ -55,15 +55,29 @@ Toronto that is checkable against the real city.
 - Write the sprint to SPRINT.md and create a GitHub milestone named
   `sprint-<YYYY-MM-DD>`; assign the chosen issues to it. Do not create
   issues for work no specialist has found; ask a specialist to look first.
+- Before dispatching, check whether a specialist is already running in
+  another session: `git worktree list`, open PRs, and issues filed in the
+  last hour under its label. If so, gate its output instead of dispatching
+  a duplicate. Do not put a specialist's prompt or notes in your own sprint
+  PR while it may be running elsewhere; its branch will then conflict
+  with main.
 
 ## Phase 3 — Dispatch and gate
 - Launch each owning prompt as a subagent in a worktree with the sprint
   item appended as its "Start here". Respect the parallelism rule above.
+- Every brief says: run long commands (`npm run e2e:perf` is ~3 min) in the
+  foreground, and never end the turn while waiting on a background command
+  — a subagent is not woken by it, and it may not be resumable. If one
+  stops early anyway, relaunch a fresh agent into the same worktree and
+  branch with a "where things stand" section.
 - When each returns, gate it: read its report and "Prompt changes"
   section, confirm the verification command it names actually passed,
   confirm draw calls and programs did not rise, confirm nothing in its
   "Do not" list was touched. A failed gate goes back with one specific
   note, at most twice, then it is deferred and logged.
+- Never push to a branch another live session owns (a conflict fix
+  included); comment on its PR instead. If a specialist's own session
+  merges before your gate ran, run the gate on main right after and log it.
 - Merge only via PR, squash only. Close the milestone with a one-paragraph
   summary comment.
 
@@ -116,3 +130,12 @@ starts smarter than this one.
 - 2026-09-11: Phase 1 now names the walk API (`controls.teleport`) and adds
   label and open-PR checks; sprint 1 found three labels missing and the perf
   prompt one round stale behind unmerged PR #63.
+- 2026-09-11: Phase 3 briefs now forbid stopping on a background wait; the
+  first perf dispatch ended its turn waiting on `e2e:perf` and had to be
+  relaunched.
+- 2026-09-11: Phase 2 now checks for specialists already running in other
+  sessions before dispatching; sprint 1's three scouts ran in parallel
+  sessions, and #71 made both of their PRs conflict with main.
+- 2026-09-11: Phase 3 forbids pushing to another live session's branch and
+  requires a post-merge gate on main when a specialist self-merges; my
+  conflict-fix push on #75 split the historian's review fixes into #81.

@@ -218,6 +218,7 @@ export function install(ctx, { controls }) {
     wanted = typeof force === 'boolean' ? force : !wanted;
     accum = REFRESH;              // draw on the very next frame
     root.hidden = !visible();
+    button.setAttribute('aria-pressed', String(wanted));   // M and the button share one state
     return wanted;
   }
 
@@ -227,6 +228,15 @@ export function install(ctx, { controls }) {
     if (e.code === 'KeyM' && !e.repeat && !helpOpen()) toggle();   // while help is up M would flip it unseen
   }
   window.addEventListener('keydown', onKey);
+
+  // Touch has no M key: a Map button in the HUD bar, shown only on coarse pointers (CSS).
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'hud-btn hud-minimap-btn';
+  button.textContent = 'Map';
+  button.setAttribute('aria-pressed', 'true');
+  button.addEventListener('click', () => toggle());
+  document.querySelector('.hud-bar')?.appendChild(button);
 
   // The CSS circle clips hit-testing too, so no rim guard is needed here.
   const viewpointAt = (e) => pickViewpoint(e.offsetX, e.offsetY, VIEWPOINTS, view, SIZE);
@@ -247,6 +257,7 @@ export function install(ctx, { controls }) {
     dispose() {
       window.removeEventListener('keydown', onKey);
       root.remove();
+    button.remove();
     },
   };
 }

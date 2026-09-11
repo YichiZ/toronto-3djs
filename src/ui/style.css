@@ -566,6 +566,12 @@ html, body {
 @media (pointer: coarse) {
   .hud-minimap { bottom: auto; top: calc(var(--hud-place-h, 100px) + 26px); transform: scale(0.6); transform-origin: top left; }
 }
+/* The Map button (no M key on touch): in the bar, coarse pointers only. */
+.hud-minimap-btn { display: none; }
+.hud-minimap-btn[aria-pressed="true"] { background: rgba(125, 211, 252, 0.18); border-color: rgba(125, 211, 252, 0.5); }
+@media (pointer: coarse) {
+  .hud-minimap-btn { display: inline-flex; }
+}
 @media (pointer: coarse) and (max-height: 600px) {
   .hud-minimap { display: none; }
 }

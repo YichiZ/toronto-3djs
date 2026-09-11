@@ -11,9 +11,12 @@ import { chromium } from 'playwright';
 const ROOT = new URL('../', import.meta.url).pathname;
 
 /** Start vite and read the URL it actually bound, rather than assuming a port. */
-export function startServer() {
+export function startServer({ preview = false } = {}) {
   return new Promise((resolve, reject) => {
-    const server = spawn('npx', ['vite', '--host', '127.0.0.1'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    // `preview` serves dist/ - the production bundle, which is what a perf run
+    // has to measure. Port 0 lets the OS pick, so a busy 4173 is not a failure.
+    const args = preview ? ['vite', 'preview', '--host', '127.0.0.1', '--port', '0'] : ['vite', '--host', '127.0.0.1'];
+    const server = spawn('npx', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
     const fail = setTimeout(() => reject(new Error('vite did not report a URL within 30 s')), 30_000);
     let out = '';
     server.stdout.setEncoding('utf8');
@@ -47,8 +50,8 @@ export async function launchBrowser() {
  * The first-visit card (#26) is marked seen unless `intro` is set: it sits over
  * the middle of the view, and no other suite is testing it.
  */
-export async function openWorld({ consoleErrors = [], contextOptions, intro = false } = {}) {
-  const { server, url } = await startServer();
+export async function openWorld({ consoleErrors = [], contextOptions, intro = false, preview = false } = {}) {
+  const { server, url } = await startServer({ preview });
   const browser = await launchBrowser();
   const viewport = { width: 1280, height: 800 };
   // contextOptions: e.g. { hasTouch: true } for a touchscreen device.

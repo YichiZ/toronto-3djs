@@ -236,10 +236,14 @@ async function pickPinch() {
     if (car.speed < 2) continue;   // queued at a light: might not arrive in the watch
     for (let ahead = 8; ahead <= 40; ahead += 4) {
       if (car.s + ahead + 4 > car.len) break;
+      if (ahead > car.speed * 5) break;   // must arrive well inside the 8 s watch
       const spot = { x: car.x + car.dx * ahead, z: car.z + car.dz * ahead };
       for (const side of [1, -1]) {
         const w = await wallDistance(spot.x, spot.z, -car.dz * side, car.dx * side, 12);
-        if (w && w.d <= car.halfWidth + 0.5 + BODY_RADIUS + 0.8) return { car, spot, side, wall: w };
+        // The walker must start clear of the wall (a pole right on the lane
+        // would fail the assertion at sample 0, before any shove), yet close
+        // enough that the shove would reach it.
+        if (w && w.d > BODY_RADIUS + 0.1 && w.d <= car.halfWidth + 0.5 + BODY_RADIUS + 0.8) return { car, spot, side, wall: w };
       }
     }
   }

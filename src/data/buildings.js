@@ -119,29 +119,43 @@ export const BUILDINGS = [
   {
     id: 'maple-leaf-square-w', name: 'Maple Leaf Square West Tower', address: '15 York Street',
     x: -232, z: 248, w: 40, d: 44, height: 176, floors: 54,
-    landmark: true, confidence: 'inferred',
+    // Downgraded from 'inferred' (historian 2026-09-11): published storey counts
+    // disagree - 40/44 (Lanterra marketing), 49 at 181 m, 65 at 186 m
+    // (Wikipedia, "Maple Leaf Square", 2026) - and none matches 54/50 here.
+    landmark: true, confidence: 'approximated',
+    note: 'Height and storeys unverified: published figures conflict (40/44, 49 and 65 storeys; 181-186 m).',
   },
   {
     id: 'maple-leaf-square-e', name: 'Maple Leaf Square East Tower', address: '15 York Street',
     x: -232, z: 316, w: 40, d: 42, height: 163, floors: 50,
-    landmark: true, confidence: 'inferred',
-    note: 'Shared podium with the public square and its outdoor screen faces the arena.',
+    // Downgraded from 'inferred' (historian 2026-09-11): see maple-leaf-square-w.
+    landmark: true, confidence: 'approximated',
+    note: 'Shared podium with the public square and its outdoor screen faces the arena. Height and storeys unverified: published figures conflict.',
   },
   {
     id: 'one-york', name: '1 York Street', address: '1 York Street',
-    x: -330, z: 336, w: 50, d: 44, height: 150, floors: 35,
+    // CORRECTED height 150 -> 174 m (historian 2026-09-11).
+    // source: SKYDB, "One York Street", 2026 (174 m, 35 floors);
+    // source: Menkes, "1 York Street", 2026 (35 storeys, 2016).
+    // Height rests on one source, so the grade stays 'inferred'.
+    x: -330, z: 336, w: 50, d: 44, height: 174, floors: 35, year: 2016,
     kind: 'curtain', palette: { glass: '#7d99ab', spandrel: '#2f3a44' },
     confidence: 'inferred',
   },
+  // CORRECTED (historian 2026-09-11): the two ICE figures were swapped between
+  // the addresses. 12 York (ICE I, 2014) is the shorter, 14 York (ICE II, 2015)
+  // the taller. source: Wikipedia, "ICE Condominiums" and "List of tallest
+  // buildings in Toronto", 2026. Positions and footprints are still unverified,
+  // hence 'approximated'; the ids' west/east labels do not match their x either.
   {
     id: 'ice-condos-w', name: 'ICE Condos West', address: '12 York Street',
-    x: -330, z: 213, w: 34, d: 34, height: 234, floors: 67,
+    x: -330, z: 213, w: 34, d: 34, height: 202, floors: 57, year: 2014,
     kind: 'curtain', palette: { glass: '#8fb0c4', spandrel: '#39424b' },
     confidence: 'approximated',
   },
   {
     id: 'ice-condos-e', name: 'ICE Condos East', address: '14 York Street',
-    x: -382, z: 213, w: 34, d: 34, height: 208, floors: 57,
+    x: -382, z: 213, w: 34, d: 34, height: 234, floors: 67, year: 2015,
     kind: 'curtain', palette: { glass: '#8fb0c4', spandrel: '#39424b' },
     confidence: 'approximated',
   },
@@ -215,13 +229,19 @@ export const BUILDINGS = [
   },
   {
     id: 'l-tower', name: 'L Tower', address: '8 The Esplanade',
-    x: 232, z: 62, w: 34, d: 34, height: 205, floors: 58,
+    // Upgraded to 'reference' (historian 2026-09-11): 205 m / 58 floors.
+    // source: Wikipedia, "L Tower", 2026; source: Wikipedia, "List of tallest
+    // buildings in Toronto", 2026 (205 m, 59 floors).
+    x: 232, z: 62, w: 34, d: 34, height: 205, floors: 58, year: 2015,
     kind: 'curtain', palette: { glass: '#93b2c6', spandrel: '#2b333a' },
-    confidence: 'inferred', note: 'Daniel Libeskind curve; reconstructed here as a tapered slab.',
+    confidence: 'reference', note: 'Daniel Libeskind curve; reconstructed here as a tapered slab. Height and storeys verified; the footprint is not.',
   },
   {
     id: 'yonge-front-se', name: '1 Yonge / Toronto Star Building', address: '1 Yonge Street',
-    x: 232, z: 250, w: 60, d: 70, height: 92, floors: 25,
+    // CORRECTED height 92 -> 101 m (historian 2026-09-11).
+    // source: Wikipedia, "One Yonge Street", 2026 (101 m, 25 storeys, 1970).
+    // Single source and an unverified footprint: stays 'approximated'.
+    x: 232, z: 250, w: 60, d: 70, height: 101, floors: 25, year: 1970,
     kind: 'curtain', palette: { glass: '#6d8798', spandrel: '#4b535a' },
     confidence: 'approximated',
   },
@@ -255,9 +275,14 @@ export const BUILDINGS = [
   },
   {
     id: 'td-south-tower', name: 'TD Centre South Tower', address: '79 Wellington Street West',
-    x: -140, z: -215, w: 42, d: 40, height: 178, floors: 46,
+    // CORRECTED 178 m / 46 floors -> 153.6 m / 39 (historian 2026-09-11).
+    // source: Cadillac Fairview, "TD South Tower / 79 Wellington St. W.
+    // Technical Specification", 2022 (39 storeys above ground, 503 ft 10 in;
+    // its "151 m" is a typo for 153.6 m); source: Wikipedia,
+    // "Toronto-Dominion Centre", 2026 (153.57 m, 1985).
+    x: -140, z: -215, w: 42, d: 40, height: 153.6, floors: 39, year: 1985,
     kind: 'curtain', palette: { glass: '#33383c', spandrel: '#22262a' },
-    confidence: 'inferred',
+    confidence: 'reference', note: 'Height, storeys and year verified; the footprint is not.',
   },
   {
     id: 'wellington-w-infill-1', name: 'Wellington Street West offices', address: '120 Wellington Street West',
@@ -273,9 +298,12 @@ export const BUILDINGS = [
   },
   {
     id: 'ritz-carlton', name: 'Ritz-Carlton Toronto', address: '181 Wellington Street West',
-    x: -474, z: -204, w: 44, d: 44, height: 209, floors: 53,
+    // Upgraded to 'reference' (historian 2026-09-11): 209 m / 53 floors checks.
+    // source: Wikipedia, "Ritz-Carlton Toronto", 2026 (209.8 m, 53 storeys);
+    // source: Wikipedia, "List of tallest buildings in Toronto", 2026 (209.5 m, 2011).
+    x: -474, z: -204, w: 44, d: 44, height: 209, floors: 53, year: 2011,
     kind: 'curtain', palette: { glass: '#93a9b8', spandrel: '#525a61' },
-    confidence: 'approximated',
+    confidence: 'reference', note: 'Height and storeys verified; the footprint is not.',
   },
 
   // ---------------------------------------------------------------------------
@@ -295,7 +323,11 @@ export const BUILDINGS = [
   },
   {
     id: 'front-w-condo-1', name: 'Front Street West residences', address: '300 Front Street West',
-    x: -530, z: -54, w: 48, d: 50, height: 172, floors: 49,
+    // CORRECTED height 172 -> 156 m (historian 2026-09-11).
+    // source: UrbanToronto, "300 Front Street West" project database, 2026
+    // (156.05 m, 49 storeys); CondoInvestments, "300 Front Street West", 2026.
+    // Footprint unverified: stays 'approximated'.
+    x: -530, z: -54, w: 48, d: 50, height: 156, floors: 49,
     kind: 'curtain', palette: { glass: '#8aa8ba', spandrel: '#3a434a' },
     confidence: 'approximated',
   },

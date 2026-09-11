@@ -35,6 +35,8 @@ const LANDMARKS = [
   ['maple-leaf-square', 'mls-square'],
   ['gooderham-flatiron', 'gooderham-flatiron'],
   ['front-york-east', 'union-station'],
+  // #79: 6 m from a corner pier, craning up; neither facade nor roofline read.
+  ['hhof-front-yonge', 'hockey-hall-of-fame'],
 ];
 
 /** In-page: what the camera frames on arrival. Moving things never count. */
@@ -87,6 +89,30 @@ for (const [viewpoint, subject] of LANDMARKS) {
     assert.ok(f.clearAhead >= 8, `only ${f.clearAhead} m of clear walking ahead - ${where}`);
   });
 }
+
+// #79: the checks above pass a 19 m building seen from 8 m, with its roofline
+// out of sight. The steepest part of the roofline to fit is its nearest top
+// corner; if that is in frame, the facade reads whole.
+test('the Hockey Hall of Fame arrives whole: its roofline in frame (#79)', async () => {
+  await page.selectOption('.hud-bar select', 'hhof-front-yonge');
+  await page.waitForTimeout(700);
+  const corner = await page.evaluate(async () => {
+    const THREE = await import('/node_modules/three/build/three.module.js');
+    const reg = await import('/src/core/registry.js');
+    const cam = window.__TWIN__.ctx.camera;
+    cam.updateMatrixWorld();
+    const box = new THREE.Box3().setFromObject(reg.get('hockey-hall-of-fame').object);
+    let near = null;
+    for (const x of [box.min.x, box.max.x]) for (const z of [box.min.z, box.max.z]) {
+      const d = Math.hypot(x - cam.position.x, z - cam.position.z);
+      if (!near || d < near.d) near = { x, z, d };
+    }
+    const p = new THREE.Vector3(near.x, box.max.y, near.z).project(cam);
+    return { ndcX: +p.x.toFixed(2), ndcY: +p.y.toFixed(2), metres: +near.d.toFixed(1) };
+  });
+  // Unfixed: the corner 8 m off and far above the top of the frame.
+  assert.ok(corner.ndcY < 0.95 && Math.abs(corner.ndcX) <= 1, `the roofline's nearest corner is out of frame - ${JSON.stringify(corner)}`);
+});
 
 // Below grade, #70: the streetcar loop's back-faced shell wrapped the PATH
 // arrival (a grey wall 3 m ahead) and put its lid 0.3 m over the eye in the Bay

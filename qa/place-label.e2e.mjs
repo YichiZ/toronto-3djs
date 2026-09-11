@@ -42,7 +42,8 @@ async function placeAt(x, eyeY, z) {
 // Union Station's box runs x -242.6 to -13.4, long face at z 18.6 - probed from
 // the registry, not guessed. The pavement 4 m off that face:
 const PAVEMENT_Z = 18.6 - 4;
-const UNION_HEADLINE = /^Union Station (surveyed|reference|inferred|approximated) \d+ m$/;
+// No provenance badge outside reference mode (#69).
+const UNION_HEADLINE = /^Union Station \d+ m$/;
 
 for (const [spot, x, corner] of [
   ['west end', -234.6, 'Front & York'],
@@ -73,6 +74,38 @@ test('far from any building, a scattered street-furniture set does not take the 
   assert.doesNotMatch(place.name, /Pay-and-display|wayfinding pylon|signal head|shrubs|Transit shelter|Storefront fascia/,
     `the HUD named a scattered set: "${place.name}"`);
   assert.doesNotMatch(place.name, / 0 m$/, `claimed to be right at something: "${place.name}"`);
+});
+
+/** Jump to a viewpoint, let the HUD refresh, read the headline. */
+async function headlineAt(viewpoint) {
+  await page.evaluate((id) => window.__TWIN__.controls.teleport(id), viewpoint);
+  await page.waitForTimeout(700);
+  return page.evaluate(() => document.querySelector('.hud-place .place-name')?.textContent?.trim() ?? '');
+}
+
+test('in the Great Hall, the HUD names the Great Hall (#69)', async () => {
+  // It said "Union Station east and west wings · INFERRED".
+  const name = await headlineAt('great-hall');
+  assert.match(name, /^Union Station Great Hall \d+ m$/, `the HUD said "${name}"`);
+});
+
+test('in the SkyWalk, the HUD names the SkyWalk (#69)', async () => {
+  // It said "Metro Toronto Convention Centre".
+  const name = await headlineAt('skywalk-east');
+  assert.match(name, /^SkyWalk/, `the HUD said "${name}"`);
+});
+
+test('provenance badges and the true bearing live in reference mode (#69)', async () => {
+  const read = () => page.evaluate(() => ({
+    badge: Boolean(document.querySelector('.hud-place .place-name em')),
+    bearing: document.querySelector('.hud-place .bearing').checkVisibility(),
+  }));
+  await headlineAt('union-forecourt');
+  assert.deepEqual(await read(), { badge: false, bearing: false }, 'shown outside reference mode');
+  await page.evaluate(() => window.__TWIN__.reference.toggle());
+  await page.waitForTimeout(500);
+  assert.deepEqual(await read(), { badge: true, bearing: true }, 'missing in reference mode');
+  await page.evaluate(() => window.__TWIN__.reference.toggle());
 });
 
 test('the whole run produced no console errors', () => {

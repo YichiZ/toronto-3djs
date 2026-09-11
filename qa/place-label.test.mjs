@@ -57,6 +57,25 @@ test('below grade, nested boxes all at 0 m: the most specific place names it', (
   assert.equal(near.record.name, 'PATH — Union Station north to Front Street');
 });
 
+test('in the Great Hall, the hall names the place - not the wings box around it (#69)', () => {
+  // At street level interiors were not places, so the landmark whose box holds
+  // the hall took the headline in the building's most famous room.
+  const near = pickPlace([
+    { record: rec('Union Station east and west wings', 'landmark'), distance: 0, footprint: 11519 },
+    { record: rec('Union Station Great Hall', 'interior'), distance: 0, footprint: 1976 },
+    { record: UNION, distance: 0, footprint: 20000 },
+  ], false);
+  assert.equal(near.record.name, 'Union Station Great Hall');
+});
+
+test('in the SkyWalk, the SkyWalk names the place - not the convention centre beside it (#69)', () => {
+  const near = pickPlace([
+    { record: rec('Metro Toronto Convention Centre - North Building', 'landmark'), distance: 3, footprint: 30000 },
+    { record: rec('SkyWalk pedestrian corridor', 'interior'), distance: 0, footprint: 1500 },
+  ], false);
+  assert.equal(near.record.name, 'SkyWalk pedestrian corridor');
+});
+
 test('a tie-break never overrides a real difference in distance', () => {
   const near = pickPlace([
     { record: UNION, distance: 4, footprint: 11519 },

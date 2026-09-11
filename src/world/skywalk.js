@@ -258,7 +258,9 @@ export function build(_ctx) {
   const tube = buildTube();
   group.add(tube);
   register({
-    id: 'skywalk-tube', name: 'SkyWalk pedestrian corridor', kind: 'infrastructure',
+    // An enclosed room you walk inside, so 'interior': as 'infrastructure' the
+    // HUD named the Metro Toronto Convention Centre beside it instead (#69).
+    id: 'skywalk-tube', name: 'SkyWalk pedestrian corridor', kind: 'interior',
     object: tube, confidence: 'reference',
     source: 'Enclosed SkyWalk, Union Station to MTCC North / CN Tower / Rogers Centre',
     note: 'Route is modelled straight at z=62 above the rail corridor. Section (9 m wide, shallow curved roof) is proportioned from imagery.',

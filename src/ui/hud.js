@@ -623,6 +623,10 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
     camera.getWorldDirection(dir);
     const bearing = gridDirectionToBearing(dir.x, dir.z);
     bearingEl.textContent = `${bearing.toFixed(0)}° ${compassPoint(bearing)} true`;
+    // Provenance and the true bearing are reference-mode detail: a visitor can
+    // do nothing with "INFERRED" or "252° WSW true" (#69).
+    const refOn = Boolean(reference?.enabled?.());
+    bearingEl.hidden = !refOn;
     levelEl.textContent = controls?.level ? `· ${controls.level}` : '';
     // The level is where the walker stands; orbit and the tour have no walker,
     // and the chip read "SkyWalk" over an aerial (#29).
@@ -633,7 +637,8 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
     if (near) {
       const cls = CONFIDENCE_CLASS[near.record.confidence] ?? '';
       placeName.innerHTML =
-        `${escape(near.record.name)} <em class="${cls}">${near.record.confidence}</em>` +
+        `${escape(near.record.name)}` +
+        (refOn ? ` <em class="${cls}">${near.record.confidence}</em>` : '') +
         ` <span class="dist">${near.distance.toFixed(0)} m</span>`;
     } else {
       placeName.textContent = 'downtown Toronto';

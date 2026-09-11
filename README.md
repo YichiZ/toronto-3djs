@@ -1,20 +1,62 @@
-# Union Station · Downtown Toronto Digital Twin
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo.svg" alt="Union Station — Downtown Toronto Digital Twin" width="640">
+  </picture>
+</p>
 
-An interactive, browser-scale 3D reconstruction of **Union Station and the
-surrounding downtown Toronto blocks**, built as a pure **Three.js** web
-application. Walk Front Street, enter the Great Hall, descend into the PATH,
-ride the SkyWalk over the tracks, and watch trains, traffic and pedestrians move
-through a city whose geometry is anchored to real coordinates.
+<p align="center">
+  An interactive, browser-scale 3D reconstruction of Union Station and the blocks around it — every polygon written by hand, no external assets.
+</p>
+
+<p align="center">
+  <img alt="Three.js r171" src="https://img.shields.io/badge/three.js-r171-2B3440">
+  <img alt="Vite 6" src="https://img.shields.io/badge/vite-6-4F7F6E">
+  <img alt="No external assets" src="https://img.shields.io/badge/assets-none%2C%20all%20procedural-9A8F79">
+  <img alt="Grid rotation 16.7 degrees" src="https://img.shields.io/badge/grid-16.7%C2%B0%20west%20of%20north-9A8F79">
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-2B3440"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> — <a href="#the-things-that-make-it-toronto">Toronto invariants</a> — <a href="#controls">Controls</a> — <a href="#how-it-is-built">Architecture</a> — <a href="#qa">QA</a> — <a href="#licences-and-provenance">Provenance</a>
+</p>
+
+<p align="center">
+  <img src="docs/hero-corridor-dusk.jpg" alt="The rail corridor and Union Station train shed at golden hour, Royal York and the financial district behind" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/front-and-bay.jpg" alt="Street level at Front and Bay, the Union Station colonnade running west" width="440">
+  <img src="docs/cn-tower-dusk.jpg" alt="The CN Tower at dusk from Bremner and Lower Simcoe" width="440">
+</p>
+
+> **Demo:** coming soon. Until then, the quick start below puts the whole city on
+> your screen in about thirty seconds.
+
+Walk Front Street, enter the Great Hall, descend into the PATH, ride the SkyWalk
+over the tracks, and watch trains, traffic and pedestrians move through a city
+whose geometry is anchored to real coordinates.
 
 Built from [`PROMPT.md`](PROMPT.md), which is the brief this repository was
 produced from, reproduced verbatim.
 
+---
+
+## Quick start
+
 ```bash
 npm install
 npm run dev        # http://127.0.0.1:5173
-npm run build      # production bundle
-npm run qa         # static QA -> FINAL_QA_REPORT.md
 ```
+
+Then open the URL and click once to capture the pointer. Two more scripts matter:
+
+```bash
+npm run build      # production bundle
+npm run qa         # static QA -> FINAL_QA_REPORT.md, non-zero exit on any error
+```
+
+No API keys, no downloads, no data files. Node 20+ and a browser with WebGL 2.
 
 ---
 
@@ -104,6 +146,10 @@ src/ui/         camera modes, HUD, cinematic tour, reference mode
 qa/             the automated QA harness
 ```
 
+Every module exports exactly `build(ctx)` and returns a `THREE.Object3D`;
+[`MODULE_CONTRACT.md`](MODULE_CONTRACT.md) is the full contract, including
+registration and the draw-call budget.
+
 ### Coordinate system
 
 Real WGS84 coordinates are converted to a **grid-aligned local frame** by
@@ -140,21 +186,46 @@ verify. Clicking a storefront shows you which grade you are looking at.
 ## QA
 
 ```bash
-npm run qa
+npm test           # unit tests
+npm run qa         # static audit -> FINAL_QA_REPORT.md
+npm run e2e        # Playwright, one suite at a time
 ```
 
-Runs the geometric audit (footprint overlaps, buildings standing in roadways,
-boundary containment, the geo transforms' round-trip, the CN Tower's bearing and
-distance from Union Station), the hallucination-trap audit, and the registry
-integrity check, then writes [`FINAL_QA_REPORT.md`](FINAL_QA_REPORT.md). It exits
-non-zero on any error, so it can gate a build.
+`npm run qa` runs the geometric audit (footprint overlaps, buildings standing in
+roadways, boundary containment, the geo transforms' round-trip, the CN Tower's
+bearing and distance from Union Station), the hallucination-trap audit, and the
+registry integrity check, then writes
+[`FINAL_QA_REPORT.md`](FINAL_QA_REPORT.md). It exits non-zero on any error, so it
+can gate a build.
 
 Runtime figures — FPS, draw calls, triangle count, crowd sizes — are captured
 separately from a live page and folded into the same report.
 
 ---
 
+## Contributing
+
+Issues and pull requests are welcome. Before you start:
+
+- [`CLAUDE.md`](CLAUDE.md) — the short version: commands, the module contract,
+  the coordinate frame, and the Toronto invariants.
+- [`MODULE_CONTRACT.md`](MODULE_CONTRACT.md) — the full build contract,
+  registration rules and the performance budget.
+- [`qa/traps.mjs`](qa/traps.mjs) — the machine-checked invariants. If a change
+  trips one of these, the change is wrong, not the trap.
+
+Conventions: branch `<topic>-<issue#>` (for example `hud-29`); commit
+`type: lowercase summary` per [conventional
+commits](https://www.conventionalcommits.org/), appending `(#issue)` when one
+exists; merge by pull request, squash only (`gh pr merge --squash`).
+`npm test` and `npm run qa` must pass before review.
+
+---
+
 ## Licences and provenance
+
+The code is MIT licensed — see [`LICENSE`](LICENSE). The reconstruction itself
+carries the obligations below.
 
 - Reconstructed from public reference: OpenStreetMap, City of Toronto Open Data
   (3D Massing, Building Outlines, Toronto Centreline, Sidewalk Inventory,
@@ -167,3 +238,5 @@ separately from a live page and folded into the same report.
   *Contains information licensed under the Open Government Licence – Toronto.*
 - Every figure in the building database carries a confidence grade. Anything
   graded below `reference` is a hypothesis, and the QA report says so.
+- No brand's logotype or signage artwork is reproduced. Wordmarks in the scene
+  and the mark at the top of this file are original lettering.

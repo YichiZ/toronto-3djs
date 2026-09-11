@@ -9,7 +9,8 @@
  *     -district commute walks it twice a day.
  *   - Lake Shore Boulevard under the Gardiner is a traffic sewer with almost no
  *     footfall; it gets a tenth of the forecourt's density.
- *   - The PATH concourse carries its own crowd one level down (LEVELS.path).
+ *   - The PATH concourse carries its own crowd one level down (LEVELS.path),
+ *     and each of Union's three concourses its own (LEVELS.unionConcourse).
  *
  * WHY IT IS BUILT THIS WAY
  *   Every agent is one instance in one of five InstancedMeshes, so a 700-strong
@@ -30,6 +31,7 @@ import { buildStreetGraph } from './streetGraph.js';
 
 const STREET_AGENTS = 720;
 const PATH_AGENTS = 180;
+const CONCOURSE_AGENTS = 90;
 
 // Muted, high-value clothing tints. They multiply the baked part shading, so a
 // bright tint yields a mid-tone coat and leaves the face plausible.
@@ -103,8 +105,8 @@ const ARCHETYPES = [
   { id: 'cyclist-walking', share: 0.11, speed: [0.9, 1.2], opts: { bike: true } },
 ];
 
-/** Snap-and-link an arbitrary segment list (the PATH) into the same structure. */
-function buildSegmentGraph(segments) {
+/** Snap-and-link an arbitrary segment list (the PATH, a concourse) into the same structure. */
+function buildSegmentGraph(segments, y = LEVELS.path + 0.05) {
   const byKey = new Map();
   const nodes = [];
   const edges = [];
@@ -119,7 +121,7 @@ function buildSegmentGraph(segments) {
     const b = node(s.bx, s.bz);
     const len = Math.hypot(b.x - a.x, b.z - a.z);
     if (len < 1) continue;
-    const e = { a, b, w: 1, cross: false, len, y: LEVELS.path + 0.05 };
+    const e = { a, b, w: 1, cross: false, len, y };
     a.edges.push(e); b.edges.push(e); edges.push(e);
   }
   return { nodes, edges: edges.filter((e) => e.a.edges.length > 1 || e.b.edges.length > 1) };
@@ -289,6 +291,20 @@ export function build(ctx) {
       });
     })
     .catch(() => console.info('[pedestrians] PATH_SEGMENTS unavailable - skipping the concourse crowd'));
+
+  // Union's concourses were empty rooms (#70): one walking loop per room.
+  import('../interiors/concourses.js')
+    .then((m) => {
+      const g = buildSegmentGraph(normaliseSegments(m.CONCOURSE_WALKS), LEVELS.unionConcourse + 0.05);
+      if (!g.edges.length) throw new Error('no usable CONCOURSE_WALKS');
+      const counts = ARCHETYPES.map((a, i) => (i < 3 ? Math.round(CONCOURSE_AGENTS * a.share * 1.3) : 0));
+      const concMeshes = makeMeshes(group, counts, 'ped-concourse');
+      meshes = meshes.concat(concMeshes.filter(Boolean));
+      ARCHETYPES.forEach((arch, i) => {
+        for (let k = 0; k < counts[i]; k++) agents.push(spawn(g.edges, concMeshes[i], k, arch));
+      });
+    })
+    .catch(() => console.info('[pedestrians] CONCOURSE_WALKS unavailable - skipping the Union concourse crowd'));
 
   ctx.onFrame.push((dt) => {
     for (const a of agents) {

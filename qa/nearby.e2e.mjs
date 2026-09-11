@@ -49,12 +49,13 @@ test('on the forecourt: nearby places, and the lift down to the PATH', async () 
 
 test('in the PATH: the nearest way up, the Loop entrance stairs to the street', async () => {
   const s = await strip('path-corridor');
-  // The Union Station Loop headhouse at (-24, 17.5), 11 m from the viewpoint
-  // at (-30, 8). Before the forecourt stairs were tagged (#72) the nearest
-  // listed way up was the concourse stair at (-40, 26.1), 21 m off.
+  // The Union Station Loop headhouse at (-24, 17.5), 20 m from the viewpoint
+  // at (-27, -2); it stood at (-30, 8), 11 m off, until #70 moved it out of the
+  // loop's shell. Before the forecourt stairs were tagged (#72) the nearest
+  // listed way up was the concourse stair at (-40, 26.1), now 31 m off.
   const way = s.lines.find((l) => l.includes('Stairs up to street level ⇡'));
   assert.ok(way, `no way up listed: ${JSON.stringify(s.lines)}`);
-  assert.ok(Math.abs(Number(way.match(LINE)[2]) - 11) <= 1, way);
+  assert.ok(Math.abs(Number(way.match(LINE)[2]) - 20) <= 1, way);
 });
 
 test('walk mode only', async () => {

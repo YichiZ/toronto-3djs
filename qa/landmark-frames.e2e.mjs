@@ -88,6 +88,39 @@ for (const [viewpoint, subject] of LANDMARKS) {
   });
 }
 
+// Below grade, #70: the streetcar loop's back-faced shell wrapped the PATH
+// arrival (a grey wall 3 m ahead) and put its lid 0.3 m over the eye in the Bay
+// Concourse. That shell is noCollide, so the check above never sees it; this
+// one counts anything drawn.
+for (const viewpoint of ['york-concourse', 'bay-concourse', 'path-corridor']) {
+  test(`arriving at "${viewpoint}", nothing is drawn within 4 m of the middle of the frame`, async () => {
+    await page.selectOption('.hud-bar select', viewpoint);
+    await page.waitForTimeout(900);
+    const hit = await page.evaluate(async () => {
+      const THREE = await import('/node_modules/three/build/three.module.js');
+      const { ctx } = window.__TWIN__;
+      const cam = ctx.camera;
+      cam.updateMatrixWorld();
+      const moving = new Set(['vehicles', 'pedestrians', 'trains']);
+      const shown = (o) => { for (let p = o; p; p = p.parent) { if (!p.visible || moving.has(p.name)) return false; } return o.material?.visible !== false; };
+      const rc = new THREE.Raycaster();
+      rc.camera = cam;
+      let nearest = { d: Infinity };
+      for (const x of [-0.3, 0, 0.3]) for (const y of [-0.2, 0, 0.3]) {
+        rc.setFromCamera(new THREE.Vector2(x, y), cam);
+        const h = rc.intersectObject(ctx.scene, true).find((i) => shown(i.object));
+        if (h && h.distance < nearest.d) {
+          const chain = [];
+          for (let p = h.object; p && chain.length < 3; p = p.parent) chain.push(p.name || p.type);
+          nearest = { d: +h.distance.toFixed(1), what: chain.join(' < ') };
+        }
+      }
+      return nearest;
+    });
+    assert.ok(hit.d >= 4, `${hit.what} is ${hit.d} m away in the middle of the frame at ${viewpoint}`);
+  });
+}
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

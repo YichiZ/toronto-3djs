@@ -76,7 +76,9 @@ export const VIEWPOINTS = Object.freeze([
     id: 'york-concourse',
     name: 'York Concourse',
     position: { x: -214, y: LEVELS.unionConcourse + EYE, z: 58 },
-    lookAt: { x: -120, y: LEVELS.unionConcourse + 3, z: 58 },
+    // Looking east it faced the blank end wall (#70); north-east it takes in the
+    // departure boards, the balustrade, the escalators and the crowd.
+    lookAt: { x: -206, y: LEVELS.unionConcourse + 2.4, z: 26 },
     mode: 'walk',
     description: 'West concourse floor, one level below the Great Hall.',
     realWorld: 'The 2015 revitalisation: pale stone floor, backlit wayfinding, the deep coffered ceiling, escalators up to the platform level.',
@@ -85,7 +87,9 @@ export const VIEWPOINTS = Object.freeze([
     id: 'bay-concourse',
     name: 'Bay Concourse',
     position: { x: -40, y: LEVELS.unionConcourse + EYE, z: 52 },
-    lookAt: { x: -140, y: LEVELS.unionConcourse + 3, z: 52 },
+    // Looking west it faced the blank end wall 24 m off (#70); north it takes
+    // in the departure board, the escalators up to the hall and the crowd.
+    lookAt: { x: -42, y: LEVELS.unionConcourse + 2.4, z: 26 },
     mode: 'walk',
     description: 'East concourse — a different space at a different level from the Great Hall.',
     realWorld: 'Lower, busier and more retail-lined than York: the food hall frontages, GO departure boards, the ramp down to the Union Station Loop.',
@@ -95,9 +99,12 @@ export const VIEWPOINTS = Object.freeze([
     name: 'PATH corridor under Bay',
     // On the centreline of path-bay-north, the corridor it describes. It was at
     // (-3, -60), about 8 m outside every corridor, in solid ground: the visitor
-    // saw the street from underneath (#24). From here the corridor runs 54 m
-    // clear to the Royal Bank Plaza turn.
-    position: { x: -30, y: LEVELS.path + EYE, z: 8 },
+    // saw the street from underneath (#24). At z 8 it stood inside the
+    // streetcar loop's back-faced shell, whose wall 3 m ahead was the flat grey
+    // void on arrival (#70); from z -2 the corridor runs 38 m clear to the Royal
+    // Bank Plaza turn. 3 m east of the centreline, because the crowd walks the
+    // centreline: standing on it, someone's back filled the frame.
+    position: { x: -27, y: LEVELS.path + EYE, z: -2 },
     lookAt: { x: -30, y: LEVELS.path + 2, z: -40 },
     mode: 'walk',
     description: 'PATH concourse level on the Bay Street corridor, heading north toward Royal Bank Plaza.',

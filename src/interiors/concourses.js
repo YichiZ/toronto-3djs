@@ -52,6 +52,21 @@ export const ROOMS = Object.freeze([
   },
 ]);
 
+/**
+ * Where the concourse crowd walks (#70): one loop per room, as [[x, z], [x, z]]
+ * segments. Each loop keeps 1.5 m or more clear of the stairs, escalators,
+ * balustrades and VIA seating placed by buildRoom. The rooms are walled on all
+ * four sides, so no loop crosses from one room to the next.
+ */
+const loop = (x0, z0, x1, z1) => [
+  [[x0, z0], [x1, z0]], [[x1, z0], [x1, z1]], [[x1, z1], [x0, z1]], [[x0, z1], [x0, z0]],
+];
+export const CONCOURSE_WALKS = Object.freeze([
+  ...loop(-234, 34, -202, 62),   // York
+  ...loop(-51, 35, -34, 61),     // Bay
+  ...loop(-149, 57, -115, 68),   // VIA, between the balustrade, the seats and the stairs
+]);
+
 const matCache = new Map();
 const local = (key, build) => {
   let m = matCache.get(key);
@@ -112,6 +127,35 @@ const boardMaterial = () =>
       map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: 1.0, roughness: 0.45,
     });
   });
+
+const SIGNS = {
+  up: '↑  Trains · Great Hall',
+  path: '↓  PATH',
+};
+
+/**
+ * Hanging wayfinding sign, original canvas lettering. A thin box rather than a
+ * plane: its front and back faces both read the right way round.
+ * @param {keyof SIGNS} kind
+ * @param {number} width metres; the sign is 1 m tall
+ */
+function hangingSign(kind, width) {
+  const mat = local(`sign:${kind}`, () => {
+    const { canvas, ctx } = canvas2d(Math.round(width * 128), 128);
+    ctx.fillStyle = '#12202c';
+    ctx.fillRect(0, 0, canvas.width, 128);
+    ctx.fillStyle = '#f4f1e8';
+    ctx.font = 'bold 64px "Helvetica Neue", Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(SIGNS[kind], 36, 66);
+    const map = new THREE.CanvasTexture(canvas);
+    map.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({
+      map, emissiveMap: map, emissive: 0xffffff, emissiveIntensity: 0.8, roughness: 0.5,
+    });
+  });
+  return new THREE.Mesh(new THREE.BoxGeometry(width, 1.0, 0.08), mat);
+}
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -355,6 +399,13 @@ function buildRoom(room) {
   const down = stair({ rise: FLOOR - LEVELS.path, run: 6.0, width: 3.4 });
   down.position.set(room.x - room.w / 2 + 8, LEVELS.path, room.z + 6);
   g.add(down);
+
+  // wayfinding over the stair heads (#70)
+  const upSign = hangingSign('up', 6.2);
+  upSign.position.set(room.x + room.w / 2 - 9.5, FLOOR + 3.4, room.z - 5);
+  const downSign = hangingSign('path', 3.4);
+  downSign.position.set(room.x - room.w / 2 + 8, FLOOR + 3.2, room.z + 9);
+  g.add(upSign, downSign);
 
   if (room.short === 'via') {
     // waiting seating and the gate doors onto the platform stairs

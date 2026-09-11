@@ -4,8 +4,10 @@
  * The plan follows the level the walker is on - the street grid and footprints
  * at grade; below it the PATH spine or the concourse rooms, above it the deck
  * you are standing on - with the streets and buildings dimmed underneath so
- * you can still place yourself. North-up in GRID north (-Z), because that is
- * the frame the streets are laid out in; a separate tick marks true north.
+ * you can still place yourself. Heading-up, GTA style: the projection turns
+ * the map so the walker's forward direction is up, `heading` 0 meaning grid
+ * north (-Z) and reproducing the old north-up map exactly. Ticks mark where
+ * true and grid north went.
  *
  * Pure: minimap.js owns the canvas, so `npm test` covers everything here.
  */
@@ -67,39 +69,61 @@ export function planFor(level) {
 }
 
 /**
- * Grid position to map pixels, centred on `centre`. +x is right; grid south
- * (+z) is down, so grid north is up.
+ * The camera's forward direction as a map heading in radians: 0 facing grid
+ * north (-Z), growing clockwise. Feed it `camera.getWorldDirection()` x and z.
  */
-export function worldToMap(x, z, centre, sizePx, viewM = VIEW_METRES) {
-  const k = sizePx / viewM;
-  return { x: sizePx / 2 + (x - centre.x) * k, y: sizePx / 2 + (z - centre.z) * k };
+export function headingOf(dirX, dirZ) {
+  return Math.atan2(dirX, -dirZ);
 }
 
-/** Inverse of {@link worldToMap}. */
-export function mapToWorld(px, py, centre, sizePx, viewM = VIEW_METRES) {
+/** Turn a map offset (x right, y down) by -heading, so the heading points up. */
+function turn(x, y, heading) {
+  const c = Math.cos(heading);
+  const s = Math.sin(heading);
+  return { x: x * c + y * s, y: -x * s + y * c };
+}
+
+/**
+ * Grid position to map pixels, centred on `centre` and turned so `heading` is
+ * up. At heading 0 that is grid north up: +x right, grid south (+z) down.
+ */
+export function worldToMap(x, z, centre, sizePx, viewM = VIEW_METRES, heading = 0) {
   const k = sizePx / viewM;
-  return { x: centre.x + (px - sizePx / 2) / k, z: centre.z + (py - sizePx / 2) / k };
+  const t = turn((x - centre.x) * k, (z - centre.z) * k, heading);
+  return { x: sizePx / 2 + t.x, y: sizePx / 2 + t.y };
+}
+
+/** Inverse of {@link worldToMap}: map pixels back to grid metres. */
+export function mapToWorld(px, py, centre, sizePx, viewM = VIEW_METRES, heading = 0) {
+  const k = sizePx / viewM;
+  const t = turn(px - sizePx / 2, py - sizePx / 2, -heading);
+  return { x: centre.x + t.x / k, z: centre.z + t.y / k };
 }
 
 /**
  * True north as a unit direction on the map (x right, y down). The grid is
  * turned 16.7 degrees off true, so on a grid-north-up map true north leans
- * that far clockwise.
+ * that far clockwise; on a heading-up map it turns with everything else.
  */
-export function trueNorthOnMap() {
+export function trueNorthOnMap(heading = 0) {
   const g = trueToGrid(0, -1);            // true north: x = true east, z = true south
-  return { x: g.x, y: g.z };
+  return turn(g.x, g.z, heading);
+}
+
+/** Grid north (-Z) as a unit direction on the map, for the second tick. */
+export function gridNorthOnMap(heading = 0) {
+  return turn(0, -1, heading);
 }
 
 /**
  * The viewpoint whose dot is under a map pixel, within `radiusPx`, or null.
  * The nearest wins when two dots are close.
  */
-export function pickViewpoint(px, py, viewpoints, centre, sizePx, radiusPx = 7, viewM = VIEW_METRES) {
+export function pickViewpoint(px, py, viewpoints, centre, sizePx, radiusPx = 7, viewM = VIEW_METRES, heading = 0) {
   let best = null;
   let bestD = radiusPx;
   for (const v of viewpoints) {
-    const m = worldToMap(v.position.x, v.position.z, centre, sizePx, viewM);
+    const m = worldToMap(v.position.x, v.position.z, centre, sizePx, viewM, heading);
     const d = Math.hypot(m.x - px, m.y - py);
     if (d <= bestD) { bestD = d; best = v; }
   }

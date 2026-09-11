@@ -83,8 +83,7 @@ test('the minimap shows the destination as an amber ring', async () => {
     for (let i = 0; i < d.length; i += 4) if (d[i] > 230 && d[i + 1] > 170 && d[i + 1] < 210 && d[i + 2] < 80) n++;
     return n;
   });
-  await page.keyboard.press('KeyM');
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(300);        // the minimap is up whenever you are walking
   assert.ok(await amber() > 10, 'no amber destination ring on the minimap');
   await page.click('.guide-clear');
   await page.waitForTimeout(300);
@@ -113,7 +112,6 @@ test('with the guide up, no HUD panel overlaps another', async () => {
     assert.deepEqual(over, [], `at ${width} px`);
   }
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.keyboard.press('KeyM');
 });
 
 test('the guide is for walking: hidden in orbit', async () => {

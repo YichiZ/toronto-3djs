@@ -1,9 +1,11 @@
 /**
  * Issue #7 in a real browser: the walk-mode minimap.
  *
- * The unit test in qa/minimap-plan.test.mjs checks what gets drawn; this checks
- * the real thing - the M key, the per-level plan following the walker, the
- * pixels on the canvas, and a click on a viewpoint dot actually teleporting.
+ * The unit test in qa/minimap-plan.test.mjs checks what gets drawn and the
+ * heading-up maths; this checks the real thing - on by default while walking,
+ * M hiding it, the per-level plan following the walker, the pixels on the
+ * canvas, and a click on a viewpoint dot actually teleporting under the
+ * heading the walker happens to be facing.
  *
  *   npm run e2e
  */
@@ -44,7 +46,11 @@ const until = (want, timeout = 2000) => page.waitForFunction((w) => {
   return root && Object.entries(w).every(([k, v]) => (k === 'shown' ? !root.hidden : root.dataset[k]) === v);
 }, want, { timeout });
 
-/** How many canvas pixels are accent-blue: the PATH spine, the rooms, the wedge. */
+/**
+ * How many canvas pixels are accent-blue: the PATH spine, the rooms, the arrow.
+ * getImageData reads the square backing store, not the CSS circle, so the
+ * counts include whatever the turned plan painted into the corners.
+ */
 const bluePixels = () => page.evaluate(() => {
   const c = document.querySelector('.hud-minimap canvas');
   const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -57,20 +63,23 @@ const bluePixels = () => page.evaluate(() => {
   return { blue, painted, total: d.length / 4 };
 });
 
-test('off by default', async () => {
+test('on by default while walking, with the street plan at street level', async () => {
   await walkTo(-16, 1.7, 40);
-  await page.waitForTimeout(200);
-  assert.deepEqual(await state(), { shown: false, level: null });
-});
-
-test('M shows it while walking, with the street plan at street level', async () => {
-  await page.keyboard.press('KeyM');
   await until({ shown: true, level: 'street' });
   const s = await state();
   assert.equal(s.shown, true);
   assert.equal(s.level, 'street');
   const px = await bluePixels();
   assert.ok(px.painted > px.total * 0.3, `the map is mostly empty: ${px.painted} of ${px.total} pixels painted`);
+});
+
+test('M hides it, M shows it again', async () => {
+  await page.keyboard.press('KeyM');
+  await until({ shown: false });
+  assert.equal((await state()).shown, false, 'M hides');
+  await page.keyboard.press('KeyM');
+  await until({ shown: true, level: 'street' });
+  assert.equal((await state()).shown, true, 'M again brings it back');
 });
 
 test('the plan follows the walker below grade: the PATH spine appears', async () => {
@@ -89,12 +98,14 @@ test('clicking a viewpoint dot teleports there', async () => {
   await page.waitForTimeout(250);                // and a redraw centred on the new spot, which the click maps onto
   const target = await page.evaluate(async () => {
     const { ctx } = window.__TWIN__;
-    const { worldToMap } = await import('/src/ui/minimapPlan.js');
+    const { worldToMap, headingOf, VIEW_METRES } = await import('/src/ui/minimapPlan.js');
     const { getViewpoint } = await import('/src/data/references.js');
     const vp = getViewpoint('union-forecourt');
     const c = document.querySelector('.hud-minimap canvas');
     const r = c.getBoundingClientRect();
-    const m = worldToMap(vp.position.x, vp.position.z, { x: ctx.camera.position.x, z: ctx.camera.position.z }, r.width);
+    const dir = ctx.camera.getWorldDirection(ctx.camera.up.clone());   // any spare Vector3; 'three' is not importable from the page
+    const centre = { x: ctx.camera.position.x, z: ctx.camera.position.z };
+    const m = worldToMap(vp.position.x, vp.position.z, centre, r.width, VIEW_METRES, headingOf(dir.x, dir.z));
     return { x: r.left + m.x, y: r.top + m.y, vp: vp.position };
   });
   await page.mouse.click(target.x, target.y);
@@ -104,16 +115,46 @@ test('clicking a viewpoint dot teleports there', async () => {
     `clicked the dot but stood at ${at.map((v) => v.toFixed(1))}, not ${target.vp.x}, ${target.vp.z}`);
 });
 
-test('hidden outside walk mode, back when walking again, and M hides it', async () => {
+test('hidden outside walk mode, back when walking again, and M still hides it', async () => {
   await page.evaluate(() => window.__TWIN__.controls.setMode('orbit'));
   await until({ shown: false });
   assert.equal((await state()).shown, false, 'orbit');
   await page.evaluate(() => window.__TWIN__.controls.setMode('walk'));
   await until({ shown: true });
-  assert.equal((await state()).shown, true, 'walking again, still toggled on');
+  assert.equal((await state()).shown, true, 'walking again, on as it was');
   await page.keyboard.press('KeyM');
   await until({ shown: false });
-  assert.equal((await state()).shown, false, 'M again');
+  assert.equal((await state()).shown, false, 'M hides it');
+});
+
+test('on a touchscreen the disc sits under the place panel, whatever the nearby strip adds', async () => {
+  // The desktop viewports in wayfinding.e2e.mjs never enter (pointer: coarse);
+  // only a touch context does, and that is where the always-on disc used to
+  // overlap the place panel once the nearby strip (#15) grew it.
+  const touch = await openWorld({ contextOptions: { hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } } });
+  try {
+    await touch.page.evaluate(() => {
+      const { ctx, controls } = window.__TWIN__;
+      controls.setMode('walk');
+      ctx.camera.position.set(-16, 1.7, 40);
+      controls.setLevelByY(0);
+    });
+    await touch.page.waitForFunction(() => {
+      const m = document.querySelector('.hud-minimap');
+      return m && !m.hidden && document.querySelector('.hud-place')?.offsetHeight > 0;
+    }, null, { timeout: 5000 });
+    await touch.page.waitForTimeout(300);        // the strip fills in and the ResizeObserver publishes the height
+    const r = await touch.page.evaluate(() => {
+      const box = (sel) => document.querySelector(sel).getBoundingClientRect();
+      const place = box('.hud-place');
+      const map = box('.hud-minimap');
+      return { coarse: matchMedia('(pointer: coarse)').matches, placeBottom: place.bottom, mapTop: map.top };
+    });
+    assert.equal(r.coarse, true, 'the touch context should be pointer: coarse');
+    assert.ok(r.mapTop >= r.placeBottom, `the disc (top ${r.mapTop}) overlaps the place panel (bottom ${r.placeBottom})`);
+  } finally {
+    await touch.close();
+  }
 });
 
 test('the whole run produced no console errors', () => {

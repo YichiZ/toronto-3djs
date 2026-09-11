@@ -516,35 +516,52 @@ html, body {
   border-radius: 3px;
 }
 
-/* Walk-mode minimap (issue #7). Off by default - orientation has to work without
-   it - and M toggles it. Bottom-left, above the bar. */
+/* Walk-mode minimap (issue #7), GTA style: a heading-up disc in the bottom-left
+   corner, on whenever you are walking, hidden with M. The panel is the round
+   frame itself - no card behind it. */
 .hud-minimap {
   left: 14px;
   /* On the bar's real height (#29), which the wayfinding row (#11) adds to. */
   bottom: calc(var(--hud-bar-h, 50px) + 28px);
-  padding: 6px;
+  padding: 0;
   line-height: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  backdrop-filter: none;      /* the canvas is opaque and carries its own shadow */
+  box-shadow: none;
 }
+/* The disc: a square canvas rounded off here, so minimap.js draws in plain
+   square pixels and the browser does the clipping. */
 .hud-minimap canvas {
   display: block;
   width: 220px;
   height: 220px;
-  border-radius: 6px;
+  border-radius: 50%;
+  /* The rim is a ring, not a border: the canvas box stays exactly 220 px, so a
+     click maps straight onto map pixels. */
+  box-shadow: 0 0 0 2px var(--glass-edge), 0 2px 12px rgba(0, 0, 0, 0.45);
   cursor: pointer;
 }
+/* The level, along the bottom of the disc, the way GTA names the district. */
 .hud-minimap .minimap-level {
   position: absolute;
-  left: 12px;
-  top: 10px;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  text-align: center;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   line-height: 1.2;
   color: var(--ink-dim);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   pointer-events: none;
 }
 /* On touch the joystick owns the bottom-left corner; sit under the place panel. */
 @media (pointer: coarse) {
-  .hud-minimap { bottom: auto; top: 104px; }
+  .hud-minimap { bottom: auto; top: calc(var(--hud-place-h, 100px) + 26px); }
 }
 
 /* Look speed in the help panel (#14). */

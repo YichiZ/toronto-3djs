@@ -7,6 +7,7 @@ npm run dev      # vite dev server, http://127.0.0.1:5173
 npm run build    # production bundle
 npm test         # unit tests: node --test "qa/*.test.mjs"
 npm run e2e      # Playwright e2e, one file at a time
+npm run e2e:perf # builds, then the qa/*.perf.mjs frame-time suites (~3 min)
 npm run qa       # static QA -> FINAL_QA_REPORT.md; exits non-zero on any error
 ```
 

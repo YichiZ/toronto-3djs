@@ -124,16 +124,21 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'royal-york-porte-cochere',
     name: 'Royal York porte-cochère',
-    position: { x: -150, y: EYE, z: -13 },
+    // At (-150, -13) the eye sat 7 m under the canopy, craning 32 degrees at a
+    // bar sign, with 6.7 m to walk (#82). From 25 m east along the sidewalk the
+    // canopy on its columns and the hotel above it fill the frame at 14 degrees.
+    position: { x: -125, y: EYE, z: -5 },
     lookAt: { x: -150, y: 10, z: -26 },
     mode: 'walk',
-    description: 'North sidewalk of Front, at the hotel entrance drive.',
+    description: 'North sidewalk of Front, east of the entrance drive, looking back at the porte-cochère.',
     realWorld: 'The chateau-style limestone base, the canopy over the entrance drive, doormen and taxis, the green copper roof twenty-eight storeys up and mostly out of frame.',
   },
   {
     id: 'front-york-east',
     name: 'Front & York, looking east',
-    position: { x: -262, y: EYE, z: 16 },
+    // At z 16 a transit sign post stood 3.3 m dead ahead and the walk stopped
+    // there (#82); 6 m nearer the colonnade the run east is 62 m clear.
+    position: { x: -262, y: EYE, z: 22 },
     lookAt: { x: 20, y: 8, z: 12 },
     mode: 'walk',
     description: 'South promenade at York, the whole Front Street canyon ahead.',
@@ -151,10 +156,13 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'cn-tower-base',
     name: 'CN Tower base',
-    position: { x: -704, y: EYE, z: 132 },
-    lookAt: { x: -704, y: 340, z: 200 },
+    // From (-704, 132) the camera stared 79 degrees straight up the shaft and the
+    // base was out of frame (#82). From Roundhouse Park, 100 m off, the legs and
+    // the shaft rise together at a 21 degree gaze.
+    position: { x: -640, y: EYE, z: 262 },
+    lookAt: { x: -690, y: 40, z: 175 },
     mode: 'walk',
-    description: 'North side of the tower base, looking up the shaft.',
+    description: 'Roundhouse Park, south-east of the tower, looking up at its base and shaft.',
     realWorld: 'The hexagonal concrete shaft with its three legs, the main pod at 342-351 m, SkyPod at 447 m, mast to 553.33 m — from here the top is hard to hold in one frame.',
   },
   {
@@ -187,10 +195,12 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'arena-bay-heritage',
     name: 'Scotiabank Arena, Bay Street elevation',
-    position: { x: -11, y: EYE, z: 286 },
-    lookAt: { x: -30, y: 16, z: 282 },
+    // From the west sidewalk the facade was a 19 m close-up at 36 degrees - stone
+    // pilasters, not a building (#82). Across Bay it reads whole, square on.
+    position: { x: 10, y: EYE, z: 280 },
+    lookAt: { x: -27, y: 10, z: 280 },
     mode: 'walk',
-    description: 'West sidewalk of Bay, facing the incorporated 1941 postal building front.',
+    description: 'East sidewalk of Bay, facing the incorporated 1941 postal building front across the street.',
     realWorld: 'Art Deco stone of the Toronto Postal Delivery Building with Louis Temporale bas-reliefs, the modern arena volume rising behind it. The same treatment continues on the Lake Shore elevation.',
   },
   {
@@ -205,10 +215,13 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'maple-leaf-square',
     name: 'Maple Leaf Square',
-    position: { x: -232, y: EYE, z: 283 },
-    lookAt: { x: -110, y: 24, z: 283 },
+    // (-232, 283) was inside the podium's footprint: the frame was its wall and
+    // the back of the outdoor screen (#82). The square runs x -205..-171, but
+    // the arena's footprint takes it from x -194, so this stands 4 m west of that.
+    position: { x: -198, y: EYE, z: 234 },
+    lookAt: { x: -200, y: 20, z: 320 },
     mode: 'walk',
-    description: 'The public square between the two towers, facing the arena.',
+    description: 'The south end of the public square, looking north past the outdoor screen on the podium.',
     realWorld: 'The outdoor screen on the podium wall, the paved square that fills for playoff games, the arena bulk directly east.',
   },
   {
@@ -232,7 +245,9 @@ export const VIEWPOINTS = Object.freeze([
   {
     id: 'gooderham-flatiron',
     name: 'Gooderham Flatiron from Front',
-    position: { x: 300, y: EYE, z: -12 },
+    // At (300, -12) a neighbouring block stood 6 m ahead and the Flatiron was 0%
+    // of the frame (#82). From here the rounded prow and turret stand whole.
+    position: { x: 300, y: EYE, z: -48 },
     lookAt: { x: 332, y: 14, z: -78 },
     mode: 'walk',
     description: 'North sidewalk of Front Street East, looking north-east at the wedge.',

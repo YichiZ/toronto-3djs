@@ -48,3 +48,17 @@ Driver: .agents/notes/product-review.driver.mjs -> product-review/*.png + log.js
   "ORIGIN · Front & Bay · 0,0" covers the HUD (42).
 - Screenshots converted to JPEG q70 before commit (18 MB of PNGs otherwise).
 - Harness trick: a parallel Bash `cd` persists; use absolute paths.
+
+### Filed (run 1, label `product`, created this run)
+- #67 [P1] tour films the inside of walls; 10/13 captions mismatched
+- #68 [P1] first frame opens on the ghosted plinth; first step walks into it
+- #69 [P2] interior place label names the wrong place, in jargon
+- #70 [P2] concourse and PATH arrival are empty grey boxes
+- #72 [P2] level change leaves you facing a wall, goal receding
+
+### Not filed (in PRODUCT_REVIEW.md only) — do not re-raise unless it worsens
+- 6 onboarding card and Jump to / Go to look-alikes (P3), 7 HHOF viewpoint
+  framing (P3), 8 reference-mode label pile-up and ORIGIN banner (P3).
+- Rejected: forecourt lamp post (#28 already nudged), fps dip on tour beat 7
+  (perf-owned), arrow keys walk rather than turn (documented), 3.4 m/s walk
+  speed (right for the map), "day" time label.

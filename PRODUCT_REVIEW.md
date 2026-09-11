@@ -28,7 +28,7 @@ hits both, and neither needs new content.
 
 ## Findings, ranked by visitor impact × reach
 
-### 1. The tour films the inside of walls, and the captions describe rooms that aren't in frame — P1, M
+### 1. The tour films the inside of walls, and the captions describe rooms that aren't in frame — P1, M · #67
 - **What a visitor sees:** press Tour; captions say "Dropping onto the
   promenade", "The colonnade", "Inside the Great Hall… the carved frieze",
   "Down to the York Concourse", "Into the PATH… no daylight anywhere", while
@@ -56,7 +56,7 @@ hits both, and neither needs new content.
   solid ground. End the tour back on the street where it started. Related to
   closed #25 (beat 1 only).
 
-### 2. The first frame opens on a ghosted plinth, and the first step walks into it — P1, S
+### 2. The first frame opens on a ghosted plinth, and the first step walks into it — P1, S · #68
 - **What a visitor sees:** after the controls card, the view is dominated by a
   pale, semi-transparent box (the Monument to Multiculturalism plinth) dead
   ahead, with "CONCOU…" signage cropped at the left. Holding W for 2½ s ends
@@ -68,7 +68,7 @@ hits both, and neither needs new content.
   as the hero; the forecourt viewpoint (`07`) already does this. Make the
   plinth read as solid stone. Follows on from closed #23.
 
-### 3. Inside the station, the place label names the wrong place, in jargon — P2, S
+### 3. Inside the station, the place label names the wrong place, in jargon — P2, S · #69
 - **What a visitor sees:** standing in the Great Hall, the label reads "Union
   Station east and west wings · INFERRED · street". Entering the SkyWalk it
   reads "Metro Toronto Convention Centre". During the concourse beat it reads
@@ -83,7 +83,7 @@ hits both, and neither needs new content.
   badges and the true bearing to reference mode. Distinct from closed #10
   (street-side labels).
 
-### 4. Below the street, the spaces are empty grey boxes — P2, L
+### 4. Below the street, the spaces are empty grey boxes — P2, L · #70
 - **What a visitor sees:** the York Concourse is a bare grey room: no gates,
   departure boards, signage, people or trains (`11`, `12`). Arriving in the
   PATH shows a flat grey void with a pedestrian's back filling the frame (`16`)
@@ -97,7 +97,7 @@ hits both, and neither needs new content.
   viewpoint where the corridor is already in view and no pedestrian spawns on
   the camera. (Perceived stream-in delay is perf's; noted only as impact.)
 
-### 5. Changing level leaves you facing a wall, farther from where you were going — P2, M
+### 5. Changing level leaves you facing a wall, farther from where you were going — P2, M · #72
 - **What a visitor sees:** in the York Concourse with "Go to Front & York"
   set (87 m), pressing E lands facing a blank stone wall, and the guide jumps
   to 141 m (`13` → `14`). From Front & Bay, "Go to PATH corridor under Bay"

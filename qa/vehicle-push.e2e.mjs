@@ -89,15 +89,25 @@ const trafficCount = () => page.evaluate(() =>
   window.__TWIN__.ctx.scene.getObjectByName('vehicles').userData.count());
 
 /**
- * A spot `ahead` metres in front of a car that no other car is about to reach,
+ * Seconds between picking a car and it reaching the spot. The pick's re-sample
+ * (250 ms) and standWalker()'s 40-frame settle (~660 ms) come out of this; a
+ * 14 m look-ahead left ~0.9 s, so the car shoved the walker before the watch
+ * began and the tests saw only the tail of the pass, or none of it.
+ */
+const LEAD = 2.5;
+
+/**
+ * A spot LEAD seconds in front of a car that no other car is about to reach,
  * and the car really is driving toward it. Tries the fleet in order.
  */
-async function pickApproach({ ahead = 14 } = {}) {
+async function pickApproach() {
   const cars = await fleet();
   for (const car of cars) {
     // A bus's length makes the timing sloppy; a bicycle at 4.5 m/s takes most
     // of the watch to arrive.
     if (car.half > 4 || car.half < 1.5) continue;
+    if (car.speed < 6) continue;   // braking or queued: the lead time means nothing
+    const ahead = car.speed * LEAD;
     if (car.s + ahead + 4 > car.len) continue;   // the lane ends first: the car wraps, never arrives
     const spot = { x: car.x + car.dx * ahead, z: car.z + car.dz * ahead };
     const crowded = cars.some((o) => o !== car
@@ -234,7 +244,8 @@ async function pickPinch() {
   const cars = (await fleet()).filter((c) => c.half <= 4 && c.half >= 1.5);
   for (const car of cars) {
     if (car.speed < 2) continue;   // queued at a light: might not arrive in the watch
-    for (let ahead = 8; ahead <= 40; ahead += 4) {
+    // Not closer than 2 s: the wall rays and standWalker() run while it drives.
+    for (let ahead = Math.ceil(car.speed * 2); ahead <= 40; ahead += 4) {
       if (car.s + ahead + 4 > car.len) break;
       if (ahead > car.speed * 5) break;   // must arrive well inside the 8 s watch
       const spot = { x: car.x + car.dx * ahead, z: car.z + car.dz * ahead };

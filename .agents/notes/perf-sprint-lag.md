@@ -223,9 +223,10 @@ cannot catch it.
 - **A fresh worktree has no `node_modules`.** `npm run build` then resolves `three`
   from a parent directory's copy and fails with a Rolldown "failed to resolve
   import" - run `npm install` first.
-- `npm run e2e:perf` **exits 0 even when assertions fail**; read the `pass`/`fail`
-  counts, not the exit code. It also exits 0 when the *build* fails, so a piped
-  `| tail` can hide the whole thing.
+- `npm run e2e:perf` exits non-zero on a failed assertion or build (`node --test`
+  returns 1; verified after this run). The "exits 0" seen during the run was the
+  exit code of the `| tail` / `| grep` it was piped through, which hides both
+  the build failure and the assertion failure.
 - Don't pipe it through `tail -60`: the first scenario's four report lines scroll
   off, and the 60 s sprint is the one you most want.
 - `npx vite build --minify false` gives real function names in a CDP allocation

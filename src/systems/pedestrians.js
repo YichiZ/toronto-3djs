@@ -25,6 +25,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { STREETS, LEVELS } from '../data/grid.js';
 import { register } from '../core/registry.js';
+import { clearance, SIDE_RATE } from './crowdPush.js';
 
 /** Sidewalk surface height; streets.js lays the walks on a 0.15 m curb. */
 const WALK_Y = 0.15;
@@ -281,10 +282,15 @@ function spawn(edges, im, slot, arch) {
     height: 0.94 + Math.random() * 0.12,
     phase: Math.random() * Math.PI * 2,
     wait: 0,
+    side: 0,                      // metres off its line, sidestepping the walker (#38)
   };
 }
 
-function stepAgent(a, dt) {
+/** Walker eye height over the floor, to tell whether it is on this agent's level. */
+const WALKER_EYE = 1.7;
+
+/** @param {THREE.Vector3} [walker] the camera, to sidestep */
+function stepAgent(a, dt, walker) {
   const e = a.edge;
   if (a.wait > 0) { a.wait -= dt; } else { a.s += a.speed * dt; a.phase += dt * a.speed * 5.2; }
 
@@ -306,9 +312,21 @@ function stepAgent(a, dt) {
   const f = a.edge.len > 0 ? a.s / a.edge.len : 0;
   const from = a.rev ? a.edge.b : a.edge.a;
   const to = a.rev ? a.edge.a : a.edge.b;
-  const x = from.x + (to.x - from.x) * f;
-  const z = from.z + (to.z - from.z) * f;
+  let x = from.x + (to.x - from.x) * f;
+  let z = from.z + (to.z - from.z) * f;
   const bob = a.wait > 0 ? 0 : Math.sin(a.phase) * 0.035;
+
+  // Sidestep the walker when it is on this floor; ease back once past.
+  const len = Math.hypot(to.x - from.x, to.z - from.z) || 1;
+  const dx = (to.x - from.x) / len;
+  const dz = (to.z - from.z) / len;
+  const onFloor = walker && Math.abs(walker.y - WALKER_EYE - a.edge.y) < 1.5;
+  const target = onFloor
+    ? clearance({ px: x, pz: z }, { dx, dz }, { cx: walker.x, cz: walker.z }, a.slot % 2 ? 1 : -1)
+    : 0;
+  a.side += (target - a.side) * Math.min(1, dt * SIDE_RATE);
+  x += -dz * a.side;
+  z += dx * a.side;
 
   _d.position.set(x, a.edge.y + bob, z);
   _d.rotation.set(0, Math.atan2(to.x - from.x, to.z - from.z), 0);
@@ -387,13 +405,15 @@ export function build(ctx) {
   ctx.onFrame.push((dt) => {
     for (const a of agents) {
       if (a.slot >= a.im.count) continue;   // trimmed away by setDensity
-      stepAgent(a, dt);
+      stepAgent(a, dt, ctx.camera.position);
     }
     for (const im of meshes) if (im) im.instanceMatrix.needsUpdate = true;
   });
 
   group.userData.setDensity = setDensity;
   group.userData.population = population;
+  /** The live agent list, for qa/crowd.e2e.mjs. */
+  group.userData.agents = () => agents;
   // The HUD broadcasts its crowd slider rather than reaching into the module.
   if (typeof window !== 'undefined') {
     window.addEventListener('twin:crowd-density', (e) => setDensity(e.detail));

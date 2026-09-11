@@ -40,25 +40,39 @@ const FRONT_YONGE = () => page.evaluate(async () => {
   return getDestination('x:front-yonge');
 });
 
-test('choosing a corner shows its name and straight-line distance', async () => {
+test('choosing a corner shows its name and the walking distance along the sidewalks', async () => {
   await page.selectOption('.hud-goto', 'x:front-yonge');
   await page.waitForTimeout(300);
-  const dest = await FRONT_YONGE();
-  const cam = await page.evaluate(() => window.__TWIN__.ctx.camera.position.toArray());
-  const metres = Math.hypot(dest.x - cam[0], dest.z - cam[2]);
+  const { walk, crow } = await page.evaluate(async () => {
+    const { route, streetGraph } = await import('/src/ui/route.js');
+    const { getDestination } = await import('/src/ui/wayfinding.js');
+    const d = getDestination('x:front-yonge');
+    const c = window.__TWIN__.ctx.camera.position;
+    return { walk: route(streetGraph(), c, d).length, crow: Math.hypot(d.x - c.x, d.z - c.z) };
+  });
   const g = await guide();
   assert.equal(g.shown, true, 'no guide after choosing a destination');
   const m = g.text.match(/^Front & Yonge · (\d+) m$/);
   assert.ok(m, `the guide reads "${g.text}"`);
-  assert.ok(Math.abs(Number(m[1]) - metres) <= 1, `says ${m[1]} m; it is ${metres.toFixed(1)} m`);
+  assert.ok(Math.abs(Number(m[1]) - walk) <= 1, `says ${m[1]} m; the walk is ${walk.toFixed(1)} m`);
+  assert.ok(walk >= crow - 0.5, `the walk (${walk.toFixed(0)} m) beats the straight line (${crow.toFixed(0)} m)`);
 });
 
-test('the arrow points ahead when facing it and behind when facing away', async () => {
-  const dest = await FRONT_YONGE();
-  await face(dest.x, dest.z);
-  assert.ok(Math.abs((await guide()).turn) <= 2, `facing it, the arrow turns ${(await guide()).turn} deg`);
-  await face(dest.x, dest.z, true);
-  assert.ok(Math.abs((await guide()).turn) >= 178, `facing away, the arrow turns ${(await guide()).turn} deg`);
+/** The point the arrow is aiming at: the next corner of the route. */
+const aim = () => page.evaluate(() => document.querySelector('.hud-guide').dataset.aim.split(',').map(Number));
+
+test('the arrow points ahead when facing its next corner and behind when facing away', async () => {
+  const [x, z] = await aim();
+  await face(x, z);
+  assert.ok(Math.abs((await guide()).turn) <= 3, `facing it, the arrow turns ${(await guide()).turn} deg`);
+  const [x2, z2] = await aim();
+  await face(x2, z2, true);
+  assert.ok(Math.abs((await guide()).turn) >= 177, `facing away, the arrow turns ${(await guide()).turn} deg`);
+});
+
+test('the route is drawn on the minimap, corner by corner', async () => {
+  const pts = await page.evaluate(async () => (await import('/src/ui/wayfinding.js')).getRoute());
+  assert.ok(pts && pts.length >= 3, `route: ${JSON.stringify(pts)}`);
 });
 
 test('the minimap shows the destination as an amber ring', async () => {

@@ -51,7 +51,14 @@ export const PLACE_KINDS_BELOW_GRADE = new Set(['landmark', 'building', 'interio
  * @returns {{record: object, distance: number} | null}
  */
 export function pickPlace(entries, belowGrade) {
-  const places = belowGrade ? PLACE_KINDS_BELOW_GRADE : PLACE_KINDS;
+  // Standing INSIDE a room - 0 m from an interior's box - the room is the place,
+  // above grade too (#69). The Great Hall sits inside the box of the station's
+  // wings, which as a landmark used to win at street level, so the HUD named
+  // "Union Station east and west wings" in the building's most famous room.
+  // Only rooms you are in: from the pavement the PATH cluster's box is 1.1 m
+  // away, and the street keeps naming the building (first case in the test).
+  const inRoom = entries.some((e) => e.record.kind === 'interior' && e.distance < 0.01);
+  const places = belowGrade || inRoom ? PLACE_KINDS_BELOW_GRADE : PLACE_KINDS;
   const footprintOf = (e) => e.footprint ?? Infinity;
   let best = null;
   let bestRank = Infinity;

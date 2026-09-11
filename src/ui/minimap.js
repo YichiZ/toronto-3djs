@@ -105,22 +105,23 @@ export function install(ctx, { controls }) {
     view.heading = heading;
     const k = SIZE / VIEW_METRES;
 
-    // Everything in grid metres is drawn through one rotation, so the walker's
-    // heading is up; the arrow and the ticks go on afterwards, upright.
-    g.save();
-    g.translate(SIZE / 2, SIZE / 2);
-    g.rotate(-view.heading);
-    g.translate(-SIZE / 2, -SIZE / 2);
+    // Every point goes through worldToMap with the view's heading - the one
+    // rotation, the same one clicks invert - so the walker's heading is up.
+    // (A canvas rotate() on top of it once turned the map twice over.)
+    const corners = (x0, z0, x1, z1) => [[x0, z0], [x1, z0], [x1, z1], [x0, z1]].map(([x, z]) => worldToMap(x, z, view, SIZE));
+    const trace = (pts) => {
+      g.beginPath();
+      pts.forEach((m, i) => (i ? g.lineTo(m.x, m.y) : g.moveTo(m.x, m.y)));
+    };
 
     for (const p of plan) {
       const st = STYLE[p.style];
       if (p.kind === 'rect') {
         if (outside(p.x0, p.z0, p.x1, p.z1)) continue;
-        const a = worldToMap(p.x0, p.z0, view, SIZE);
-        const w = (p.x1 - p.x0) * k;
-        const h = (p.z1 - p.z0) * k;
-        if (st.fill) { g.fillStyle = st.fill; g.fillRect(a.x, a.y, w, h); }
-        if (st.stroke) { g.strokeStyle = st.stroke; g.lineWidth = 1; g.strokeRect(a.x, a.y, w, h); }
+        trace(corners(p.x0, p.z0, p.x1, p.z1));
+        g.closePath();
+        if (st.fill) { g.fillStyle = st.fill; g.fill(); }
+        if (st.stroke) { g.strokeStyle = st.stroke; g.lineWidth = 1; g.stroke(); }
         continue;
       }
       const xs = p.points.map((q) => q.x);
@@ -129,11 +130,7 @@ export function install(ctx, { controls }) {
       if (outside(Math.min(...xs) - pad, Math.min(...zs) - pad, Math.max(...xs) + pad, Math.max(...zs) + pad)) continue;
       g.strokeStyle = st.stroke;
       g.lineWidth = Math.max(1, p.width * k);
-      g.beginPath();
-      p.points.forEach((q, i) => {
-        const m = worldToMap(q.x, q.z, view, SIZE);
-        if (i) g.lineTo(m.x, m.y); else g.moveTo(m.x, m.y);
-      });
+      trace(p.points.map((q) => worldToMap(q.x, q.z, view, SIZE)));
       g.stroke();
     }
 
@@ -152,11 +149,7 @@ export function install(ctx, { controls }) {
     if (path?.length > 1) {
       g.strokeStyle = 'rgba(251, 191, 36, 0.85)';
       g.lineWidth = 2;
-      g.beginPath();
-      path.forEach((q, i) => {
-        const m = worldToMap(q.x, q.z, view, SIZE);
-        if (i) g.lineTo(m.x, m.y); else g.moveTo(m.x, m.y);
-      });
+      trace(path.map((q) => worldToMap(q.x, q.z, view, SIZE)));
       g.stroke();
     }
 
@@ -173,7 +166,6 @@ export function install(ctx, { controls }) {
       g.arc(SIZE / 2 + (m.x - SIZE / 2) * t, SIZE / 2 + (m.y - SIZE / 2) * t, BLIP_R, 0, Math.PI * 2);
       g.stroke();
     }
-    g.restore();
 
     // You are here: the arrow never moves - the map turned instead.
     g.fillStyle = '#7dd3fc';

@@ -95,7 +95,12 @@ export const BUILDINGS = [
   // ---------------------------------------------------------------------------
   {
     id: 'scotiabank-arena', name: 'Scotiabank Arena', address: '40 Bay Street',
-    x: -110, z: 280, w: 168, d: 142, height: 40, floors: 5,
+    // CORRECTED west edge -194 -> -171 (w 168 -> 145, x -110 -> -98.5): the old
+    // footprint covered Maple Leaf Square's public square (x -205..-171), which is
+    // open plaza west of the arena. The towers cannot move west instead - York
+    // Street's east curb is at -262 and the podium already starts at -259. The
+    // Bay (x -26) and Lake Shore (z 351) faces are unchanged.
+    x: -98.5, z: 280, w: 145, d: 142, height: 40, floors: 5,
     landmark: true, confidence: 'reference', year: 1999,
     note: 'Not a freestanding bowl: incorporates the 1941 Art Deco Toronto Postal Delivery Building facades and Louis Temporale bas-reliefs on BOTH the Bay Street and Lake Shore Boulevard elevations.',
   },

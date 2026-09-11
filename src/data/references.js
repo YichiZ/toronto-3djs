@@ -216,12 +216,12 @@ export const VIEWPOINTS = Object.freeze([
     id: 'maple-leaf-square',
     name: 'Maple Leaf Square',
     // (-232, 283) was inside the podium's footprint: the frame was its wall and
-    // the back of the outdoor screen (#82). The square runs x -205..-171, but
-    // the arena's footprint takes it from x -194, so this stands 4 m west of that.
-    position: { x: -198, y: EYE, z: 234 },
-    lookAt: { x: -200, y: 20, z: 320 },
+    // the back of the outdoor screen (#82). The square runs x -205..-171 and is
+    // now clear of the arena, so this stands mid-square.
+    position: { x: -188, y: EYE, z: 244 },
+    lookAt: { x: -196, y: 6, z: 300 },
     mode: 'walk',
-    description: 'The south end of the public square, looking north past the outdoor screen on the podium.',
+    description: 'In the middle of the public square, looking north toward the outdoor screen on the podium.',
     realWorld: 'The outdoor screen on the podium wall, the paved square that fills for playoff games, the arena bulk directly east.',
   },
   {

@@ -36,11 +36,11 @@
 /** Metres a non-place record must beat a place by to take the headline. */
 export const HEADLINE_PENALTY = 25;
 
-const PLACE_KINDS = new Set(['landmark', 'building']);
+export const PLACE_KINDS = new Set(['landmark', 'building']);
 // Below grade the PATH is the place. Its corridors are registered as
 // 'infrastructure' (probed, not assumed), which at street level means lay-bys
 // and ramps - so the kind only counts as a place underground.
-const PLACE_KINDS_BELOW_GRADE = new Set(['landmark', 'building', 'interior', 'infrastructure']);
+export const PLACE_KINDS_BELOW_GRADE = new Set(['landmark', 'building', 'interior', 'infrastructure']);
 
 /**
  * The record the HUD should name.

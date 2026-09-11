@@ -289,7 +289,9 @@ html, body {
   left: 14px;
   bottom: calc(var(--hud-bar-h, 50px) + 28px);
   width: min(430px, 88vw);
-  max-height: 62vh;
+  /* Never up into the place panel, whose height the nearby strip varies (#15):
+     54 px is its 14 px top, a 12 px gap and the 28 px over the bar. */
+  max-height: min(62vh, calc(100vh - var(--hud-bar-h, 50px) - var(--hud-place-h, 100px) - 54px));
   overflow-y: auto;
   padding: 16px 18px;
   line-height: 1.5;
@@ -468,7 +470,7 @@ html, body {
   .hud-value { min-width: 54px; }
   /* Above the bar like everywhere else: hung at top 62 px they sat inside the
      place label. The cap keeps the help panel's top clear of that label. */
-  .hud-help { max-height: calc(100vh - var(--hud-bar-h, 50px) - 140px); }
+  .hud-help { max-height: calc(100vh - var(--hud-bar-h, 50px) - var(--hud-place-h, 100px) - 54px); }
   .hud-place { max-width: 62vw; }
   /* fps only: all three counters ran 100 px into the place label at 390 px. */
   .hud-stats .calls, .hud-stats .tris { display: none; }
@@ -609,3 +611,15 @@ html, body {
 .hud-help .hud-sound { margin: 4px 0; font-size: 12px; color: var(--ink-dim); }
 .hud-help .hud-sound input { vertical-align: middle; margin: 0 6px 0 0; accent-color: var(--accent); }
 .hud-intro .hud-sound { display: none; }
+
+/* Nearby strip (#15), the bottom of the place panel. */
+.hud-place .place-nearby {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  border-top: 1px solid var(--glass-edge);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+.hud-place .place-nearby li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

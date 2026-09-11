@@ -68,6 +68,7 @@ function labelSprite(record) {
     map: texture, depthTest: false, transparent: true, sizeAttenuation: true,
   }));
   sprite.scale.set(24, 6, 1);
+  sprite.visible = false;   // the declutter pass sizes it and shows it (#80)
   sprite.renderOrder = 900;
   sprite.userData.noCollide = true;
   // Labels are never picked and never walked on, and Sprite.raycast is the one
@@ -93,6 +94,9 @@ function textPlane(text, colour, width = 60) {
   sprite.scale.set(width, width * 96 / 1024, 1);
   sprite.renderOrder = 901;
   sprite.userData.noCollide = true;
+  // Held at a constant size on screen, never larger than this world width (#80).
+  sprite.userData.maxWidth = width;
+  sprite.userData.px = width * 4;
   return sprite;
 }
 
@@ -273,18 +277,64 @@ export function install(ctx) {
     }
   }
 
-  // Labels are billboards already (Sprite), but they should shrink with
-  // distance in a controlled way rather than vanish; scale mildly with range.
+  // Every tag holds a constant size on screen, capped at its old world size,
+  // and a label is hidden where a nearer one already sits (#80). Sized in world
+  // metres, the labels stacked into a wall and the origin tag ran across the
+  // lower third of the screen.
+  const LABEL_PX = 170;
+  const MAX_SHOWN = 45;
+  const PAD = 4;
   const tmp = new THREE.Vector3();
+  const ndc = new THREE.Vector3();
+  let frame = 0;
+
+  /** Size a tag to `px` pixels wide at its depth; its padded screen box, or null off screen. */
+  function fit(sprite, px, maxWidth, k, W, H) {
+    sprite.getWorldPosition(tmp);
+    const depth = -ndc.copy(tmp).applyMatrix4(camera.matrixWorldInverse).z;
+    if (depth <= 0) return null;
+    const aspect = sprite.scale.y / sprite.scale.x;
+    const w = Math.min(maxWidth, (px * depth) / k);
+    sprite.scale.set(w, w * aspect, 1);
+    ndc.copy(tmp).project(camera);
+    const x = ((ndc.x + 1) / 2) * W;
+    const y = ((1 - ndc.y) / 2) * H;
+    const hw = (w * k) / depth / 2 + PAD;
+    const hh = (w * aspect * k) / depth / 2 + PAD;
+    if (x + hw < 0 || x - hw > W || y + hh < 0 || y - hh > H) return null;
+    return { x0: x - hw, x1: x + hw, y0: y - hh, y1: y + hh };
+  }
+  const overlapsAny = (r, placed) => placed.some((p) => r.x0 < p.x1 && p.x0 < r.x1 && r.y0 < p.y1 && p.y0 < r.y1);
+
   ctx.onFrame.push(() => {
     if (pending.length) drainPending();
-    if (!root.visible || !groups.labels.visible) return;
-    for (const sprite of groups.labels.children) {
-      sprite.getWorldPosition(tmp);
-      const d = tmp.distanceTo(camera.position);
-      sprite.visible = d < 700;
-      const s = THREE.MathUtils.clamp(d * 0.05, 12, 70);
-      sprite.scale.set(s, s * 0.25, 1);
+    if (!root.visible || (frame++ & 3)) return;
+    const W = ctx.renderer.domElement.clientWidth || innerWidth;
+    const H = ctx.renderer.domElement.clientHeight || innerHeight;
+    const k = H / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2));
+    camera.updateMatrixWorld();
+    const placed = [];
+    // The frame of reference first: street, origin, north and level tags.
+    for (const g of [groups.grid, groups.section]) {
+      if (!g.visible) continue;
+      for (const s of g.children) {
+        if (!s.isSprite) continue;
+        const r = fit(s, s.userData.px, s.userData.maxWidth, k, W, H);
+        s.visible = !!r && !overlapsAny(r, placed);
+        if (s.visible) placed.push(r);
+      }
+    }
+    if (!groups.labels.visible) return;
+    // ponytail: greedy nearest-first, O(n·k) with k <= MAX_SHOWN; a screen grid
+    // index if the label count grows past a few hundred.
+    const order = groups.labels.children
+      .map((s) => ({ s, d: s.getWorldPosition(tmp).distanceTo(camera.position) }))
+      .sort((a, b) => a.d - b.d);
+    let shown = 0;
+    for (const { s, d } of order) {
+      const r = d < 700 && shown < MAX_SHOWN ? fit(s, LABEL_PX, 70, k, W, H) : null;
+      s.visible = !!r && !overlapsAny(r, placed);
+      if (s.visible) { placed.push(r); shown++; }
     }
   });
 

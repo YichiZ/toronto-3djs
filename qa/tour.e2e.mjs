@@ -85,7 +85,10 @@ test('the tour cuts rather than flying through walls', async () => {
     const plan = tour.plan();
     const rc = new THREE.Raycaster();
     rc.camera = ctx.camera;
-    // Checked here independently of tour.js: every glide's straight line is clear.
+    // Checked here independently of tour.js: every glide's straight line is
+    // clear of static geometry. Traffic moves; a car on the line is not a wall.
+    const MOVING = new Set(['vehicles', 'pedestrians', 'trains']);
+    const moving = (o) => { for (let p = o; p; p = p.parent) if (MOVING.has(p.name)) return true; return false; };
     const blockedGlides = [];
     tour.beats.forEach((b, i) => {
       if (!plan[i]) return;
@@ -93,7 +96,7 @@ test('the tour cuts rather than flying through walls', async () => {
       const to = new THREE.Vector3(...b.pos);
       rc.set(from, to.clone().sub(from).normalize());
       rc.far = from.distanceTo(to);
-      if (rc.intersectObject(ctx.scene, true).some((h) => h.face && !h.object.userData?.noCollide)) blockedGlides.push(b.id);
+      if (rc.intersectObject(ctx.scene, true).some((h) => h.face && !h.object.userData?.noCollide && !moving(h.object))) blockedGlides.push(b.id);
     });
     const cut = (id) => !plan[tour.beats.findIndex((b) => b.id === id)];
     return { blockedGlides, interiorCuts: ['great-hall', 'concourse', 'path'].every(cut) };

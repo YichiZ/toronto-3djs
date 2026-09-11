@@ -153,6 +153,12 @@ export function install(ctx, controls) {
    * @type {boolean[] | null}
    */
   let glides = null;
+  // Traffic is not a wall. The colonnade glide runs over Front Street's roadway,
+  // so a bus crossing the line when the tour first started turned it into a cut
+  // - and the tour test failed whenever one was there (#72 gate). The walker's
+  // collision index leaves the same three groups out.
+  const MOVING = new Set(['vehicles', 'pedestrians', 'trains']);
+  const moving = (o) => { for (let p = o; p; p = p.parent) if (MOVING.has(p.name)) return true; return false; };
   function planGlides() {
     const rc = new THREE.Raycaster();
     rc.camera = camera;                     // sprites throw without it
@@ -164,7 +170,8 @@ export function install(ctx, controls) {
       const len = dir.length();
       rc.set(from, dir.normalize());
       rc.far = len;
-      return !rc.intersectObject(scene, true).some((h) => h.face && !h.object.userData?.noCollide);
+      return !rc.intersectObject(scene, true)
+        .some((h) => h.face && !h.object.userData?.noCollide && !moving(h.object));
     });
   }
 

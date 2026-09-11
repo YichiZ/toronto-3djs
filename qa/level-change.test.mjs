@@ -8,7 +8,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { levelTolerances, pickLevel, LEVEL_SETTLE, LEVEL_ARRIVED } from '../src/ui/levelChange.js';
+import { levelTolerances, pickLevel, openHeading, FACE_CLEAR, LEVEL_SETTLE, LEVEL_ARRIVED } from '../src/ui/levelChange.js';
 import { LEVELS } from '../src/data/grid.js';
 
 const ORDER = [
@@ -60,6 +60,29 @@ test('widely spaced levels keep the full tolerance', () => {
   assert.equal(tol[STREET], 1.5);
   assert.equal(tol[0], 1.5);
   assert.equal(tol[ORDER.length - 1], 1.5);
+});
+
+test('arriving facing open ground keeps the heading (#72)', () => {
+  const clear = Array(16).fill(2);
+  clear[0] = FACE_CLEAR;
+  assert.equal(openHeading(clear), 0);
+});
+
+test('arriving at a wall turns the smallest way that opens up (#72)', () => {
+  // Wall ahead; open a quarter turn right (index 4) and nearly behind (index 9).
+  const clear = Array(16).fill(1);
+  clear[4] = 20;
+  clear[9] = 30;
+  assert.equal(openHeading(clear), 4, 'a quarter turn, not three-quarters, even though behind is longer');
+  // The same, mirrored: a quarter turn left.
+  const mirrored = Array(16).fill(1);
+  mirrored[12] = 20;
+  assert.equal(openHeading(mirrored), 12);
+});
+
+test('boxed in on every side, face the most open direction there is (#72)', () => {
+  const clear = [1, 2, 3, 4.5, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  assert.equal(openHeading(clear), 3);
 });
 
 test('the transition is an exponential time constant, not a per-frame factor', () => {

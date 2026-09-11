@@ -306,3 +306,18 @@ hardware.
   4 consecutive quiet runs (HEAD total 4/6). **Load-sensitive flake, not a
   regression.** `qa/crowd.e2e.mjs` sidestep: failed once under contention,
   passed alone.
+
+### Final gate run, rebased on origin/main 4c79fac (load average down to ~3.6)
+
+`npm run e2e:perf`: **6 pass / 0 fail.** Great hall idle p50 16.6 / **p95 17.6** /
+max 18.2 (the issue predicted 17.5); sprint p95 17.6 / max 23.0; street walk
+p95 17.6; mode switching x10 p95 17.6 / **max 19.1**; #62 test labels per frame
+40 80 120 160 200 221. This is the second run after the fix and it disagrees
+with the loaded one above (Great Hall 29.2): per the prompt, a p95 is a claim
+until two runs agree, and the paired A/B (+1.44 ms per render for DoubleSide,
+6/6 rounds) is the number that does not move with load. #60 closes the Great
+Hall failure on this hardware when the machine is quiet; under load (5+) the
+transmission pass (#61) still pushes it over.
+
+`npm test` 148/148, `npm run e2e` 111/111 (exit 0), `npm run qa` 0 errors /
+0 warnings.

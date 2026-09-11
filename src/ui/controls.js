@@ -33,6 +33,7 @@ import { probeHeights } from './probes.js';
 import { stepAtEdge } from './edge.js';
 import { buildCollisionIndex } from './collision.js';
 import { LEVEL_ORDER, STREET_LEVEL, nearestLevel, floorAtLevel, substeps, slide } from './walkMath.js';
+import { push as vehiclePush } from '../systems/vehiclePush.js';
 import { TOUCH_LOOK_RATE, browserStorage, loadLookSpeed, saveLookSpeed, clampLookSpeed } from './lookSpeed.js';
 import {
   settle, easeTo, runFraction, bobGain, bobHeight,
@@ -152,6 +153,14 @@ export function install(ctx) {
   const collision = buildCollisionIndex(scene.getObjectByName('downtown-toronto') ?? scene, {
     skip: (o) => MOVING.has(o.name),
   });
+
+  // ...which left traffic driving straight through the walker. Instead of
+  // indexing the fleet, ask it each frame for the handful of cars in reach and
+  // do a flat 2D test - see src/systems/vehiclePush.js. The system publishes
+  // this on its group's userData, the same route metrics() reads count() by.
+  const nearbyVehicles = scene.getObjectByName('vehicles')?.userData?.nearby ?? null;
+  /** Search radius round the walker; a car's own half length is added inside. */
+  const PUSH_REACH = BODY_RADIUS + 1;
 
   // Last surface ground() actually found. The low collision ray is hung off
   // this rather than off the eye, because the camera eases toward the floor and
@@ -683,10 +692,26 @@ function ignoreHit(hit) {
     velocity.x += (wish.x - velocity.x) * Math.min(1, ACCEL * dt);
     velocity.z += (wish.z - velocity.z) * Math.min(1, ACCEL * dt);
 
+    // Traffic does not stop for anyone: any car whose footprint has reached the
+    // walker adds a sideways shove to this step. It rides through slide() with
+    // the rest of the step, so a walker pinned against a building is pushed
+    // ALONG the wall, never into it - and the walker's velocity is untouched,
+    // so being clipped does not launch anyone.
+    let pushX = 0;
+    let pushZ = 0;
+    if (nearbyVehicles && !airborne) {
+      const here = { cx: camera.position.x, cz: camera.position.z };
+      nearbyVehicles(here.cx, here.cz, PUSH_REACH, (car) => {
+        const p = vehiclePush(car, here, dt);
+        pushX += p.x;
+        pushZ += p.z;
+      });
+    }
+
     // Move, and if something is in the way slide along it rather than stopping:
     // two passes, for inside corners - see slide(). It hands back x and z only,
     // so a jump's vertical velocity is never touched.
-    const slid = slide({ x: velocity.x * dt, z: velocity.z * dt }, velocity, blockingNormal);
+    const slid = slide({ x: velocity.x * dt + pushX, z: velocity.z * dt + pushZ }, velocity, blockingNormal);
     step.set(slid.step.x, 0, slid.step.z);
     velocity.x = slid.velocity.x;
     velocity.z = slid.velocity.z;

@@ -6,7 +6,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planFor, worldToMap, mapToWorld, trueNorthOnMap, pickViewpoint, LEVEL_PLANS, VIEW_METRES } from '../src/ui/minimapPlan.js';
+import { planFor, worldToMap, mapToWorld, trueNorthOnMap, pickViewpoint, headingOf, LEVEL_PLANS, VIEW_METRES } from '../src/ui/minimapPlan.js';
 import { STREETS } from '../src/data/grid.js';
 import { BUILDINGS } from '../src/data/buildings.js';
 import { PATH_SEGMENTS } from '../src/interiors/path.js';
@@ -83,4 +83,47 @@ test('a click finds the dot under it, the nearest of two, and nothing elsewhere'
   const a = worldToMap(10, 0, centre, 220);
   assert.equal(pickViewpoint(a.x + 0.4, a.y, vps, centre, 220)?.id, 'a');
   assert.equal(pickViewpoint(a.x, a.y + 30, vps, centre, 220), null);
+});
+
+test('heading 0 is the old north-up map, unchanged', () => {
+  const centre = { x: -100, z: 40 };
+  assert.equal(headingOf(0, -1), 0, 'facing grid north is heading 0');
+  const k = 220 / VIEW_METRES;
+  for (const [x, z] of [[-100, -10], [40, 200], [-330, 41]]) {
+    // The pre-restyle formula, literally: +x right, +z down, no turn.
+    assert.deepEqual(worldToMap(x, z, centre, 220, VIEW_METRES, 0), { x: 110 + (x - centre.x) * k, y: 110 + (z - centre.z) * k });
+  }
+  const n = trueNorthOnMap(0);
+  assert.ok(Math.abs(n.x - Math.sin(GRID_ROTATION_DEG * Math.PI / 180)) < 1e-9 && Math.abs(n.y + Math.cos(GRID_ROTATION_DEG * Math.PI / 180)) < 1e-9, `true north at heading 0: ${n.x}, ${n.y}`);
+});
+
+test('heading-up: facing grid east puts what is ahead of you at the top', () => {
+  const centre = { x: 0, z: 0 };
+  const heading = headingOf(1, 0);                       // camera looking down +x
+  const ahead = worldToMap(50, 0, centre, 220, VIEW_METRES, heading);
+  assert.ok(Math.abs(ahead.x - 110) < 1e-9, `ahead sits at x ${ahead.x}, not the centre`);
+  assert.ok(ahead.y < 110, 'ahead is up');
+  const right = worldToMap(0, 50, centre, 220, VIEW_METRES, heading);   // grid south is now to your right
+  assert.ok(right.x > 110 && Math.abs(right.y - 110) < 1e-9);
+  const n = trueNorthOnMap(heading);
+  assert.ok(n.x < 0, 'true north swings to the left when you face east');
+});
+
+test('the rotated map round-trips, and the true-north tick stays a unit vector', () => {
+  const centre = { x: -212, z: 77 };
+  const heading = headingOf(0.6, 0.8);
+  const m = worldToMap(-190, 120, centre, 220, VIEW_METRES, heading);
+  const back = mapToWorld(m.x, m.y, centre, 220, VIEW_METRES, heading);
+  assert.ok(Math.abs(back.x - -190) < 1e-9 && Math.abs(back.z - 120) < 1e-9, JSON.stringify(back));
+  const n = trueNorthOnMap(heading);
+  assert.ok(Math.abs(Math.hypot(n.x, n.y) - 1) < 1e-9);
+});
+
+test('a click finds the dot under it on a rotated map', () => {
+  const centre = { x: 0, z: 0 };
+  const heading = headingOf(1, 0);
+  const vps = [{ id: 'a', position: { x: 50, z: 0 } }];
+  const m = worldToMap(50, 0, centre, 220, VIEW_METRES, heading);
+  assert.equal(pickViewpoint(m.x, m.y, vps, centre, 220, 7, VIEW_METRES, heading)?.id, 'a');
+  assert.equal(pickViewpoint(m.x, m.y, vps, centre, 220), null, 'north-up it is somewhere else entirely');
 });

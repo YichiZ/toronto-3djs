@@ -125,7 +125,7 @@ automated check in [`qa/traps.mjs`](qa/traps.mjs):
 | `Esc` | close panels, release the pointer |
 | click a storefront | tenant card, with its verification grade |
 | `F` | open the storefront under the reticle (walking, pointer captured) |
-| `M` | minimap while walking; click a viewpoint dot to jump there |
+| `M` | hide or show the minimap — on while walking, heading-up; click a viewpoint dot to jump there |
 
 ---
 

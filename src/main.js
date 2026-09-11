@@ -46,7 +46,7 @@ async function boot() {
   const { install: installFootsteps } = await import('./ui/footsteps.js');
   const footsteps = installFootsteps(ctx, { controls });
   installHud(ctx, { controls, tour, time, reference, footsteps, failures });
-  // Supplementary and off until M: the brief requires orientation without one.
+  // On while walking, GTA style; M hides it. Installed after the HUD so it can find the help panel.
   const { install: installMinimap } = await import('./ui/minimap.js');
   const minimap = installMinimap(ctx, { controls });
 

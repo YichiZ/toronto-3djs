@@ -1,26 +1,37 @@
 /**
- * The walk-mode minimap (issue #7).
+ * The walk-mode minimap (issue #7), GTA style.
  *
- * Supplementary by design: the brief requires orientation to work without a
- * minimap, so it stays off until M is pressed, and only ever shows while
- * walking. What it draws is decided in minimapPlan.js, which is pure and
- * unit-tested; this module owns the canvas, the toggle and click-to-teleport.
+ * Heading-up: the map turns under a fixed arrow so what is ahead of you is at
+ * the top, with ticks for true and grid north since the turning map no longer
+ * tells you either. A circle in the bottom-left corner, on whenever you are
+ * walking - M hides it, M brings it back - and never outside walk mode. What
+ * it draws is decided in minimapPlan.js, which is pure and unit-tested, along
+ * with the rotation maths; this module owns the canvas, the toggle and
+ * click-to-teleport.
  *
  * ponytail: the plan is redrawn from primitives on each refresh - 10 Hz, only
  * while shown, culled to the view - rather than blitted from a cached layer
- * per level as the issue sketched. Measured at 0.1 ms a redraw on the street
+ * per level as the issue sketched, and the heading is applied as one canvas
+ * rotation rather than per point. Measured at 0.1 ms a redraw on the street
  * and 0.02 ms in the PATH; add the cache if a denser plan ever makes it show
- * up in a profile.
+ * up in a profile. The circle is CSS `border-radius` on a square canvas, not
+ * a 2D clip: same picture, one less path per frame.
  */
 import * as THREE from 'three';
 import { VIEWPOINTS } from '../data/references.js';
-import { planFor, worldToMap, pickViewpoint, trueNorthOnMap, VIEW_METRES } from './minimapPlan.js';
+import { planFor, worldToMap, pickViewpoint, trueNorthOnMap, gridNorthOnMap, headingOf, VIEW_METRES } from './minimapPlan.js';
 import { getTarget, getRoute } from './wayfinding.js';
 import { isTyping } from './typing.js';
 
 const SIZE = 220;                 // CSS px; matches .hud-minimap canvas in style.css
+const RADIUS = SIZE / 2;          // the CSS circle the canvas is rounded to
 const REFRESH = 0.1;              // seconds: ~10 Hz is plenty at walking pace
 const BACKGROUND = '#0e131a';
+const BLIP_R = 5;                 // the destination ring
+const EDGE_PAD = 9;               // how far inside the rim an edge-pinned blip sits
+const TICK_R = RADIUS - 12;       // where the north letters sit
+const VIEWPOINT_R = 3;
+const TURN_EPS = 0.002;           // radians of heading change worth a redraw
 const STYLE = {
   street: { stroke: '#46505c' },
   streetDim: { stroke: '#262d36' },
@@ -48,21 +59,33 @@ export function install(ctx, { controls }) {
   (document.querySelector('.hud') ?? document.body).appendChild(root);
   const g = canvas.getContext('2d');
 
-  let wanted = false;             // M toggles this; walk mode is the other condition
+  let wanted = true;              // on while walking; M toggles it off
   let plan = [];
   let planLevel = null;
   let accum = REFRESH;
   const dir = new THREE.Vector3();
-  const centre = { x: 0, z: 0 };  // what the map is centred on as last drawn - clicks map onto that
+  // Centre and heading as last drawn - clicks are mapped back through these.
+  const view = { x: 0, z: 0, heading: 0 };
 
-  const visible = () => wanted && controls.mode === 'walk';
+  // The help panel lands on the same corner and is the thing you are reading,
+  // so the disc steps aside while it is open (#29 checks for the overlap). Not
+  // for the first-visit card (#26): same element, but centred, so no collision.
+  const help = document.querySelector('.hud-help');
+  const helpOpen = () => !!help && !help.hidden && !help.classList.contains('hud-intro');
+  const visible = () => wanted && controls.mode === 'walk' && !helpOpen();
 
+  // The CSS circle is inscribed in the canvas square, so anything visible lies
+  // within VIEW_METRES / 2 of the walker whichever way the map is turned.
   const outside = (x0, z0, x1, z1) => {
     const half = VIEW_METRES / 2;
-    return x1 < centre.x - half || x0 > centre.x + half || z1 < centre.z - half || z0 > centre.z + half;
+    return x1 < view.x - half || x0 > view.x + half || z1 < view.z - half || z0 > view.z + half;
   };
 
-  function draw() {
+  /** Distance from the map centre, for culling to the circle. */
+  const fromCentre = (m) => Math.hypot(m.x - SIZE / 2, m.y - SIZE / 2);
+
+  /** @param {number} heading radians, from headingOf(); the caller already has it */
+  function draw(heading) {
     const dpr = window.devicePixelRatio || 1;
     const px = Math.round(SIZE * dpr);
     if (canvas.width !== px) { canvas.width = px; canvas.height = px; }
@@ -77,15 +100,23 @@ export function install(ctx, { controls }) {
       label.textContent = level;
       root.dataset.level = level;
     }
-    centre.x = camera.position.x;
-    centre.z = camera.position.z;
+    view.x = camera.position.x;
+    view.z = camera.position.z;
+    view.heading = heading;
     const k = SIZE / VIEW_METRES;
+
+    // Everything in grid metres is drawn through one rotation, so the walker's
+    // heading is up; the arrow and the ticks go on afterwards, upright.
+    g.save();
+    g.translate(SIZE / 2, SIZE / 2);
+    g.rotate(-view.heading);
+    g.translate(-SIZE / 2, -SIZE / 2);
 
     for (const p of plan) {
       const st = STYLE[p.style];
       if (p.kind === 'rect') {
         if (outside(p.x0, p.z0, p.x1, p.z1)) continue;
-        const a = worldToMap(p.x0, p.z0, centre, SIZE);
+        const a = worldToMap(p.x0, p.z0, view, SIZE);
         const w = (p.x1 - p.x0) * k;
         const h = (p.z1 - p.z0) * k;
         if (st.fill) { g.fillStyle = st.fill; g.fillRect(a.x, a.y, w, h); }
@@ -100,7 +131,7 @@ export function install(ctx, { controls }) {
       g.lineWidth = Math.max(1, p.width * k);
       g.beginPath();
       p.points.forEach((q, i) => {
-        const m = worldToMap(q.x, q.z, centre, SIZE);
+        const m = worldToMap(q.x, q.z, view, SIZE);
         if (i) g.lineTo(m.x, m.y); else g.moveTo(m.x, m.y);
       });
       g.stroke();
@@ -109,10 +140,10 @@ export function install(ctx, { controls }) {
     // Viewpoints: the dots you can click to jump to.
     g.fillStyle = '#e8edf3';
     for (const v of VIEWPOINTS) {
-      const m = worldToMap(v.position.x, v.position.z, centre, SIZE);
-      if (m.x < 0 || m.y < 0 || m.x > SIZE || m.y > SIZE) continue;
+      const m = worldToMap(v.position.x, v.position.z, view, SIZE);
+      if (fromCentre(m) > RADIUS - VIEWPOINT_R) continue;
       g.beginPath();
-      g.arc(m.x, m.y, 3, 0, Math.PI * 2);
+      g.arc(m.x, m.y, VIEWPOINT_R, 0, Math.PI * 2);
       g.fill();
     }
 
@@ -123,56 +154,64 @@ export function install(ctx, { controls }) {
       g.lineWidth = 2;
       g.beginPath();
       path.forEach((q, i) => {
-        const m = worldToMap(q.x, q.z, centre, SIZE);
+        const m = worldToMap(q.x, q.z, view, SIZE);
         if (i) g.lineTo(m.x, m.y); else g.moveTo(m.x, m.y);
       });
       g.stroke();
     }
 
-    // Destination (#11): an amber ring, pinned to the edge when off the map.
+    // Destination (#11): an amber ring, pinned to the rim when off the map.
     const dest = getTarget();
     if (dest) {
-      const m = worldToMap(dest.x, dest.z, centre, SIZE);
+      const m = worldToMap(dest.x, dest.z, view, SIZE);
+      const d = fromCentre(m);
+      const max = RADIUS - EDGE_PAD;
+      const t = d > max ? max / d : 1;
       g.strokeStyle = '#fbbf24';
       g.lineWidth = 2;
       g.beginPath();
-      g.arc(Math.min(SIZE - 7, Math.max(7, m.x)), Math.min(SIZE - 7, Math.max(7, m.y)), 5, 0, Math.PI * 2);
+      g.arc(SIZE / 2 + (m.x - SIZE / 2) * t, SIZE / 2 + (m.y - SIZE / 2) * t, BLIP_R, 0, Math.PI * 2);
       g.stroke();
     }
-
-    // You are here: a wedge along the view direction. The map stays north-up.
-    camera.getWorldDirection(dir);
-    g.save();
-    g.translate(SIZE / 2, SIZE / 2);
-    g.rotate(Math.atan2(dir.z, dir.x));
-    g.fillStyle = '#7dd3fc';
-    g.beginPath();
-    g.moveTo(9, 0);
-    g.lineTo(-5, 5.5);
-    g.lineTo(-2.5, 0);
-    g.lineTo(-5, -5.5);
-    g.closePath();
-    g.fill();
     g.restore();
 
-    // True north: the grid runs 16.7 degrees off it, so a tick says where it is.
-    const n = trueNorthOnMap();
-    const r = SIZE / 2 - 12;
+    // You are here: the arrow never moves - the map turned instead.
+    g.fillStyle = '#7dd3fc';
+    g.beginPath();
+    g.moveTo(SIZE / 2, SIZE / 2 - 9);
+    g.lineTo(SIZE / 2 + 5.5, SIZE / 2 + 5);
+    g.lineTo(SIZE / 2, SIZE / 2 + 2.5);
+    g.lineTo(SIZE / 2 - 5.5, SIZE / 2 + 5);
+    g.closePath();
+    g.fill();
+
+    // Which way is north, now that up is wherever you are looking: 'N' for true
+    // north, a dot for grid north, the 16.7 degrees between them visible.
+    const n = trueNorthOnMap(view.heading);
+    const gn = gridNorthOnMap(view.heading);
     g.fillStyle = '#93a3b5';
     g.font = '10px ui-monospace, monospace';
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText('N', SIZE / 2 + n.x * r, SIZE / 2 + n.y * r);
+    g.fillText('N', SIZE / 2 + n.x * TICK_R, SIZE / 2 + n.y * TICK_R);
+    g.beginPath();
+    g.arc(SIZE / 2 + gn.x * TICK_R, SIZE / 2 + gn.y * TICK_R, 1.5, 0, Math.PI * 2);
+    g.fill();
   }
 
   ctx.onFrame.push((dt) => {
     const show = visible();
     if (root.hidden === show) root.hidden = !show;
-    if (!show) return;
+    if (!show) { accum = REFRESH; return; }   // so the first frame back is fresh, not the last one drawn
     accum += dt;
-    if (accum < REFRESH) return;
+    // The whole map turns with the head, and looking around is faster than
+    // walking: redraw at once while turning, at REFRESH otherwise.
+    camera.getWorldDirection(dir);
+    const heading = headingOf(dir.x, dir.z);
+    const turned = Math.atan2(Math.sin(heading - view.heading), Math.cos(heading - view.heading));   // wrapped, so facing south does not read as a full turn
+    if (accum < REFRESH && Math.abs(turned) < TURN_EPS) return;
     accum = 0;
-    draw();
+    draw(heading);
   });
 
   function toggle(force) {
@@ -185,11 +224,12 @@ export function install(ctx, { controls }) {
   function onKey(e) {
     const t = e.target;
     if (isTyping(t)) return;
-    if (e.code === 'KeyM' && !e.repeat) toggle();
+    if (e.code === 'KeyM' && !e.repeat && !helpOpen()) toggle();   // while help is up M would flip it unseen
   }
   window.addEventListener('keydown', onKey);
 
-  const viewpointAt = (e) => pickViewpoint(e.offsetX, e.offsetY, VIEWPOINTS, centre, SIZE);
+  // The CSS circle clips hit-testing too, so no rim guard is needed here.
+  const viewpointAt = (e) => pickViewpoint(e.offsetX, e.offsetY, VIEWPOINTS, view, SIZE);
   canvas.addEventListener('click', (e) => {
     const v = viewpointAt(e);
     if (v) controls.teleport(v.id);

@@ -17,6 +17,7 @@ import { INTERSECTIONS } from '../data/grid.js';
 import { pickPlace, nearestIntersection } from './placeLabel.js';
 import { aimAt } from './aim.js';
 import { browserStorage } from './lookSpeed.js';
+import { DESTINATIONS, guide, getTarget, setTarget } from './wayfinding.js';
 
 const CONFIDENCE_CLASS = {
   surveyed: 'c-surveyed',
@@ -149,6 +150,73 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
   }
   bar.appendChild(jump);
 
+  // --- wayfinding (#11) ---------------------------------------------------
+  // The guide is a full-width row inside the bar, not a floating panel: the
+  // bar grows by a row and --hud-bar-h lifts everything above it, so it can
+  // never land on another panel.
+  const goTo = el('select', 'hud-select hud-goto');
+  goTo.appendChild(el('option', null, 'Go to…'));
+  goTo.firstChild.value = '';
+  for (const group of ['Places', 'Corners']) {
+    const og = document.createElement('optgroup');
+    og.label = group;
+    for (const d of DESTINATIONS) {
+      if (d.group !== group) continue;
+      const opt = el('option', null, d.name);
+      opt.value = d.id;
+      og.appendChild(opt);
+    }
+    goTo.appendChild(og);
+  }
+  bar.appendChild(goTo);
+  const guideEl = el('div', 'hud-guide',
+    '<span class="guide-arrow" aria-hidden="true">↑</span><span class="guide-text"></span>' +
+    '<button class="hud-btn small guide-clear" type="button" aria-label="Clear destination">✕</button>');
+  guideEl.hidden = true;
+  bar.prepend(guideEl);
+  const guideArrow = guideEl.querySelector('.guide-arrow');
+  const guideText = guideEl.querySelector('.guide-text');
+  const guideDir = new THREE.Vector3();
+  let arrivedUntil = 0;
+
+  /** Arrow and distance to the destination; walk mode only, like the level chip. */
+  function updateGuide() {
+    const dest = getTarget();
+    const walking = controls?.mode === 'walk';
+    if (!dest) {
+      guideEl.hidden = !(walking && performance.now() < arrivedUntil);
+      return;
+    }
+    guideEl.hidden = !walking;
+    if (!walking) return;
+    camera.getWorldDirection(guideDir);
+    const g = guide(camera.position, guideDir, dest);
+    if (g.arrived) {
+      guideArrow.textContent = '✓';
+      guideArrow.style.transform = '';
+      guideText.textContent = `Arrived · ${dest.name}`;
+      setTarget(null);
+      arrivedUntil = performance.now() + 2500;
+      return;
+    }
+    guideArrow.textContent = '↑';
+    guideArrow.style.transform = `rotate(${g.turn.toFixed(0)}deg)`;
+    guideEl.dataset.turn = g.turn.toFixed(0);
+    guideText.textContent = `${dest.name} · ${g.distance.toFixed(0)} m`;
+  }
+  goTo.addEventListener('change', () => {
+    if (!goTo.value) return;
+    setTarget(goTo.value);
+    goTo.value = '';
+    arrivedUntil = 0;
+    updateGuide();
+  });
+  guideEl.querySelector('.guide-clear').addEventListener('click', () => {
+    setTarget(null);
+    arrivedUntil = 0;
+    updateGuide();
+  });
+
   const helpButton = el('button', 'hud-btn', 'Help<kbd>H</kbd>');
   bar.appendChild(helpButton);
   // The bar wraps to one, two or three rows with the width; panels that float
@@ -174,6 +242,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
       <dt>Click a storefront</dt><dd>tenant, category, address and confidence grade</dd>
       <dt>F</dt><dd>open the storefront under the reticle (walking, pointer captured)</dd>
       <dt>M</dt><dd>minimap while walking — click a dot to jump to that viewpoint</dd>
+      <dt>Go to…</dt><dd>pick a destination: an arrow and the distance to it, and a ring on the minimap</dd>
     </dl>
     <div class="hud-look"><label>Look speed<input type="range" min="0.25" max="3" step="0.05"><output></output></label></div>
     <div class="hud-reflayers"></div>
@@ -482,6 +551,7 @@ export function install(ctx, { controls, tour, time, reference, failures = [] } 
     // The level is where the walker stands; orbit and the tour have no walker,
     // and the chip read "SkyWalk" over an aerial (#29).
     levelEl.hidden = controls?.mode !== 'walk';
+    updateGuide();
 
     const near = nearestEntity();
     if (near) {

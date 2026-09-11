@@ -15,6 +15,7 @@
 import * as THREE from 'three';
 import { VIEWPOINTS } from '../data/references.js';
 import { planFor, worldToMap, pickViewpoint, trueNorthOnMap, VIEW_METRES } from './minimapPlan.js';
+import { getTarget } from './wayfinding.js';
 
 const SIZE = 220;                 // CSS px; matches .hud-minimap canvas in style.css
 const REFRESH = 0.1;              // seconds: ~10 Hz is plenty at walking pace
@@ -112,6 +113,17 @@ export function install(ctx, { controls }) {
       g.beginPath();
       g.arc(m.x, m.y, 3, 0, Math.PI * 2);
       g.fill();
+    }
+
+    // Destination (#11): an amber ring, pinned to the edge when off the map.
+    const dest = getTarget();
+    if (dest) {
+      const m = worldToMap(dest.x, dest.z, centre, SIZE);
+      g.strokeStyle = '#fbbf24';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.arc(Math.min(SIZE - 7, Math.max(7, m.x)), Math.min(SIZE - 7, Math.max(7, m.y)), 5, 0, Math.PI * 2);
+      g.stroke();
     }
 
     // You are here: a wedge along the view direction. The map stays north-up.

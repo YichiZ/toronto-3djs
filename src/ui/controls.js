@@ -809,6 +809,18 @@ function ignoreHit(hit) {
   }
   ctx.onFrame.push(update);
 
+  /**
+   * Where the walk left off when orbit began, and where the pivot was put.
+   *
+   * Entering orbit pivots ORBIT_PULLBACK ahead along the view, so from the
+   * forecourt, facing the portico, the pivot sits some 60 m inside the station.
+   * Landing back at an untouched pivot put the walker in a white void against
+   * the viaduct (#84). Turning and zooming never move the pivot; only a pan -
+   * choosing a new subject - does.
+   * @type {{x:number, y:number, z:number, pivot:THREE.Vector3} | null}
+   */
+  let walkReturn = null;
+
   function setMode(name) {
     if (!['walk', 'orbit', 'cinematic'].includes(name)) {
       throw new RangeError(`setMode: unknown mode "${name}"`);
@@ -834,16 +846,26 @@ function ignoreHit(hit) {
         maxPolarAngle: orbit.maxPolarAngle,
       });
       orbit.target.set(t.x, t.y, t.z);
+      walkReturn = previous === 'walk'
+        ? { x: camera.position.x, y: camera.position.y, z: camera.position.z, pivot: orbit.target.clone() }
+        : null;
     }
     if (name === 'walk') {
-      if (previous === 'orbit') {
-        // Land at the subject, not under the orbit camera. Cinematic -> walk is
-        // left alone: the tour has just placed the camera somewhere deliberate,
-        // and the orbit target is stale.
+      if (previous === 'orbit' && walkReturn && orbit.target.distanceTo(walkReturn.pivot) < 1) {
+        // Only turned and zoomed: walk on from where the walk left off.
+        camera.position.set(walkReturn.x, walkReturn.y, walkReturn.z);
+        levelIndex = nearestLevelIndex(walkReturn.y - EYE);
+      } else if (previous === 'orbit') {
+        // A new subject was chosen (a pan, or an orbit viewpoint): land at it,
+        // not under the orbit camera. Cinematic -> walk is left alone: the tour
+        // has just placed the camera somewhere deliberate, and the orbit target
+        // is stale.
         levelIndex = walkLevelForTarget(
           orbit.target.y, LEVEL_ORDER.map((l) => l.y), STREET_LEVEL, MAX_LEVEL_TOLERANCE
         );
         camera.position.set(orbit.target.x, LEVEL_ORDER[levelIndex].y + EYE, orbit.target.z);
+      }
+      if (previous === 'orbit') {
         // Keep the yaw, drop the pitch: arriving at eye height staring at the
         // pavement only to have the first mouse move snap the view level was
         // half the jump.

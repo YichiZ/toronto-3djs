@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import { VIEWPOINTS } from '../data/references.js';
 import { planFor, worldToMap, pickViewpoint, trueNorthOnMap, VIEW_METRES } from './minimapPlan.js';
-import { getTarget } from './wayfinding.js';
+import { getTarget, getRoute } from './wayfinding.js';
 import { isTyping } from './typing.js';
 
 const SIZE = 220;                 // CSS px; matches .hud-minimap canvas in style.css
@@ -114,6 +114,19 @@ export function install(ctx, { controls }) {
       g.beginPath();
       g.arc(m.x, m.y, 3, 0, Math.PI * 2);
       g.fill();
+    }
+
+    // The route to it (#11), corner by corner along the sidewalks.
+    const path = getRoute();
+    if (path?.length > 1) {
+      g.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+      g.lineWidth = 2;
+      g.beginPath();
+      path.forEach((q, i) => {
+        const m = worldToMap(q.x, q.z, centre, SIZE);
+        if (i) g.lineTo(m.x, m.y); else g.moveTo(m.x, m.y);
+      });
+      g.stroke();
     }
 
     // Destination (#11): an amber ring, pinned to the edge when off the map.

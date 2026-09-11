@@ -17,7 +17,8 @@ import { INTERSECTIONS } from '../data/grid.js';
 import { pickPlace, nearestIntersection } from './placeLabel.js';
 import { aimAt } from './aim.js';
 import { browserStorage } from './lookSpeed.js';
-import { DESTINATIONS, guide, getTarget, setTarget } from './wayfinding.js';
+import { DESTINATIONS, guide, getTarget, setTarget, setRoute } from './wayfinding.js';
+import { route, nextWaypoint, streetGraph } from './route.js';
 import { isTyping } from './typing.js';
 import { nearbyPlaces, nearestAccess, accessText, arrowFor } from './nearby.js';
 
@@ -240,10 +241,26 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
       arrivedUntil = performance.now() + 2500;
       return;
     }
+    // On the street, to somewhere on the street: walk the sidewalks, and aim
+    // at the next corner. Anywhere else, the straight line (routing below
+    // grade is still to come).
+    let aim = dest;
+    let distance = g.distance;
+    const onStreet = Math.abs(camera.position.y - 1.7) < 1.2;
+    if (dest.street && onStreet) {
+      const r = route(streetGraph(), camera.position, dest);
+      setRoute(r.points);
+      aim = nextWaypoint(r.points, camera.position);
+      distance = r.length;
+    } else {
+      setRoute(null);
+    }
+    const turn = guide(camera.position, guideDir, aim).turn;
     guideArrow.textContent = '↑';
-    guideArrow.style.transform = `rotate(${g.turn.toFixed(0)}deg)`;
-    guideEl.dataset.turn = g.turn.toFixed(0);
-    guideText.textContent = `${dest.name} · ${g.distance.toFixed(0)} m`;
+    guideArrow.style.transform = `rotate(${turn.toFixed(0)}deg)`;
+    guideEl.dataset.turn = turn.toFixed(0);
+    guideEl.dataset.aim = `${aim.x.toFixed(2)},${aim.z.toFixed(2)}`;
+    guideText.textContent = `${dest.name} · ${distance.toFixed(0)} m`;
   }
   goTo.addEventListener('change', () => {
     if (!goTo.value) return;

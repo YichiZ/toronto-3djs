@@ -18,9 +18,12 @@ export const ARRIVE_METRES = 8;
 export const DESTINATIONS = Object.freeze([
   ...VIEWPOINTS.map((v) => {
     const p = v.mode === 'orbit' ? v.lookAt : v.position;
-    return Object.freeze({ id: `vp:${v.id}`, name: v.name, x: p.x, z: p.z, group: 'Places' });
+    // Routable on the sidewalks: street-level walk viewpoints, and an orbit
+    // viewpoint's subject, which stands on the street.
+    const street = v.mode === 'orbit' || (v.position.y > 0 && v.position.y < 3.5);
+    return Object.freeze({ id: `vp:${v.id}`, name: v.name, x: p.x, z: p.z, street, group: 'Places' });
   }),
-  ...INTERSECTIONS.map((i) => Object.freeze({ id: `x:${i.id}`, name: i.name, x: i.x, z: i.z, group: 'Corners' })),
+  ...INTERSECTIONS.map((i) => Object.freeze({ id: `x:${i.id}`, name: i.name, x: i.x, z: i.z, street: true, group: 'Corners' })),
 ]);
 
 export const getDestination = (id) => DESTINATIONS.find((d) => d.id === id) ?? null;
@@ -46,11 +49,17 @@ export function guide(from, forward, dest) {
   return { distance, turn, arrived: distance <= ARRIVE_METRES };
 }
 
-// The one destination, shared by the HUD banner and the minimap marker.
+// The one destination, shared by the HUD banner and the minimap marker, and
+// the route to it as the HUD last worked it out.
 let target = null;
+let routePoints = null;
 export const getTarget = () => target;
-/** Set by id, or clear with null. Unknown ids clear. */
+/** Set by id, or clear with null. Unknown ids clear. A new target drops the old route. */
 export function setTarget(id) {
   target = id ? getDestination(id) : null;
+  routePoints = null;
   return target;
 }
+export const getRoute = () => routePoints;
+/** @param {{x:number, z:number}[]|null} points */
+export function setRoute(points) { routePoints = points; }

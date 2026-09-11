@@ -678,20 +678,31 @@ export function build(ctx) { // eslint-disable-line no-unused-vars
   // Vertical circulation up to street level and to the Union concourses.
   const vertical = new THREE.Group();
   vertical.name = 'path-vertical-circulation';
+  // Each way up or down is tagged for the HUD's nearby strip (#15): where it is
+  // (halfway along its run) and which two floors it joins.
+  const access = (kind, x, z, highY, highName) =>
+    ({ kind, x, z, lowY: FLOOR, highY, lowName: 'the PATH', highName });
   const up1 = escalator({ rise: LEVELS.unionConcourse - FLOOR, run: 5.0 });
   up1.position.set(-108, FLOOR, 24);
+  up1.userData.access = access('Escalator', -108, 24 + 2.5, LEVELS.unionConcourse, 'the concourses');
   vertical.add(up1);
   const up2 = escalator({ rise: -FLOOR, run: 9.5 });
   up2.position.set(-98, FLOOR, 16);
+  up2.userData.access = access('Escalator', -98, 16 + 4.75, 0, 'street level');
   vertical.add(up2);
   const st1 = stair({ rise: LEVELS.unionConcourse - FLOOR, run: 4.2, width: 3.6 });
   st1.position.set(-40, FLOOR, 24);
+  st1.userData.access = access('Stairs', -40, 24 + 2.1, LEVELS.unionConcourse, 'the concourses');
   vertical.add(st1);
   const st2 = stair({ rise: -FLOOR, run: 8.4, width: 3.6 });
   st2.position.set(38, FLOOR, -66);
+  st2.userData.access = access('Stairs', 38, -66 + 4.2, 0, 'street level');
   vertical.add(st2);
-  vertical.add(elevator(-112, 12));
-  vertical.add(elevator(44, -74));
+  for (const [x, z] of [[-112, 12], [44, -74]]) {
+    const lift = elevator(x, z);
+    lift.userData.access = access('Lift', x, z, 0, 'street level');
+    vertical.add(lift);
+  }
   nearestCluster(-108, 16).group.add(vertical);
 
   const loop = buildStreetcarLoop();

@@ -19,6 +19,7 @@ import { aimAt } from './aim.js';
 import { browserStorage } from './lookSpeed.js';
 import { DESTINATIONS, guide, getTarget, setTarget } from './wayfinding.js';
 import { isTyping } from './typing.js';
+import { nearbyPlaces, nearestAccess, accessText, arrowFor } from './nearby.js';
 
 const CONFIDENCE_CLASS = {
   surveyed: 'c-surveyed',
@@ -50,12 +51,51 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   // --- top left: place and bearing ---------------------------------------
   const place = el('div', 'hud-panel hud-place',
     '<div class="place-name">—</div><div class="place-near"></div>' +
-    '<div class="place-meta"><span class="bearing">—</span><span class="level"></span></div>');
+    '<div class="place-meta"><span class="bearing">—</span><span class="level"></span></div>' +
+    '<ul class="place-nearby" hidden></ul>');
   hud.appendChild(place);
   const placeName = place.querySelector('.place-name');
   const placeNear = place.querySelector('.place-near');
   const bearingEl = place.querySelector('.bearing');
   const levelEl = place.querySelector('.level');
+
+  // --- nearby strip (#15) --------------------------------------------------
+  // Inside the place panel, so it grows that panel rather than floating over
+  // anything. The access tags are static once the world is built, which it is
+  // by the time the HUD installs.
+  const nearbyEl = place.querySelector('.place-nearby');
+  // The strip makes this panel's height vary; the help panel is capped on it,
+  // as panels above the bar sit on --hud-bar-h (#29).
+  new ResizeObserver(() => {
+    document.documentElement.style.setProperty('--hud-place-h', `${place.offsetHeight}px`);
+  }).observe(place);
+  const accessPoints = [];
+  scene.traverse((o) => { if (o.userData?.access) accessPoints.push(o.userData.access); });
+  const nearbyDir = new THREE.Vector3();
+  const nearbyPt = new THREE.Vector3();
+  const NEARBY_EYE = 1.7;
+  /** Every place's box distance, as last measured by nearestEntity(). */
+  let lastEntries = [];
+
+  function updateNearby(headline) {
+    if (controls?.mode !== 'walk') { nearbyEl.hidden = true; return; }
+    camera.getWorldDirection(nearbyDir);
+    const turnTo = (p) => arrowFor(guide(camera.position, nearbyDir, p).turn);
+    // The headline's own parts are not "nearby": on the forecourt both lines
+    // were Union Station's colonnade and entablature.
+    const head = headline?.record?.object ?? null;
+    const within = (o, root) => { for (let p = o; p; p = p.parent) if (p === root) return true; return false; };
+    const partOfHeadline = (e) => Boolean(head && e.record.object
+      && (within(e.record.object, head) || within(head, e.record.object)));
+    const lines = nearbyPlaces(lastEntries, {
+      exclude: headline?.record ?? null, belowGrade: camera.position.y < 0, skip: partOfHeadline,
+    })
+      .map((e) => `${turnTo(e.box.clampPoint(camera.position, nearbyPt))} ${e.record.name} · ${e.distance.toFixed(0)} m`);
+    const way = nearestAccess(accessPoints, camera.position, camera.position.y - NEARBY_EYE);
+    if (way) lines.push(`${turnTo(way.access)} ${accessText(way)} · ${way.distance.toFixed(0)} m`);
+    nearbyEl.innerHTML = lines.map((l) => `<li>${escape(l)}</li>`).join('');
+    nearbyEl.hidden = lines.length === 0;
+  }
 
   // --- top right: renderer stats -----------------------------------------
   const statsPanel = el('div', 'hud-panel hud-stats',
@@ -546,7 +586,9 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
       record: e.record,
       distance: e.box.distanceToPoint(camera.position),
       footprint: e.footprint,
+      box: e.box,
     }));
+    lastEntries = entries;
     return pickPlace(entries, camera.position.y < 0);
   }
 
@@ -575,6 +617,7 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
     }
     const corner = nearestIntersection(camera.position.x, camera.position.z, INTERSECTIONS);
     placeNear.textContent = corner ? `near ${corner.name} · ${corner.distance.toFixed(0)} m` : '';
+    updateNearby(near);
 
     fpsEl.textContent = `${stats.fps.toFixed(0)} fps`;
     callsEl.textContent = `${stats.drawCalls} calls`;

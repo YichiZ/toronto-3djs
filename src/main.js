@@ -43,7 +43,9 @@ async function boot() {
 
   const tour = installTour(ctx, controls);
   const reference = installReference(ctx);
-  installHud(ctx, { controls, tour, time, reference, failures });
+  const { install: installFootsteps } = await import('./ui/footsteps.js');
+  const footsteps = installFootsteps(ctx, { controls });
+  installHud(ctx, { controls, tour, time, reference, footsteps, failures });
   // Supplementary and off until M: the brief requires orientation without one.
   const { install: installMinimap } = await import('./ui/minimap.js');
   const minimap = installMinimap(ctx, { controls });
@@ -73,7 +75,7 @@ async function boot() {
 
   // Exposed for the QA harness driving the page through a headless browser.
   window.__TWIN__ = {
-    ctx, controls, tour, time, reference, lod, minimap,
+    ctx, controls, tour, time, reference, lod, minimap, footsteps,
     registry: summary,
     failures,
     stats: () => ({ ...ctx.stats, memory: ctx.renderer.info.memory }),

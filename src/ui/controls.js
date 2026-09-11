@@ -24,6 +24,7 @@
  */
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { isTyping } from './typing.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { VIEWPOINTS, getViewpoint } from '../data/references.js';
 import { orbitTargetFrom, walkLevelForTarget, ORBIT_PULLBACK } from './modeTransition.js';
@@ -261,7 +262,7 @@ export function install(ctx) {
   // --- keyboard -----------------------------------------------------------
   const typingInField = (e) => {
     const t = e.target;
-    return t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
+    return isTyping(t);
   };
 
   function onKeyDown(e) {
@@ -465,6 +466,9 @@ function ignoreHit(hit) {
       // above the feet - so it rejected nothing, and a walker on Front Street
       // stepped 2 m straight up onto the Bay Concourse's ceiling slab (#13).
       if (hit.point.y + EYE - camera.position.y > STEP_UP) continue;
+      // What the floor is, for footsteps.js (#12); an instanced proxy stands in
+      // for its source, which is the one in the scene graph.
+      floorObject = hit.object.userData.collisionSource ?? hit.object;
       return hit.point.y;
     }
     return null;
@@ -478,6 +482,8 @@ function ignoreHit(hit) {
    * has just left a floor is still within a body radius of it.
    */
   let onFloor = false;
+  /** The mesh the last floor probe landed on, or null. */
+  let floorObject = null;
 
   /** Snap to whatever floor is actually under the walker on the current level. */
   function ground(dt) {
@@ -594,9 +600,16 @@ function ignoreHit(hit) {
    * the bob must be off, because a bobbing jump looks broken - fades the head
    * back instead of dropping it 4 cm in a single frame.
    */
+  const reduceMotion = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : null;
+
   function applyBob(dt) {
     const speed = Math.hypot(velocity.x, velocity.z);
-    bobStrength = easeTo(bobStrength, bobGain(speed, WALK_SPEED, airborne), BOB_SETTLE, dt);
+    // prefers-reduced-motion: no bob at all (#12). Footsteps still keep time -
+    // they count bobDistance, which moves regardless.
+    const gain = reduceMotion?.matches ? 0 : bobGain(speed, WALK_SPEED, airborne);
+    bobStrength = easeTo(bobStrength, gain, BOB_SETTLE, dt);
     bobY = bobHeight(bobDistance, bobStrength);
     camera.position.y += bobY;
   }
@@ -832,6 +845,9 @@ function ignoreHit(hit) {
   return {
     get mode() { return mode; },
     get viewpoint() { return lastViewpoint; },
+    /** The floor mesh underfoot, and metres walked: what footsteps.js keys on (#12). */
+    get floorObject() { return floorObject; },
+    get strideDistance() { return bobDistance; },
     get level() { return LEVEL_ORDER[levelIndex].name; },
     get airborne() { return airborne; },
     get lookSpeed() { return lookSpeed; },

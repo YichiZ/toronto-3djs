@@ -16,6 +16,7 @@ import * as THREE from 'three';
 import { VIEWPOINTS } from '../data/references.js';
 import { planFor, worldToMap, pickViewpoint, trueNorthOnMap, VIEW_METRES } from './minimapPlan.js';
 import { getTarget } from './wayfinding.js';
+import { isTyping } from './typing.js';
 
 const SIZE = 220;                 // CSS px; matches .hud-minimap canvas in style.css
 const REFRESH = 0.1;              // seconds: ~10 Hz is plenty at walking pace
@@ -170,7 +171,7 @@ export function install(ctx, { controls }) {
 
   function onKey(e) {
     const t = e.target;
-    if (t && ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
+    if (isTyping(t)) return;
     if (e.code === 'KeyM' && !e.repeat) toggle();
   }
   window.addEventListener('keydown', onKey);

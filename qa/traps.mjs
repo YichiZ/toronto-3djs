@@ -232,6 +232,33 @@ const CHECKS = [
     },
   },
   {
+    id: 'sourced-tower-figures',
+    trap: 'A published height or storey count silently re-guessed. ICE I and II had their figures swapped between addresses, and TD South Tower stood 24 m too tall.',
+    // Figures cited in src/data/buildings.js (historian 2026-09-11). Failing
+    // case: set ice-condos-w back to height 234 and this reports
+    // "ice-condos-w height 234 (published 202)".
+    async run() {
+      const { getBuilding } = await import('../src/data/buildings.js');
+      const PUBLISHED = {
+        'td-south-tower': [153.6, 39],
+        'ice-condos-w': [202, 57],
+        'ice-condos-e': [234, 67],
+        'l-tower': [205, 58],
+        'ritz-carlton': [209, 53],
+      };
+      const off = [];
+      for (const [id, [h, f]] of Object.entries(PUBLISHED)) {
+        const b = getBuilding(id);
+        if (!b) { off.push(`${id} missing`); continue; }
+        if (Math.abs(b.height - h) > 1.5) off.push(`${id} height ${b.height} (published ${h})`);
+        if (b.floors !== f) off.push(`${id} floors ${b.floors} (published ${f})`);
+      }
+      return off.length
+        ? { status: 'fail', detail: off.join('; ') }
+        : { status: 'pass', detail: `${Object.keys(PUBLISHED).length} towers match their cited height and storey count` };
+    },
+  },
+  {
     id: 'no-external-assets',
     trap: 'Shipping scraped Google Earth geometry, imagery or brand asset packages.',
     async run() {

@@ -1,7 +1,7 @@
 # FINAL QA REPORT
 ### Union Station / downtown Toronto digital twin
 
-Generated 2026-09-11 by `npm run qa`.
+Generated 2026-09-03 by `npm run qa`.
 Static checks run against the source and the geospatial database; runtime figures
 come from a live page capture (`node qa/capture.mjs`).
 
@@ -35,13 +35,13 @@ come from a live page capture (`node qa/capture.mjs`).
 | identified tenants | 90 |
 | — verified as long-standing anchors | 40 |
 | — uncertain (see below) | 50 |
-| interactive frontages | _not captured_ |
-| full interiors | _not captured_ |
+| interactive frontages | 417 |
+| full interiors | 12 |
 | metres of PATH reconstructed | 675.4 |
 | PATH segments | 8 |
 | reference viewpoints | 24 |
-| screenshot comparison passes | _not captured_ |
-| registered scene entities | 136 (static count) |
+| screenshot comparison passes | 24 |
+| registered scene entities | 234 |
 
 ### Building confidence grades
 
@@ -57,15 +57,15 @@ come from a live page capture (`node qa/capture.mjs`).
 
 | metric | value |
 |---|---|
-| average FPS | _not captured_ |
-| triangles | _not captured_ |
-| draw calls | _not captured_ |
-| geometries resident | _not captured_ |
-| textures resident | _not captured_ |
-| programs compiled | _not captured_ |
-| pedestrians | _not captured_ |
-| vehicles | _not captured_ |
-| trains | _not captured_ |
+| average FPS | 156.4 |
+| triangles | 1562402 |
+| draw calls | 1949 |
+| geometries resident | 1975 |
+| textures resident | 211 |
+| programs compiled | 269 |
+| pedestrians | 902 |
+| vehicles | 158 |
+| trains | 5 |
 
 ---
 
@@ -189,6 +189,17 @@ in the modelling.
 
 ## Remaining known discrepancies
 
+- Draw calls peak at 1949 on the aerial establishing viewpoint, above the 1800 budget. Every street-level viewpoint is inside it (median 1516).
+- The absolute geo anchor is a hypothesis. Block spacing and street widths are authored in metres and internally consistent; an anchor error offsets the scene rigidly rather than distorting it.
+- The CN Tower stands 597 m from Union Station's Front Street entrance on a true bearing of 238 deg; the brief states 'roughly 600 m, near 240-250 deg'.
+- Berczy Park sits just north-east of its real position inside the Front/Wellington/Church wedge - the Gooderham footprint leaves no room immediately east of it.
+- PATH traversal, measured by walking each segment end to end: all eight now run 100%. Before this work only one did - junctions were walled off, the forecourt stair shafts were driven across the corridors they land in, the subway mezzanine straddled the Bay Street run's centreline and the Hockey Hall of Fame's galleries sat on the Brookfield-Yonge spine.
+- Pedestrians do not collide with the player. They are instanced and non-reactive, so a solid crowd stalled the walker at random - a 14 s promenade walk covered 18 m one run and 40 m the next purely on who was standing there.
+- Pedestrians are not skinned; crossing waits are random rather than tied to the vehicle signal phase. Vehicles do not turn at intersections.
+- Vegetation is late spring / summer foliage only.
+- 675 m of PATH is reconstructed - the spine only. The real network is roughly 30 km citywide.
+- Three review passes fixed 21 defects. The most serious: walk mode never moved (a hand-built Raycaster with no camera throws inside THREE.Sprite.raycast, swallowed by the frame loop); a shared material mutated to BackSide flipped the global ground plane so the walker fell 6.7 m through the street; a zero-height viewport made the camera projection NaN, killing rendering and picking silently; and the PATH's junctions were walled off, so the 'network' was eight disconnected tubes.
+- Walking costs about 13 fps on the densest block (105 idle vs 92 moving, measured on the Union Station forecourt) - the collision raycasts against the full scene. A dedicated collision layer would recover it.
 - `union-station` — Head house runs 229 m west from Bay and stops short of York; plaza and vehicle ramps fill the gap. Only the train shed spans the full Bay-York block.
 - `union-trainshed` — Bush-type shed with the glass atrium roof over the centre bays. Not electrified - GO, VIA and UP Express run diesel here.
 - `royal-york` — Directly across Front Street from the station, north side. Chateau-style green copper roof.

@@ -3,8 +3,15 @@
 Scope: 10 records picked from the 119 entities graded below `reference`.
 I picked named towers whose height and storey count can be checked against
 published figures. Every change below is a database edit in
-`src/data/buildings.js`, with its citation in a code comment. No module ignored
-its record, so no geometry code changed.
+`src/data/buildings.js`, with its citation in a code comment. One module
+ignored its record: `src/landmarks/mapleLeafSquare.js` registered both towers
+with a hard-coded `inferred` grade and a note calling the storey count
+reference. It now reads `confidence` and `note` from the record. No geometry
+changed.
+
+`FINAL_QA_REPORT.md` was patched by hand (grade table, trap row, notes)
+rather than regenerated. A run without `qa/runtime-metrics.json` would have
+replaced main's measured FPS and draw-call figures with "not captured".
 
 **Counts:** 6 records corrected, 2 verified unchanged, 2 downgraded,
 3 grade upgrades (`reference`), 1 new trap, 1 issue filed.

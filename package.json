@@ -11,7 +11,8 @@
     "qa": "node qa/run-qa.mjs",
     "test": "node --test \"qa/*.test.mjs\"",
     "capture": "node qa/capture.mjs",
-    "e2e": "node --test --test-concurrency=1 qa/*.e2e.mjs"
+    "e2e": "node --test --test-concurrency=1 qa/*.e2e.mjs",
+    "e2e:perf": "vite build && node --test --test-concurrency=1 qa/*.perf.mjs"
   },
   "dependencies": {
     "three": "^0.171.0"

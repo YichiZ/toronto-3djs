@@ -115,6 +115,40 @@ export async function buildWorld(ctx, onProgress = () => {}) {
     await new Promise((r) => setTimeout(r, 0));
   }
 
+  /**
+   * The interiors' lights, lifted out of the groups that stream.
+   *
+   * WHY. three.js keys its shader program cache on the NUMBER OF VISIBLE LIGHTS,
+   * so streaming a room in or out changed that number and every material drawn
+   * in that frame needed a program it had never compiled: two frozen frames of
+   * 283-316 ms per sprint across downtown, 43-44 programs each, the cache keys
+   * differing in exactly one field - the point-light count, 9 against 3. Dimming
+   * a light to zero is worth 0.25 ms a frame (measured, 5.66 -> 5.91 ms at street
+   * level); hiding it is worth a third of a second, once per room, mid-run.
+   * Pre-compiling does not help: three frees a program at zero users, so the
+   * 3-light key is recompiled every time the count comes back to it.
+   *
+   * Every non-ambient light counts (spot and directional too), which is why the
+   * test is `isLight`, not `isPointLight`. Ambients are uniform-only and belong
+   * to lightIndoors below. attach() keeps each light where it was in world
+   * space; a room streams in hidden, so its lights start dark.
+   *
+   * ponytail: all interior lights stay in the shader for the whole city. A pool
+   * of three lights repositioned onto the nearest rooms would keep the count
+   * constant without the per-fragment tax, if 0.25 ms ever matters.
+   */
+  const liftLights = (it) => {
+    const lights = [];
+    it.group.traverse((o) => { if (o.isLight && !o.isAmbientLight) lights.push(o); });
+    for (const light of lights) {
+      root.attach(light);
+      light.userData.streamedIntensity = light.intensity;
+      light.intensity = 0;
+    }
+    return lights;
+  };
+  for (const it of interiors) it.lights = liftLights(it);
+
   // Proximity streaming for interiors, checked a few times a second rather than
   // every frame - the camera cannot cross a 70 m radius in 250 ms on foot.
   let accum = 0;
@@ -129,7 +163,9 @@ export async function buildWorld(ctx, onProgress = () => {}) {
       tmp.set(it.centre.x, it.centre.y ?? 0, it.centre.z);
       const near = ctx.camera.position.distanceTo(tmp) < it.radius
         || it.box.distanceToPoint(ctx.camera.position) < CONTACT;
-      if (near !== it.group.visible) it.group.visible = near;
+      if (near === it.group.visible) continue;
+      it.group.visible = near;
+      for (const l of it.lights) l.intensity = near ? l.userData.streamedIntensity : 0;
     }
     lightIndoors(ctx.camera.position);
   });

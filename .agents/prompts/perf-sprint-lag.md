@@ -14,10 +14,11 @@ starts to lag, as if it needs a reload. Treat "resource growth / leak" as one
 hypothesis, not the conclusion.
 
 ## Project facts (learned the hard way; do not re-derive)
-- **Perf must be measured on the production bundle.** `npm run build`, then
-  `openWorld({ preview: true })` in the harness — it runs `vite preview` over
-  `dist/` on `--port 0`, so a busy 4173 is not a failure.
-- **The perf e2e already exists**: `qa/perf-sprint.e2e.mjs` (four scenarios)
+- **Perf must be measured on the production bundle.** `npm run e2e:perf`
+  builds and runs the `qa/*.perf.mjs` suites via `openWorld({ preview: true })`
+  (`vite preview` over `dist/` on `--port 0`; the harness refuses a missing or
+  stale `dist/`). They are kept out of `npm run e2e`.
+- **The perf e2e already exists**: `qa/perf-sprint.perf.mjs` (four scenarios)
   and `qa/perfProbe.mjs` (in-page rAF probe + `summarise`/`growth`/`report`).
   **Run it first and extend it. Do not rewrite it.**
 - **Pedestrians, vehicles and trains are fixed-count `InstancedMesh`**
@@ -30,7 +31,7 @@ hypothesis, not the conclusion.
   run's numbers, its dead ends, and its open items.
 
 ## Phase 1 — Reproduce and classify (use the systematic-debugging skill)
-- `npm run build`, then run the existing `qa/perf-sprint.e2e.mjs`. Add a
+- `npm run e2e:perf` runs the existing `qa/perf-sprint.perf.mjs`. Add a
   scenario only if the reported symptom is not already covered.
 - Report the trend: steady decline, periodic hitches, or one freeze? Give
   p50/p95/max frame time, the count of frames over 100 ms, the quintile means
@@ -84,7 +85,7 @@ Name the file and line for each confirmed cause.
   *earlier*: a boot-time shader warm-up was tried and discarded last run
   (+0.5–1.3 s load, no gain).
 - /code-review with the typescript-reviewer agent.
-- /verify: `npm test` and `npm run e2e` must pass (`npm run build` first).
+- /verify: `npm test`, `npm run e2e`, and `npm run e2e:perf` must pass.
 
 ## Start here
 Two findings are open from the last run. Confirm or close them before hunting
@@ -106,7 +107,7 @@ for new ones:
   (a fix that trades a stall for per-frame work must measure the per-frame work).
 
 ## Do not
-- Rewrite controls.js, the LOD system, or qa/perf-sprint.e2e.mjs wholesale.
+- Rewrite controls.js, the LOD system, or qa/perf-sprint.perf.mjs wholesale.
 - Change visual output (geometry, materials, lighting) unless the finding
   requires it, and call it out if so.
 - Add new dependencies; use renderer.info, performance.*, and the existing
@@ -152,3 +153,7 @@ starts smarter than this one.
 - 2026-09-10: tightened acceptance criteria (assertions must fail pre-fix; costs
   need numbers too) and the Do-not list (no rewriting the perf e2e; no
   re-testing killed hypotheses).
+- 2026-09-10: PR #57 review. Perf suites renamed `*.perf.mjs` and run by
+  `npm run e2e:perf` (builds first; harness refuses stale `dist/`). Probe now
+  counts visible non-ambient lights and the suite asserts it is constant: that
+  is the root-cause check, `programs` is the symptom check.

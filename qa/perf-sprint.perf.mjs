@@ -4,9 +4,10 @@
  *
  * Measured against the PRODUCTION bundle (`vite preview` over dist/), because
  * that is what the report is about; the dev server's module graph is not the
- * thing that lags. Build first:
+ * thing that lags. It is kept out of `npm run e2e` (2.5 minutes of measuring)
+ * and runs, after a fresh build, as:
  *
- *   npm run build && npm run e2e
+ *   npm run e2e:perf
  *
  * Each scenario runs the same probe (qa/perfProbe.mjs): per-frame gaps from
  * requestAnimationFrame, and renderer.info / performance.memory every 5 s. The
@@ -17,7 +18,7 @@
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { openWorld } from './e2eHarness.mjs';
+import { openWorld, pressKey, standWalker } from './e2eHarness.mjs';
 import { SAMPLE, summarise, report, growth } from './perfProbe.mjs';
 
 let world;
@@ -46,19 +47,8 @@ const measure = (seconds, driveSrc = null) => page.evaluate(
   { src: SAMPLE, arg: { seconds, driveSrc } },
 ).then(summarise);
 
-/** Put the walker somewhere known, level and settled, before a scenario. */
-const standAt = (pos, yaw) => page.evaluate(async ([at, yawAngle]) => {
-  const { ctx, controls } = window.__TWIN__;
-  controls.setMode('orbit');
-  controls.setMode('walk');
-  ctx.camera.position.set(at[0], at[1], at[2]);
-  controls.setLevelByY(at[1] - 1.7);
-  ctx.camera.rotation.set(0, yawAngle, 0);
-  for (let i = 0; i < 40; i++) await new Promise((r) => requestAnimationFrame(r));
-}, [pos, yaw]);
-
-const key = (type, code) => page.evaluate(([t, c]) =>
-  window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [type, code]);
+const standAt = ([x, y, z], yaw) => standWalker(page, { x, y, z, yaw });
+const key = (type, code) => pressKey(page, type, code);
 
 /** Front Street West, open pavement with room to run - the spot qa/modes.e2e.mjs uses. */
 const OPEN_STREET = [-90, 1.7, 0];
@@ -79,13 +69,11 @@ const SPRINT_ROUTE = `(elapsed) => {
   ctx.camera.rotation.set(0, yaw, 0);
 }`;
 
-let sprint;
-
 test('sprinting for 60 s does not degrade', async () => {
   await standAt(OPEN_STREET, ALONG_STREET);
   await key('keydown', 'ShiftLeft');
   await key('keydown', 'KeyW');
-  sprint = await measure(60, SPRINT_ROUTE);
+  const sprint = await measure(60, SPRINT_ROUTE);
   // A second minute over the same ground, once every surface has been drawn at
   // least once. Geometry and texture counts are FIRST-VISIT uploads - they climb
   // on the first pass however healthy the app is - so they are held to 5% here,
@@ -103,6 +91,10 @@ test('sprinting for 60 s does not degrade', async () => {
   assert.equal(again.delta.objects, 0, `the scene grew by ${again.delta.objects} objects while sprinting`);
   // Shader programs, though, must not move even on the first pass: a program
   // compiled mid-run is a frozen frame, and that was the reported lag (#perf).
+  // The visible-light count is the root cause behind that symptom - three keys
+  // its program cache on it - so it is held constant on its own.
+  assert.equal(sprint.delta.lights, 0,
+    `visible light count changed while sprinting (${sprint.first.lights} -> ${sprint.last.lights})`);
   assert.equal(sprint.delta.programs, 0,
     `${sprint.delta.programs} shader programs were compiled while sprinting `
     + `(${sprint.first.programs} -> ${sprint.last.programs})`);
@@ -135,6 +127,7 @@ test('walking outdoors at street level is steady', async () => {
   const s = await measure(20, SPRINT_ROUTE);
   await key('keyup', 'KeyW');
   console.log(report('street walk 20 s', s));
+  assert.equal(s.delta.lights, 0, `visible light count changed while walking (${s.first.lights} -> ${s.last.lights})`);
   assert.equal(s.delta.programs, 0, `${s.delta.programs} shader programs compiled while walking`);
   assert.equal(s.delta.objects, 0, `the scene grew by ${s.delta.objects} objects while walking`);
   assert.ok(s.p95 < 20, `p95 frame time ${s.p95.toFixed(1)} ms`);
@@ -142,10 +135,6 @@ test('walking outdoors at street level is steady', async () => {
 });
 
 test('switching walk <-> tour <-> reference ten times leaves nothing behind', async () => {
-  const before = await page.evaluate(() => ({
-    listeners: window.__TWIN__.ctx.onFrame.length,
-    objects: (() => { let n = 0; window.__TWIN__.ctx.scene.traverse(() => n++); return n; })(),
-  }));
   const CYCLE = `(elapsed) => {
     const { controls, tour, reference } = window.__TWIN__;
     const step = Math.floor(elapsed / 1000);
@@ -153,21 +142,26 @@ test('switching walk <-> tour <-> reference ten times leaves nothing behind', as
     window.__perfStep = step;
     const phase = step % 3;
     if (phase === 0) { reference.toggle(false); controls.setMode('walk'); }
-    else if (phase === 1) { tour.start ? tour.start() : controls.setMode('cinematic'); }
-    else { tour.stop && tour.stop(); controls.setMode('walk'); reference.toggle(true); }
+    else if (phase === 1) { tour.start(); }
+    else { tour.stop(); controls.setMode('walk'); reference.toggle(true); }
   }`;
+  const settle = () => page.evaluate(() => {
+    window.__TWIN__.reference.toggle(false);
+    window.__TWIN__.controls.setMode('walk');
+    delete window.__perfStep;
+  });
+  // Reference mode builds its labels and x-ray cages on first use. One warm-up
+  // cycle takes that one-off out of the count, so the ten measured cycles must
+  // leave the scene exactly as they found it.
+  await measure(3, CYCLE);
+  await settle();
+  const before = await page.evaluate(() => window.__TWIN__.ctx.onFrame.length);
   const s = await measure(30, CYCLE);
-  await page.evaluate(() => { window.__TWIN__.reference.toggle(false); window.__TWIN__.controls.setMode('walk'); });
+  await settle();
   console.log(report('mode switching x10', s));
-  const after = await page.evaluate(() => ({
-    listeners: window.__TWIN__.ctx.onFrame.length,
-    objects: (() => { let n = 0; window.__TWIN__.ctx.scene.traverse(() => n++); return n; })(),
-  }));
-  assert.equal(after.listeners, before.listeners,
-    `onFrame grew from ${before.listeners} to ${after.listeners} callbacks over ten mode switches`);
-  // Reference mode builds its labels and x-ray cages on first use; ten cycles
-  // must not build them ten times over.
-  assert.ok(after.objects - before.objects >= 0, 'objects went backwards');
+  const after = await page.evaluate(() => window.__TWIN__.ctx.onFrame.length);
+  assert.equal(after, before, `onFrame grew from ${before} to ${after} callbacks over ten mode switches`);
+  assert.equal(s.delta.objects, 0, `the scene grew by ${s.delta.objects} objects over ten mode switches`);
   assert.ok(s.p95 < 20, `p95 frame time ${s.p95.toFixed(1)} ms`);
   assert.equal(s.over100, 0, `${s.over100} frames over 100 ms (worst ${s.max.toFixed(0)} ms)`);
 });

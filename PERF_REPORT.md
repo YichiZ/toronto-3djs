@@ -4,7 +4,7 @@ Reported: *"after entering walk mode and sprinting for a while, the app starts t
 lag, as if it needs a reload."*
 
 Everything below was measured against the **production build** (`npm run build`
-then `vite preview` over `dist/`), driven by `qa/perf-sprint.e2e.mjs` and the
+then `vite preview` over `dist/`), driven by `qa/perf-sprint.perf.mjs` and the
 scratch probes it grew out of. Headless Chrome, 1280x800, vsync at 60 Hz, so a
 healthy frame reads as 16.7 ms and the interesting signal is in the stalls and
 in the resource counters, not in the mean.
@@ -103,7 +103,7 @@ reload" (it does not; a reload brings them all back).
 
 ## Regression cover
 
-`qa/perf-sprint.e2e.mjs` (production build, via `openWorld({ preview: true })`)
+`qa/perf-sprint.perf.mjs` (`npm run e2e:perf`: production build, via `openWorld({ preview: true })`)
 now runs four scenarios and asserts, per scenario: p95 frame time under 20 ms,
 no frame over 100 ms, no shader compiled mid-run, no scene growth, and - over a
 second pass across ground already covered - geometry and texture counts stable

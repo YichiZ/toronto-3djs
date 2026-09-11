@@ -70,13 +70,14 @@ light count genuinely has to vary.
 - `openWorld({ preview: true })` (added to `qa/e2eHarness.mjs` in e800106) runs
   `vite preview` over `dist/` with `--port 0`, so the OS picks the port and a
   busy 4173 is not a failure. Perf must be measured on the production bundle;
-  the dev server's module graph is not the thing that lags. Requires
-  `npm run build` first.
+  the dev server's module graph is not the thing that lags. The harness
+  refuses a missing or stale `dist/`; `npm run e2e:perf` builds then runs
+  the `qa/*.perf.mjs` suites, which are kept out of `npm run e2e`.
 - `qa/perfProbe.mjs` holds the in-page probe (`SAMPLE`, passed as source and
   eval'd because a scenario driver cannot cross `page.evaluate` as a closure)
   plus `summarise` / `growth` / `report`. Point it at any scenario; a trend only
   means something if every scenario is measured identically.
-- `qa/perf-sprint.e2e.mjs` runs four scenarios (60 s sprint + 20 s second pass,
+- `qa/perf-sprint.perf.mjs` runs four scenarios (60 s sprint + 20 s second pass,
   Great Hall idle, street walk, ten mode switches) and asserts p95 < 20 ms, no
   frame > 100 ms, `delta.programs === 0`, `delta.objects === 0`, and
   geometry/texture growth < 5 % on the second pass.

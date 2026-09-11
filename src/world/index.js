@@ -116,7 +116,7 @@ export async function buildWorld(ctx, onProgress = () => {}) {
   }
 
   /**
-   * The interiors' point lights, lifted out of the groups that stream.
+   * The interiors' lights, lifted out of the groups that stream.
    *
    * WHY. three.js keys its shader program cache on the NUMBER OF VISIBLE LIGHTS,
    * so streaming a room in or out changed that number and every material drawn
@@ -125,23 +125,29 @@ export async function buildWorld(ctx, onProgress = () => {}) {
    * differing in exactly one field - the point-light count, 9 against 3. Dimming
    * a light to zero is worth 0.25 ms a frame (measured, 5.66 -> 5.91 ms at street
    * level); hiding it is worth a third of a second, once per room, mid-run.
+   * Pre-compiling does not help: three frees a program at zero users, so the
+   * 3-light key is recompiled every time the count comes back to it.
    *
-   * attach() keeps each light where it was in world space, and zero intensity
-   * lights nothing, so the picture is unchanged either way.
+   * Every non-ambient light counts (spot and directional too), which is why the
+   * test is `isLight`, not `isPointLight`. Ambients are uniform-only and belong
+   * to lightIndoors below. attach() keeps each light where it was in world
+   * space; a room streams in hidden, so its lights start dark.
+   *
+   * ponytail: all interior lights stay in the shader for the whole city. A pool
+   * of three lights repositioned onto the nearest rooms would keep the count
+   * constant without the per-fragment tax, if 0.25 ms ever matters.
    */
-  root.updateMatrixWorld(true);
-  const streamedLights = [];
-  for (const it of interiors) {
-    const found = [];
-    it.group.traverse((o) => { if (o.isPointLight) found.push(o); });
-    for (const light of found) {
-      streamedLights.push({ light, interior: it, intensity: light.intensity });
+  const liftLights = (it) => {
+    const lights = [];
+    it.group.traverse((o) => { if (o.isLight && !o.isAmbientLight) lights.push(o); });
+    for (const light of lights) {
       root.attach(light);
-      // Rooms stream in hidden, so start dark rather than lighting the city for
-      // the quarter second before the first streaming tick.
-      if (!it.group.visible) light.intensity = 0;
+      light.userData.streamedIntensity = light.intensity;
+      light.intensity = 0;
     }
-  }
+    return lights;
+  };
+  for (const it of interiors) it.lights = liftLights(it);
 
   // Proximity streaming for interiors, checked a few times a second rather than
   // every frame - the camera cannot cross a 70 m radius in 250 ms on foot.
@@ -157,10 +163,9 @@ export async function buildWorld(ctx, onProgress = () => {}) {
       tmp.set(it.centre.x, it.centre.y ?? 0, it.centre.z);
       const near = ctx.camera.position.distanceTo(tmp) < it.radius
         || it.box.distanceToPoint(ctx.camera.position) < CONTACT;
-      if (near !== it.group.visible) it.group.visible = near;
-    }
-    for (const s of streamedLights) {
-      s.light.intensity = s.interior.group.visible ? s.intensity : 0;
+      if (near === it.group.visible) continue;
+      it.group.visible = near;
+      for (const l of it.lights) l.intensity = near ? l.userData.streamedIntensity : 0;
     }
     lightIndoors(ctx.camera.position);
   });

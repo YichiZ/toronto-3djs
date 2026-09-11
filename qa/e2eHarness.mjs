@@ -7,11 +7,37 @@
  */
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 
 /** Start vite and read the URL it actually bound, rather than assuming a port. */
+/** Newest mtime under a directory, so a stale bundle is caught before it is measured. */
+function newestMtime(dir) {
+  let newest = 0;
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, e.name);
+    newest = Math.max(newest, e.isDirectory() ? newestMtime(full) : statSync(full).mtimeMs);
+  }
+  return newest;
+}
+
+/**
+ * `vite preview` serves whatever is in dist/ - or a 404 page if nothing is -
+ * without complaint, so a perf run against a missing or stale bundle would be
+ * blamed on the current source. Refuse up front.
+ */
+function assertFreshBundle() {
+  const built = join(ROOT, 'dist', 'index.html');
+  if (!existsSync(built)) throw new Error('dist/ is missing: run `npm run build` (or `npm run e2e:perf`) first');
+  if (newestMtime(join(ROOT, 'src')) > statSync(built).mtimeMs) {
+    throw new Error('dist/ is older than src/: run `npm run build` (or `npm run e2e:perf`) first');
+  }
+}
+
 export function startServer({ preview = false } = {}) {
+  if (preview) assertFreshBundle();
   return new Promise((resolve, reject) => {
     // `preview` serves dist/ - the production bundle, which is what a perf run
     // has to measure. Port 0 lets the OS pick, so a busy 4173 is not a failure.
@@ -66,3 +92,22 @@ export async function openWorld({ consoleErrors = [], contextOptions, intro = fa
   await page.waitForFunction(() => Boolean(window.__TWIN__), null, { timeout: 60_000 });
   return { server, browser, page, close: async () => { await browser.close(); server.kill(); } };
 }
+
+/** Dispatch a keyboard event on the window, the way the controls listen for it. */
+export const pressKey = (page, type, code) => page.evaluate(([t, c]) =>
+  window.dispatchEvent(new KeyboardEvent(t, { code: c, bubbles: true })), [type, code]);
+
+/**
+ * Stand the walker at a world position, facing `yaw`, on the level that
+ * contains its feet, and let grounding settle for 40 frames.
+ */
+export const standWalker = (page, { x, y, z, yaw = 0 }) => page.evaluate(async ([px, py, pz, angle]) => {
+  const { ctx, controls } = window.__TWIN__;
+  controls.setMode('orbit');
+  controls.setMode('walk');
+  ctx.camera.position.set(px, py, pz);
+  controls.setLevelByY(py - 1.7);
+  ctx.camera.rotation.set(0, angle, 0);
+  for (let i = 0; i < 40; i++) await new Promise((r) => requestAnimationFrame(r));
+  return { y: ctx.camera.position.y, level: controls.level };
+}, [x, y, z, yaw]);

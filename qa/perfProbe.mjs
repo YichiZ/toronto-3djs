@@ -15,7 +15,10 @@ export const SAMPLE = `async ({ seconds, driveSrc }) => {
   const info = ctx.renderer.info;
   const snap = () => {
     let objects = 0;
+    let lights = 0;
     ctx.scene.traverse(() => objects++);
+    // What three's program cache key counts: visible, non-ambient lights.
+    ctx.scene.traverseVisible((o) => { if (o.isLight && !o.isAmbientLight) lights++; });
     return {
       t: performance.now(),
       geometries: info.memory.geometries,
@@ -26,6 +29,7 @@ export const SAMPLE = `async ({ seconds, driveSrc }) => {
       heap: performance.memory ? performance.memory.usedJSHeapSize : null,
       children: ctx.scene.children.length,
       objects,
+      lights,
     };
   };
 
@@ -58,7 +62,7 @@ export function summarise({ frames, snaps }) {
   const first = snaps[0];
   const last = snaps.at(-1);
   const delta = {};
-  for (const k of ['geometries', 'textures', 'programs', 'objects', 'children', 'heap']) {
+  for (const k of ['geometries', 'textures', 'programs', 'objects', 'lights', 'children', 'heap']) {
     delta[k] = (last[k] ?? 0) - (first[k] ?? 0);
   }
   const n = Math.max(1, Math.floor(frames.length / 5));
@@ -90,7 +94,7 @@ export function report(name, s) {
     `[perf] ${name}: ${s.frames} frames  p50 ${f(s.p50)} ms  p95 ${f(s.p95)} ms  max ${f(s.max)} ms  frames>100ms ${s.over100}`,
     `[perf] ${name}: quintile means ${s.quintiles.map(f).join(' / ')} ms`,
     `[perf] ${name}: geometries ${s.first.geometries} -> ${s.last.geometries}  textures ${s.first.textures} -> ${s.last.textures}`
-      + `  programs ${s.first.programs} -> ${s.last.programs}  objects ${s.first.objects} -> ${s.last.objects}`
+      + `  programs ${s.first.programs} -> ${s.last.programs}  lights ${s.first.lights} -> ${s.last.lights}  objects ${s.first.objects} -> ${s.last.objects}`
       + `  heap ${f(s.first.heap && s.first.heap / 1e6)} -> ${f(s.last.heap && s.last.heap / 1e6)} MB`,
     `[perf] ${name}: draw calls ${s.first.calls} -> ${s.last.calls}  triangles ${s.first.triangles} -> ${s.last.triangles}`,
   ].join('\n');

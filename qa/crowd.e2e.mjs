@@ -66,6 +66,29 @@ test('the crowd still never blocks the walker: pedestrians stay out of collision
   assert.equal(inIndex, false);
 });
 
+test('the Union concourses carry a crowd (#70)', async () => {
+  for (const id of ['york-concourse', 'bay-concourse']) {
+    const near = await page.evaluate(async (id) => {
+      const { ctx, controls } = window.__TWIN__;
+      controls.teleport(id);
+      await new Promise((r) => setTimeout(r, 600));
+      const p = ctx.camera.position;
+      let n = 0;
+      ctx.scene.getObjectByName('pedestrians').traverse((o) => {
+        if (!o.isInstancedMesh) return;
+        const a = o.instanceMatrix.array;
+        for (let i = 0; i < o.count; i++) {
+          const onFloor = Math.abs(a[i * 16 + 13] + 1.7 - p.y) < 1.5;
+          if (onFloor && Math.hypot(a[i * 16 + 12] - p.x, a[i * 16 + 14] - p.z) < 25) n++;
+        }
+      });
+      return n;
+    }, id);
+    // Unfixed: nobody at all.
+    assert.ok(near >= 8, `${near} pedestrians within 25 m at ${id}`);
+  }
+});
+
 test('the whole run produced no console errors', () => {
   assert.deepEqual(consoleErrors, []);
 });

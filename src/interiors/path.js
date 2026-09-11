@@ -426,14 +426,18 @@ function buildStreetcarLoop() {
   const cz = 30;
   const R = 17;
   const y = FLOOR - 0.4;   // track slab sits just below the concourse floor
+  // Everything here stays under Union's concourse floor. At 5.2 m the shell's
+  // lid rose 1.8 m through the Bay Concourse, 0.3 m over a visitor's eye, and
+  // its ceiling lamps floated at waist height in that room (#70).
+  const H = LEVELS.unionConcourse - 0.1 - y;
 
   // A private variant: writing side onto the shared material would flip every
   // other concrete surface in the city to back-facing.
   const box = new THREE.Mesh(
-    new THREE.BoxGeometry(R * 2 + 16, 5.2, R * 2 + 16),
+    new THREE.BoxGeometry(R * 2 + 16, H, R * 2 + 16),
     variant(M.concretePlain(), { side: THREE.BackSide })   // we are inside it
   );
-  box.position.set(cx, y + 2.6, cz);
+  box.position.set(cx, y + H / 2, cz);
   // A back-facing shell renders as nothing from outside, so colliding with it
   // from outside is an invisible wall. This 50 m box straddles the Bay Street
   // PATH run and dammed it 10 m in. Let the walker pass through into the room.
@@ -468,7 +472,7 @@ function buildStreetcarLoop() {
   // ceiling and its troffers
   const ceil = new THREE.Mesh(new THREE.CircleGeometry(R + 8, 40), M.ceilingPanel());
   ceil.rotation.x = Math.PI / 2;
-  ceil.position.set(cx, y + 5.0, cz);
+  ceil.position.set(cx, y + H - 0.1, cz);
   g.add(ceil);
   const LAMPS = 16;
   const lamps = new THREE.InstancedMesh(
@@ -478,7 +482,7 @@ function buildStreetcarLoop() {
   );
   for (let i = 0; i < LAMPS; i++) {
     const a = (i / LAMPS) * Math.PI * 2;
-    place(lamps, i, cx + Math.cos(a) * (R - 5), y + 4.9, cz + Math.sin(a) * (R - 5), 0, -a);
+    place(lamps, i, cx + Math.cos(a) * (R - 5), y + H - 0.2, cz + Math.sin(a) * (R - 5), 0, -a);
   }
   lamps.instanceMatrix.needsUpdate = true;
   g.add(lamps);

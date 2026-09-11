@@ -32,6 +32,14 @@ export const HIGH_DROP = 0.6;
 /** Metres above the floor underfoot for the low ray. */
 export const LOW_PROBE = 0.75;
 /**
+ * Metres above the FEET for the low ray mid-air. LOW_PROBE is that high only to
+ * clear the next stair riser, and in the air there is no stair to climb: hung
+ * 0.75 m off rising feet, both rays cleared a 0.98 m bollard once the feet were
+ * 0.4 m up, and the walker passed through its top half. This is tucked legs -
+ * a kerb's worth - so a hop clears a post only near the top of the arc.
+ */
+export const AIR_LIFT = 0.2;
+/**
  * Least vertical gap that makes a second ray worth casting. Below this the two
  * rays see the same obstacles and the low one is pure cost.
  */
@@ -53,13 +61,14 @@ export const MAX_FLOOR_DROP = 2.4;
  * sit at or above the high one.
  *
  * @param {number} cameraY eye height, world space
- * @param {number} floorY  surface actually underfoot, world space
+ * @param {number} floorY  surface actually underfoot (the feet, mid-air), world space
+ * @param {number} [lift]  low ray height above floorY: LOW_PROBE grounded, AIR_LIFT mid-air
  * @returns {{high: number, low: number|null}}
  */
-export function probeHeights(cameraY, floorY) {
+export function probeHeights(cameraY, floorY, lift = LOW_PROBE) {
   const high = cameraY - HIGH_DROP;
   if (!Number.isFinite(floorY)) return { high, low: null };
   if (cameraY - floorY > MAX_FLOOR_DROP) return { high, low: null };
-  const low = floorY + LOW_PROBE;
+  const low = floorY + lift;
   return { high, low: low <= high - MIN_SEPARATION ? low : null };
 }

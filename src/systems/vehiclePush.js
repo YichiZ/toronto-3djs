@@ -8,8 +8,9 @@
  * it. Traffic never brakes, never swerves, never notices.
  *
  * The displacement is returned as a plain XZ offset for controls.js to feed
- * through slide(), so a walker pinned against a building is pushed ALONG the
- * wall rather than into it.
+ * through slide(), so a walker beside a building is pushed along the wall
+ * rather than into it. Wedged in an inside corner, slide() gives up and the
+ * car passes through - there is no answer to being squashed.
  *
  * ponytail: an oriented-rectangle overlap per nearby car, resolved on the
  * shorter axis only. It cannot shove anyone out from under a bus that is
@@ -17,14 +18,17 @@
  * the upgrade if that ever shows.
  */
 
-/** Metres of air kept outside the car's own footprint. */
+/** Metres of air kept outside the car's own footprint, behind and beside. */
 export const CLEARANCE = 0.5;
 /**
- * Metres in front of the bumper the shove starts. A sedan at 13 m/s covers
- * 0.5 m in 40 ms, but clearing its width takes 250 ms at PUSH_RATE - measured
- * as the walker briefly inside the bonnet on one frame in eighty. 4 m gives
- * 300 ms, and stepping aside ahead of a car is what people do anyway.
+ * Seconds of warning in front of a moving car: the shove starts speed × REACT
+ * ahead of the bumper. Clearing a car's width takes ~250 ms at PUSH_RATE, and a
+ * sedan at 13 m/s covered CLEARANCE in 40 ms - measured as the walker inside
+ * the bonnet for a frame. A stopped car gets no lead-in at all, so the walker
+ * can still cross in front of a queue at a red light.
  */
+export const REACT = 0.3;
+/** Furthest ahead of the bumper the shove ever starts, metres. */
 export const AHEAD = 4;
 /** Fastest the walker is shoved, m/s. A shove, not a catapult. */
 export const PUSH_RATE = 6;
@@ -32,12 +36,10 @@ export const PUSH_RATE = 6;
 /**
  * Sideways displacement a car imposes on the walker this frame.
  *
- * @param {{x:number, z:number, dx:number, dz:number, half:number, halfWidth:number}} car
- *        lane position, unit heading, half length and half width
+ * @param {{x:number, z:number, dx:number, dz:number, speed:number, half:number, halfWidth:number}} car
+ *        lane position, unit heading, speed, half length and half width
  * @param {{cx:number, cz:number}} walker
  * @param {number} dt seconds
- * The window is longer in front of the car than behind - see AHEAD.
- *
  * @param {number} [fallback] side to take when the walker is dead on the
  *        centreline, +1 (the car's right) or -1
  * @returns {{x:number, z:number}} metres to add to this frame's step
@@ -48,7 +50,8 @@ export function push(car, { cx, cz }, dt, fallback = 1) {
   const rx = cx - car.x;
   const rz = cz - car.z;
   const along = rx * car.dx + rz * car.dz;
-  if (along >= car.half + AHEAD || -along >= car.half + CLEARANCE) return { x: 0, z: 0 };
+  const ahead = Math.max(CLEARANCE, Math.min(AHEAD, car.speed * REACT));
+  if (along >= car.half + ahead || -along >= car.half + CLEARANCE) return { x: 0, z: 0 };
   const lateral = rx * nx + rz * nz;
   const need = car.halfWidth + CLEARANCE - Math.abs(lateral);
   if (need <= 0) return { x: 0, z: 0 };

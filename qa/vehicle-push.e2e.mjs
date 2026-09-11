@@ -13,7 +13,7 @@
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { openWorld } from './e2eHarness.mjs';
+import { openWorld, standWalker } from './e2eHarness.mjs';
 
 let world;
 let page;
@@ -26,6 +26,7 @@ before(async () => {
 
 after(async () => { await world?.close(); });
 
+const EYE = 1.7;
 const BODY_RADIUS = 0.55;   // src/ui/controls.js
 const SAMPLE_MS = 50;
 
@@ -75,21 +76,14 @@ const wallDistance = (x, z, dx, dz, far) => page.evaluate(async ([px, pz, ddx, d
     if (skip) continue;
     const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
     if (Math.abs(n.y) > 0.7) continue;   // a floor, not a wall
-    return hit.distance;
+    let named = hit.object.userData.collisionSource ?? hit.object;
+    while (named && !named.name) named = named.parent;
+    return { d: hit.distance, name: named?.name ?? '?', y: hit.point.y };
   }
   return null;
 }, [x, z, dx, dz, far]);
 
-const stand = (x, z, yaw) => page.evaluate(async ([px, pz, angle]) => {
-  const { ctx, controls } = window.__TWIN__;
-  controls.setMode('orbit');
-  controls.setMode('walk');
-  ctx.camera.position.set(px, 1.7, pz);
-  controls.setLevelByY(0);
-  ctx.camera.rotation.set(0, angle, 0);
-  for (let i = 0; i < 40; i++) await new Promise((r) => requestAnimationFrame(r));
-  return ctx.camera.position.y;
-}, [x, z, yaw]);
+const stand = (x, z, yaw) => standWalker(page, { x, y: EYE, z, yaw });
 
 const trafficCount = () => page.evaluate(() =>
   window.__TWIN__.ctx.scene.getObjectByName('vehicles').userData.count());
@@ -104,20 +98,58 @@ async function pickApproach({ ahead = 14 } = {}) {
     // A bus's length makes the timing sloppy; a bicycle at 4.5 m/s takes most
     // of the watch to arrive.
     if (car.half > 4 || car.half < 1.5) continue;
+    if (car.s + ahead + 4 > car.len) continue;   // the lane ends first: the car wraps, never arrives
     const spot = { x: car.x + car.dx * ahead, z: car.z + car.dz * ahead };
     const crowded = cars.some((o) => o !== car
       && Math.hypot(o.x - spot.x, o.z - spot.z) < ahead - 2);
     if (crowded) continue;
     // Is it still coming? Sample the same car (nearest to its last pose) later.
     await page.waitForTimeout(250);
+    // Same heading, nearest to where it was: the follower in a queue is the
+    // only thing that can be confused for it, and that is fine.
     const later = (await fleet())
-      .reduce((b, o) => (Math.hypot(o.x - car.x, o.z - car.z) < Math.hypot(b.x - car.x, b.z - car.z) ? o : b));
+      .filter((o) => o.dx === car.dx && o.dz === car.dz)
+      .reduce((b, o) => (!b || Math.hypot(o.x - car.x, o.z - car.z) < Math.hypot(b.x - car.x, b.z - car.z) ? o : b), null);
+    if (!later) continue;
     const moved = (later.x - car.x) * car.dx + (later.z - car.z) * car.dz;
     if (moved < 0.5) continue;
     return { car: later, spot };
   }
   return null;
 }
+
+/**
+ * Count, in the page, every rendered frame on which the walker is inside a
+ * car's footprint. Polling from Node sees one frame in four; a one-frame clip
+ * is exactly what this suite exists to catch.
+ */
+const startFrameRecorder = () => page.evaluate(() => {
+  const { ctx } = window.__TWIN__;
+  const nearby = ctx.scene.getObjectByName('vehicles').userData.nearby;
+  const rec = { frames: 0, inside: 0 };
+  rec.fn = () => {
+    const c = ctx.camera.position;
+    rec.frames++;
+    let hit = false;
+    nearby(c.x, c.z, 20, (car) => {
+      const rx = c.x - car.x;
+      const rz = c.z - car.z;
+      const along = rx * car.dx + rz * car.dz;
+      const lateral = rx * -car.dz + rz * car.dx;
+      if (Math.abs(along) < car.half - 0.05 && Math.abs(lateral) < car.halfWidth - 0.05) hit = true;
+    });
+    if (hit) rec.inside++;
+  };
+  ctx.onFrame.push(rec.fn);
+  window.__pushRecorder = rec;
+});
+const stopFrameRecorder = () => page.evaluate(() => {
+  const { ctx } = window.__TWIN__;
+  const rec = window.__pushRecorder;
+  ctx.onFrame.splice(ctx.onFrame.indexOf(rec.fn), 1);
+  delete window.__pushRecorder;
+  return { frames: rec.frames, inside: rec.inside };
+});
 
 /** Sample the walker and nearby traffic for `ms`. */
 async function watch(ms, r = 20) {
@@ -137,11 +169,14 @@ test('a car arriving at the walker shoves them out of the lane, never through th
   await stand(spot.x, spot.z, yaw + Math.PI);
   const before = await trafficCount();
 
+  await startFrameRecorder();
   const samples = await watch(4000);
+  const frames = await stopFrameRecorder();
 
+  assert.ok(frames.frames > 60, `only ${frames.frames} frames rendered in 4 s`);
+  assert.equal(frames.inside, 0, `walker was inside a car on ${frames.inside} of ${frames.frames} frames`);
   const overlaps = samples.filter((s) => s.cars.some((c) => inside(c, s)));
-  assert.equal(overlaps.length, 0,
-    `walker was inside a car on ${overlaps.length} of ${samples.length} samples`);
+  assert.equal(overlaps.length, 0, `walker was inside a car on ${overlaps.length} of ${samples.length} samples`);
 
   // Some car drew level with the walker (its centre beside them) - the pass
   // really happened, and the walker was outside its body when it did.
@@ -198,11 +233,13 @@ test('the car keeps going: a walker in the lane does not stop traffic', async ()
 async function pickPinch() {
   const cars = (await fleet()).filter((c) => c.half <= 4 && c.half >= 1.5);
   for (const car of cars) {
+    if (car.speed < 2) continue;   // queued at a light: might not arrive in the watch
     for (let ahead = 8; ahead <= 40; ahead += 4) {
+      if (car.s + ahead + 4 > car.len) break;
       const spot = { x: car.x + car.dx * ahead, z: car.z + car.dz * ahead };
       for (const side of [1, -1]) {
-        const d = await wallDistance(spot.x, spot.z, -car.dz * side, car.dx * side, 12);
-        if (d !== null && d <= car.halfWidth + 0.5 + BODY_RADIUS + 0.8) return { car, spot, side };
+        const w = await wallDistance(spot.x, spot.z, -car.dz * side, car.dx * side, 12);
+        if (w && w.d <= car.halfWidth + 0.5 + BODY_RADIUS + 0.8) return { car, spot, side, wall: w };
       }
     }
   }
@@ -221,12 +258,13 @@ test('a walker with a wall beside the lane is never pushed through it', async (t
   const reached = samples.some((s) => s.cars.some((c) => Math.abs(relative(c, s).along) < c.half + 0.5
     && Math.abs(relative(c, s).lateral) < c.halfWidth + 0.5 + 0.05));
   assert.ok(reached, 'no car reached the pinned walker in 8 s');
-  for (const s of samples) {
+  const where = (s) => `(${s.x.toFixed(2)}, ${s.z.toFixed(2)}) from spot (${spot.x.toFixed(2)}, ${spot.z.toFixed(2)}), wall ${pick.wall.name} ${pick.wall.d.toFixed(2)} m off the lane`;
+  for (const [i, s] of samples.entries()) {
     // The wall must always still be in front of the walker on that side, and
     // never closer than the body radius allows.
-    const d = await wallDistance(s.x, s.z, nx, nz, 12);
-    assert.ok(d !== null, `wall vanished from beside the walker at (${s.x.toFixed(1)}, ${s.z.toFixed(1)}) - pushed through?`);
-    assert.ok(d > BODY_RADIUS - 0.1, `walker ${d.toFixed(2)} m into the wall's clearance`);
+    const w = await wallDistance(s.x, s.z, nx, nz, 12);
+    assert.ok(w, `wall vanished from beside the walker at sample ${i} ${where(s)} - pushed through?`);
+    assert.ok(w.d > BODY_RADIUS - 0.1, `walker ${w.d.toFixed(2)} m from ${w.name} (hit y ${w.y.toFixed(2)}) at sample ${i} ${where(s)}`);
   }
 });
 

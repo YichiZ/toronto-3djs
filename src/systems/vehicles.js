@@ -489,7 +489,8 @@ export function setDensity(multiplier) {
 /**
  * Every moving vehicle currently drawn whose centre is within `r` metres of
  * (x, z), handed to `fn` as a pose that is REUSED between calls - read it,
- * don't keep it.
+ * don't keep it. Lanes sit at y = 0; the caller decides whether its level
+ * is the street.
  *
  * This is what the walker gets instead of a raycast: vehicles are not in the
  * collision index on purpose (#6), so controls.js does a flat 2D test against
@@ -498,18 +499,24 @@ export function setDensity(multiplier) {
  * ponytail: a linear scan of the fleet (a few hundred), not a spatial index.
  * The fleet is already walked once per frame to write its matrices.
  */
-const _pose = { x: 0, z: 0, dx: 0, dz: 0, half: 0, halfWidth: 0 };
+const _pose = { x: 0, z: 0, dx: 0, dz: 0, speed: 0, half: 0, halfWidth: 0, s: 0, len: 0 };
 export function nearby(x, z, r, fn) {
   for (const v of vehicles) {
     if (!v.lane || !v.pushes || v.slot >= v.im.count) continue;   // parked taxis and the Flexity sit this out
-    const p = laneXZ(v.lane, v.s);
-    const dx = p.x - x;
-    const dz = p.z - z;
+    // laneXZ() inlined: no allocation for the ~150 cars the radius rejects.
+    const lane = v.lane;
+    const along = lane.dir > 0 ? lane.lo + v.s : lane.hi - v.s;
+    const px = lane.axis === 'ew' ? along : lane.cross;
+    const pz = lane.axis === 'ew' ? lane.cross : along;
+    const dx = px - x;
+    const dz = pz - z;
     const reach = r + v.half;
     if (dx * dx + dz * dz > reach * reach) continue;
-    const h = laneHeading(v.lane);
-    _pose.x = p.x; _pose.z = p.z;
-    _pose.dx = h.dx; _pose.dz = h.dz;
+    _pose.x = px; _pose.z = pz;
+    _pose.dx = lane.axis === 'ew' ? lane.dir : 0;
+    _pose.dz = lane.axis === 'ew' ? 0 : lane.dir;
+    _pose.speed = v.speed;
+    _pose.s = v.s; _pose.len = lane.len;   // where on its lane, for anyone predicting its path
     _pose.half = v.half; _pose.halfWidth = v.halfWidth;
     fn(_pose);
   }

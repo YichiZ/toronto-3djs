@@ -103,6 +103,8 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   const statsPanel = el('div', 'hud-panel hud-stats',
     '<span class="fps">–</span><span class="calls">–</span><span class="tris">–</span>');
   hud.appendChild(statsPanel);
+  // Shown in reference mode, or always with ?debug (#78); a visitor has no use for it.
+  if (new URLSearchParams(location.search).has('debug')) hud.classList.add('debug');
   const fpsEl = statsPanel.querySelector('.fps');
   const callsEl = statsPanel.querySelector('.calls');
   const trisEl = statsPanel.querySelector('.tris');
@@ -184,7 +186,9 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   bar.appendChild(refButton);
 
   const jump = el('select', 'hud-select');
-  jump.appendChild(el('option', null, 'Jump to…'));
+  // "Teleport" and "Guide me", not "Jump to" and "Go to": side by side, the
+  // old pair did not say which one moves you and which one leads you (#78).
+  jump.appendChild(el('option', null, 'Teleport to…'));
   jump.firstChild.value = '';
   for (const vp of VIEWPOINTS) {
     const opt = el('option', null, vp.name);
@@ -198,7 +202,7 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   // bar grows by a row and --hud-bar-h lifts everything above it, so it can
   // never land on another panel.
   const goTo = el('select', 'hud-select hud-goto');
-  goTo.appendChild(el('option', null, 'Go to…'));
+  goTo.appendChild(el('option', null, 'Guide me to…'));
   goTo.firstChild.value = '';
   for (const group of ['Places', 'Corners']) {
     const og = document.createElement('optgroup');
@@ -303,10 +307,10 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   const help = el('div', 'hud-panel hud-help', `
     <h2>Controls</h2>
     <dl>
-      <dt class="only-key">W A S D / arrows</dt><dd class="only-key">walk</dd>
-      <dt class="only-key">Mouse / drag</dt><dd class="only-key">look (click the view to capture the pointer)</dd>
-      <dt class="only-touch">Stick, bottom left</dt><dd class="only-touch">walk</dd>
-      <dt class="only-touch">Drag the view</dt><dd class="only-touch">look around</dd>
+      <dt class="only-key intro-core">W A S D / arrows</dt><dd class="only-key intro-core">walk</dd>
+      <dt class="only-key intro-core">Mouse / drag</dt><dd class="only-key intro-core">look (click the view to capture the pointer)</dd>
+      <dt class="only-touch intro-core">Stick, bottom left</dt><dd class="only-touch intro-core">walk</dd>
+      <dt class="only-touch intro-core">Drag the view</dt><dd class="only-touch intro-core">look around</dd>
       <dt class="only-key">Shift</dt><dd class="only-key">run</dd>
       <dt class="only-key">Space</dt><dd class="only-key">jump</dd>
       <dt class="only-key">Q / E, PgDn / PgUp</dt><dd class="only-key">change level — PATH, concourse, street, viaduct, platform, SkyWalk, Gardiner</dd>
@@ -320,8 +324,9 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
       <dt class="only-key">F</dt><dd class="only-key">open the storefront under the reticle (walking, pointer captured)</dd>
       <dt class="only-key">M</dt><dd class="only-key">hide or show the minimap — it is on while walking; click a dot to jump to that viewpoint</dd>
       <dt class="only-touch">Map</dt><dd class="only-touch">hide or show the minimap — tap a dot to jump to that viewpoint</dd>
-      <dt class="only-touch">More ⋯</dt><dd class="only-touch">time of day, crowd, reference mode, Jump to, and this help</dd>
-      <dt>Go to…</dt><dd>pick a destination: an arrow and the distance to it, and a ring on the minimap</dd>
+      <dt class="only-touch">More ⋯</dt><dd class="only-touch">time of day, crowd, reference mode, Teleport to, and this help</dd>
+      <dt>Teleport to…</dt><dd>arrive at a landmark straight away</dd>
+      <dt>Guide me to…</dt><dd>pick a destination: an arrow and the distance to it, and a ring on the minimap</dd>
     </dl>
     <div class="hud-look"><label>Look speed<input type="range" min="0.25" max="3" step="0.05"><output></output></label></div>
     <div class="hud-sound"><label><input type="checkbox">Footsteps</label></div>
@@ -360,7 +365,9 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
   if (!introSeen) {
     help.classList.add('hud-intro');
     help.insertAdjacentHTML('beforeend',
-      '<button class="hud-btn hud-intro-go" type="button"><span class="only-key">Click to walk</span><span class="only-touch">Tap to walk</span></button>');
+      '<p class="hud-intro-more"><span class="only-key">Press <kbd>H</kbd> any time for every control</span>'
+      + '<span class="only-touch">More ⋯ → Help for every control</span></p>'
+      + '<button class="hud-btn hud-intro-go" type="button"><span class="only-key">Click to walk</span><span class="only-touch">Tap to walk</span></button>');
     help.hidden = false;
     help.addEventListener('click', (e) => {
       if (!dismissIntro()) return;
@@ -643,6 +650,7 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
     // do nothing with "INFERRED" or "252° WSW true" (#69).
     const refOn = Boolean(reference?.enabled?.());
     bearingEl.hidden = !refOn;
+    hud.classList.toggle('ref-on', refOn);   // the renderer counter lives here (#78)
     levelEl.textContent = controls?.level ? `· ${controls.level}` : '';
     // The level is where the walker stands; orbit and the tour have no walker,
     // and the chip read "SkyWalk" over an aerial (#29).

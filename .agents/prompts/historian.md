@@ -84,6 +84,25 @@ storey count, footprint extent, year, façade material, column count, span.
   need geometry work beyond a database edit. `gh issue list` first; no
   duplicates.
 
+## Start here
+Open from run 1 and the director's sprint-2026-09-11 walk. Settle these
+before inventorying new records:
+- **Forecourt signage vs the entablature invariant.** From the
+  `union-forecourt` viewpoint a dark band reading "UNION STATION" sits on
+  the Front Street entablature. CLAUDE.md says the exterior entablature
+  carries incised railway names only. Find the module that draws it, find a
+  published photograph or elevation, and either cite why it stays or file a
+  `fidelity` issue (it is geometry, not a record). Add a trap if it can be
+  reduced to a check.
+- **Maple Leaf Square towers** are `approximated`: published storey counts
+  conflict with each other and with the model. One authoritative source
+  (owner or City permit record) upgrades both.
+- **#74 L Tower** needs geometry, not a record edit: leave it to its issue.
+- Product-review #69 (the place card inside the Great Hall names the east
+  and west wings) is a registration question: check which entity the card
+  resolves to there, and whether the Great Hall itself is registered with
+  the right name and grade.
+
 ## Acceptance criteria
 - Every grade change carries a citation in the code.
 - `npm test`, `npm run qa` and `npm run e2e` pass; any new trap has a
@@ -130,3 +149,6 @@ starts smarter than this one.
 - 2026-09-11 (review of run 1): don't commit a QA report regenerated without
   runtime metrics; grep landmark modules for hard-coded grades after a
   downgrade. Review caught both.
+- 2026-09-11 (game-director, sprint-2026-09-11 retro): added "Start here"
+  with the open items so run 2 starts on them instead of re-inventorying;
+  includes the forecourt "UNION STATION" band seen on the director's walk.

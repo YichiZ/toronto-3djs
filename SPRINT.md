@@ -25,6 +25,30 @@ Hand-offs from the walk (for the specialists to confirm or kill, not work items)
 - technical-artist: Great Hall exposure at 18:40.
 - product-review: forecourt spawn inside street furniture; HUD/minimap coverage.
 
+## Update — scouts ran in parallel sessions
+
+Items 3–5 were run by separate sessions before the director dispatched them,
+so the director gates their output instead of dispatching duplicates:
+
+- 3 product-review → PR #73; filed #67 #68 #69 #70 #72 #78 #79 #80.
+- 4 technical-artist → in progress in its own session; filed #76 #77. Its
+  uncommitted edits touch `src/core/materials.js`, which #60 also edits —
+  merge whichever lands second on top of the first.
+- 5 historian → PR #75; filed #74.
+
+Convergence (director's walk and a specialist independently): #69 (Great Hall
+place card) and #68 (forecourt/boot spawn) — top candidates for sprint 2.
+
+## Result
+
+| # | Item | Outcome |
+|---|---|---|
+| 1 | #60 | Shipped in #87 (fb7e6b3). Great Hall p95 17.6 ms, director re-run 6/6 `e2e:perf` |
+| 2 | #62 | Shipped in #87. 40 labels/frame instead of 221 in one; new assertion fails on the old code |
+| 3 | product-review | Shipped in #73 (6a27230); 8 issues filed |
+| 4 | technical-artist | Slipped: still in progress in its own session, no PR at close. Carried to sprint 2 |
+| 5 | historian | Shipped in #75 + #81 (self-merged, gated post-merge on main) |
+
 ## Deferred
 
 - #61 transmission pass (L, visual change to ten glass materials, no frame-time gain at 60 Hz on this machine). Revisit after the technical artist has surveyed the glass.

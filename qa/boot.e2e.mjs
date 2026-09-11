@@ -62,6 +62,9 @@ test('the first frame shows Union Station and the Front Street canyon', async ()
   assert.equal(view.colonnadeInView, true);
   assert.ok(view.union >= 20, `Union Station is ${view.union}% of the first frame`);
   assert.equal(view.canopy, 0, `the Loop canopy is ${view.canopy}% of the first frame`);
+  // The card fills on a throttled HUD tick; under a loaded full-suite run it
+  // can still read "—" here. Wait for it, then assert on whatever it says.
+  await page.waitForFunction(() => (document.querySelector('.hud-place .place-name')?.textContent ?? '—') !== '—', null, { timeout: 5000 }).catch(() => {});
   const label = await page.evaluate(() => document.querySelector('.hud-place .place-name')?.textContent ?? '');
   assert.match(label, /^Union Station\b/, `the HUD opens on "${label}"`);
 });

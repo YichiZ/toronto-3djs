@@ -342,6 +342,30 @@ function buildRoom(room) {
   floor.receiveShadow = true;
   g.add(floor);
 
+  // Stone inlay grid across the room (#77): one flat pale plane read as an
+  // empty box at every hour. Bands both ways, so some always cross the view.
+  // One instanced mesh (a unit slab scaled per band), 2 cm proud of the floor,
+  // and never a thing to trip on.
+  const BAND = 0.9;
+  const BAND_EVERY = 4.5;
+  const alongX = Math.floor(room.w / BAND_EVERY);
+  const alongZ = Math.floor(room.d / BAND_EVERY);
+  const bands = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 0.02, 1),
+    local('floorBand', () => new THREE.MeshStandardMaterial({ color: 0x7d776b, roughness: 0.32 })),
+    alongX + alongZ
+  );
+  for (let i = 0; i < alongX; i++) {
+    place(bands, i, room.x - room.w / 2 + BAND_EVERY * (i + 0.5), FLOOR + 0.01, room.z, 0, 0, 0, BAND, 1, room.d - 2);
+  }
+  for (let j = 0; j < alongZ; j++) {
+    place(bands, alongX + j, room.x, FLOOR + 0.012, room.z - room.d / 2 + BAND_EVERY * (j + 0.5), 0, 0, 0, room.w - 2, 1, BAND);
+  }
+  bands.instanceMatrix.needsUpdate = true;
+  bands.receiveShadow = true;
+  bands.userData.noCollide = true;
+  g.add(bands);
+
   const ceil = facetedCeiling(room.w, room.d, room.ceiling, room.x * 0.03);
   ceil.position.x = room.x;
   ceil.position.z = room.z;

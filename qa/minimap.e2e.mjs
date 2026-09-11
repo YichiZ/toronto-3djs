@@ -98,6 +98,34 @@ test('the plan follows the walker below grade: the PATH spine appears', async ()
     `the PATH plan should be full of spine: ${path.blue} blue pixels vs ${street.blue} at street level`);
 });
 
+/** Street-coloured pixels along the disc's centre column and centre row. */
+const streetAxes = () => page.evaluate(() => {
+  const c = document.querySelector('.hud-minimap canvas');
+  const w = c.width;
+  const d = c.getContext('2d').getImageData(0, 0, w, w).data;
+  const street = (x, y) => { const i = (y * w + x) * 4; return d[i] === 0x46 && d[i + 1] === 0x50 && d[i + 2] === 0x5c; };
+  let column = 0;
+  let row = 0;
+  for (let t = 0; t < w; t++) { if (street(w >> 1, t)) column++; if (street(t, w >> 1)) row++; }
+  return { column, row };
+});
+
+test('heading-up: facing east along Front Street, the street runs straight up the map', async () => {
+  await walkTo(-16, 1.7, 0);                     // on Front's centreline, west of Bay
+  await page.evaluate(() => { const { ctx } = window.__TWIN__; ctx.camera.lookAt(ctx.camera.position.x + 10, ctx.camera.position.y, ctx.camera.position.z); });
+  await until({ level: 'street' });
+  await page.waitForTimeout(250);
+  const east = await streetAxes();
+  assert.ok(east.column > east.row * 3 && east.column > 100,
+    `facing east, Front should fill the centre column, not the row: column ${east.column}, row ${east.row}`);
+  // Turn to face grid north (-z): now Front crosses the map left to right.
+  await page.evaluate(() => { const { ctx } = window.__TWIN__; ctx.camera.lookAt(ctx.camera.position.x, ctx.camera.position.y, ctx.camera.position.z - 10); });
+  await page.waitForTimeout(250);
+  const north = await streetAxes();
+  assert.ok(north.row > north.column * 3 && north.row > 100,
+    `facing north, Front should fill the centre row: column ${north.column}, row ${north.row}`);
+});
+
 test('clicking a viewpoint dot teleports there', async () => {
   await walkTo(-126, 1.7, 36);                   // 30 m from the forecourt viewpoint
   await until({ level: 'street' });

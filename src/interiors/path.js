@@ -576,13 +576,56 @@ export const MEZZANINE = (() => {
   return Object.freeze({ cx: eastEdge + w / 2, cz: 8, w, d });
 })();
 
-/** Union subway station mezzanine, with the fare line and stairs to the platform. */
+/**
+ * The stairwell down from the mezzanine, east of the fare line (#118).
+ *
+ * The Line 1 platforms are not modelled and LEVEL_ORDER bottoms out at PATH, so
+ * this flight descends ONE storey to a landing and is closed off there. It used
+ * to drop 5.2 m to y = -11.7 with nothing built at the bottom - and, because the
+ * mezzanine floor slab had no opening in it, the whole flight was sealed under
+ * the floor where no one could see it. A stair has to arrive somewhere; this one
+ * arrives at a shuttered landing, which is the truth about the edge of the model.
+ *
+ * Exported so the regression test measures the geometry instead of a copy of it.
+ */
+export const STAIRWELL = (() => {
+  const { cx, cz } = MEZZANINE;
+  const DROP = 1.8;
+  return Object.freeze({
+    minX: cx + 13, maxX: cx + 17.4,      // 4.4 m wide, clear of the 10 fare gates
+    minZ: cz + 1.8, maxZ: cz + 6.8,      // 3.2 m of flight, then a 1.8 m landing
+    drop: DROP,
+    landingY: FLOOR - DROP,
+    run: 3.2,
+  });
+})();
+
+/** Union subway station mezzanine, with the fare line and the gated platform stair. */
 function buildSubwayMezzanine() {
   const g = new THREE.Group();
   g.name = 'path-union-subway-mezzanine';
   const { cx, cz, w, d } = MEZZANINE;
+  const well = STAIRWELL;
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), M.pathFloor());
+  // Floor slab with the stairwell cut out of it. A hole, not a second plane:
+  // the walker's floor ray has to miss here, or the opening is invisible glass.
+  const slab = new THREE.Shape();
+  slab.moveTo(-w / 2, -d / 2);
+  slab.lineTo(w / 2, -d / 2);
+  slab.lineTo(w / 2, d / 2);
+  slab.lineTo(-w / 2, d / 2);
+  slab.closePath();
+  // ShapeGeometry is laid out in local XY; the plane is turned so local +y is -z.
+  const lv = (z) => cz - z;
+  const hole = new THREE.Path();
+  hole.moveTo(well.minX - cx, lv(well.minZ));
+  hole.lineTo(well.maxX - cx, lv(well.minZ));
+  hole.lineTo(well.maxX - cx, lv(well.maxZ));
+  hole.lineTo(well.minX - cx, lv(well.maxZ));
+  hole.closePath();
+  slab.holes.push(hole);
+
+  const floor = new THREE.Mesh(new THREE.ShapeGeometry(slab), M.pathFloor());
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(cx, FLOOR, cz);
   floor.receiveShadow = true;
@@ -635,10 +678,47 @@ function buildSubwayMezzanine() {
   readers.instanceMatrix.needsUpdate = true;
   g.add(gates, readers);
 
-  // stairs down to the subway platform, which lives below this module
-  const down = stair({ rise: 5.2, run: 7.0, width: 4.0 });
-  down.position.set(cx + 14, FLOOR - 5.2, cz + 3);
+  // One flight down to a landing, then a closed shutter: see STAIRWELL (#118).
+  const midX = (well.minX + well.maxX) / 2;
+  // The helper climbs toward +z from its origin, so the flight is turned to
+  // descend that way instead - the head of the stairs meets the floor edge.
+  const down = stair({ rise: well.drop, run: well.run, width: 4.0 });
+  down.position.set(midX, well.landingY, well.minZ + well.run);
+  down.rotation.y = Math.PI;
   g.add(down);
+
+  const landing = new THREE.Mesh(
+    new THREE.BoxGeometry(well.maxX - well.minX, 0.3, well.maxZ - well.minZ - well.run),
+    M.concretePlain()
+  );
+  landing.position.set(midX, well.landingY - 0.15, (well.minZ + well.run + well.maxZ) / 2);
+  landing.receiveShadow = true;
+  g.add(landing);
+
+  // Stairwell sides and far end, carried 1.1 m above the floor as a balustrade so
+  // the opening is guarded on the three sides the walker does not come in from.
+  const wallH = FLOOR + 1.1 - (well.landingY - 0.3);
+  const wallY = (FLOOR + 1.1 + well.landingY - 0.3) / 2;
+  for (const x of [well.minX, well.maxX]) {
+    const side = new THREE.Mesh(
+      new THREE.BoxGeometry(0.25, wallH, well.maxZ - well.minZ), M.concretePlain()
+    );
+    side.position.set(x, wallY, (well.minZ + well.maxZ) / 2);
+    g.add(side);
+  }
+  const end = new THREE.Mesh(
+    new THREE.BoxGeometry(well.maxX - well.minX + 0.5, wallH, 0.25), M.concretePlain()
+  );
+  end.position.set(midX, wallY, well.maxZ);
+  g.add(end);
+
+  // The closure itself: a rolling shutter down across the foot of the flight.
+  const shutter = new THREE.Mesh(
+    new THREE.BoxGeometry(well.maxX - well.minX - 0.3, 2.1, 0.12),
+    M.paintedSteel(0x6b6f73)
+  );
+  shutter.position.set(midX, well.landingY + 1.05, well.maxZ - 0.45);
+  g.add(shutter);
 
   const hit = new THREE.Mesh(new THREE.BoxGeometry(22, 2.6, 3), new THREE.MeshBasicMaterial({ visible: false }));
   hit.position.set(cx, FLOOR + 1.3, cz - 1.6);
@@ -648,7 +728,8 @@ function buildSubwayMezzanine() {
     tenant: 'Union subway station mezzanine',
     category: 'transit',
     confidence: 'reference',
-    note: 'Fare-paid mezzanine between the PATH concourse and the Line 1 platforms.',
+    note: 'Fare-paid mezzanine between the PATH concourse and the Line 1 platforms. '
+      + 'The platform stair is shuttered at the landing — the platforms themselves are below this model.',
   });
   g.add(hit);
 

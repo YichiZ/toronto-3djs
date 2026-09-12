@@ -14,18 +14,11 @@
  *   - BAY CONCOURSE (east end) followed with the same architectural language at
  *     a slightly smaller scale.
  *
- * WHAT IS NOT HERE, AND WHY (#117). The real halls open up to THE MOAT — the
- * cut flanking the Great Hall between street and concourse, glazed over in the
- * revitalisation — and the balustrades in those rooms guard that opening. This
- * module built the railing and not the opening: the ceiling roofs the whole
- * room, so the glass stood in the middle of a sealed space guarding a floor.
- * The railing is gone until the moat exists.
- *
- * Building it is not a matter of cutting this ceiling. Union Station's wing
- * massing is a solid stone block standing on y = 0, and its underside is what
- * a visitor in York or Bay actually sees overhead — 100% of the frame, 2 m over
- * their head. This room's ceiling at HALL_CEIL = +1.9, and anything cut into
- * it, is hidden above that lid.
+ *   - YORK AND BAY OPEN UP TO THE MOAT — the cut flanking the Great Hall
+ *     between street and concourse, glazed over in the revitalisation — and
+ *     their balustrades guard that opening. See MOAT_WELLS below (#117, #131).
+ *     The moat deck itself is not walkable: LEVEL_ORDER has no level between
+ *     street and concourse.
  *   - VIA CONCOURSE sits centre-south between them, against the train shed: it
  *     is the departures hall proper — seating, gate doors onto the platform
  *     stairs, and the departure boards passengers actually wait under.
@@ -186,12 +179,16 @@ function place(im, i, px, py, pz, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1
  * Built by displacing a subdivided plane and shading it flat, which costs one
  * draw call and reads correctly from below — the only place anyone sees it.
  */
-function facetedCeiling(w, d, y, seed = 0) {
+function facetedCeiling(w, d, y, seed = 0, field = null) {
   const geo = new THREE.PlaneGeometry(w, d, Math.max(6, Math.round(w / 4)), Math.max(4, Math.round(d / 4)));
   const pos = geo.attributes.position;
+  // `field` is the room-sized fold this piece is a window onto. A ceiling built
+  // in four strips around the moat well has to sample the SAME fold as one slab
+  // would, or the strips meet at steps of up to a metre along every seam.
+  const f = field ?? { w, d, x: 0, z: 0 };
   for (let i = 0; i < pos.count; i++) {
-    const u = pos.getX(i) / w;
-    const v = pos.getY(i) / d;
+    const u = (pos.getX(i) + f.x) / f.w;
+    const v = (pos.getY(i) + f.z) / f.d;
     const fold =
       Math.sin(u * Math.PI * 4.2 + seed) * 0.55 +
       Math.cos(v * Math.PI * 3.1 - seed * 0.7) * 0.42 +
@@ -208,6 +205,86 @@ function facetedCeiling(w, d, y, seed = 0) {
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.y = y;
   return mesh;
+}
+
+/**
+ * THE MOAT (#117, built under #131). The open cuts flanking the Great Hall east
+ * and west, between the street and the concourses — baggage, taxis and mail
+ * once, and since the revitalisation a glazed route under a steel-ribbed canopy.
+ *
+ * The head house footprint is x -241..-15, z 24..68 and the Great Hall takes the
+ * middle of it, so York and Bay sit exactly where the moats are: the opening
+ * each concourse's balustrade used to guard is real, it just had no hole behind
+ * it. The railing stood on the floor across a sealed room, guarding nothing, and
+ * was removed until this existed.
+ *
+ * WHY IT COULD NOT BE BUILT BEFORE (#128): the wing massing was a solid block
+ * standing on y = 0 and its underside hung inside these rooms, 100% of the view
+ * looking up. An opening cut in the ceiling at +1.9 measured correctly and was
+ * invisible behind that lid. The lid is gone, so this is now the thing a visitor
+ * at concourse level actually looks up into.
+ *
+ * The moat deck is not walkable — LEVEL_ORDER has no level between street and
+ * concourse — so what is built is the well, the canopy over it, and the railing
+ * at its rim.
+ *
+ * @type {ReadonlyArray<{room:string,x:number,z:number,w:number,d:number,rimY:number,canopyY:number}>}
+ */
+export const MOAT_WELLS = Object.freeze(
+  ROOMS.filter((r) => r.ceiling === HALL_CEIL).map((r) => Object.freeze({
+    room: r.id,
+    x: r.x,
+    z: r.z - r.d / 2 + 4.5,       // the north strip, clear of the retail and the boards
+    w: r.w * 0.5,
+    // Wide and shallow enough to read as daylight rather than as a stone slot:
+    // from the floor at an angle, a narrow deep cut is all reveal.
+    d: 4.4,
+    rimY: r.ceiling,
+    canopyY: r.ceiling + 3.0,
+  }))
+);
+
+/** The well above a concourse: the reveals, the glazed canopy, and its ribs. */
+function moatWell(well) {
+  const g = new THREE.Group();
+  g.name = `moat-${well.room}`;
+  const h = well.canopyY - well.rimY;
+
+  for (const [w, d, dx, dz] of [
+    [well.w, 0.4, 0, -well.d / 2], [well.w, 0.4, 0, well.d / 2],
+    [0.4, well.d, -well.w / 2, 0], [0.4, well.d, well.w / 2, 0],
+  ]) {
+    const face = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M.limestone());
+    face.position.set(well.x + dx, well.rimY + h / 2, well.z + dz);
+    g.add(face);
+  }
+
+  // Daylight is the whole point of the moat, so the glass carries the emissive
+  // and does the lighting from above that the coves cannot.
+  const glass = new THREE.Mesh(
+    new THREE.BoxGeometry(well.w, 0.12, well.d),
+    local('moatGlass', () => new THREE.MeshPhysicalMaterial({
+      color: 0xeaf3f8, roughness: 0.08, transparent: true, opacity: 0.55,
+      // Bright enough to read as sky, dim enough that the ribs and the reveals
+      // are still visible against it - at 0.9 the whole opening blew out white.
+      emissive: 0xf2f7fb, emissiveIntensity: 0.5, side: THREE.DoubleSide,
+    }))
+  );
+  glass.position.set(well.x, well.canopyY, well.z);
+  g.add(glass);
+
+  const RIB_EVERY = 2.6;
+  const ribs = Math.max(2, Math.round(well.w / RIB_EVERY));
+  const im = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.18, 0.32, well.d + 0.4), M.steelWhite(), ribs
+  );
+  for (let i = 0; i < ribs; i++) {
+    place(im, i, well.x - well.w / 2 + (well.w / (ribs - 1)) * i, well.canopyY - 0.22, well.z);
+  }
+  im.instanceMatrix.needsUpdate = true;
+  g.add(im);
+
+  return g;
 }
 
 /** Recessed linear light coves, instanced, doing most of the actual lighting. */
@@ -380,10 +457,33 @@ function buildRoom(room) {
   bands.userData.noCollide = true;
   g.add(bands);
 
-  const ceil = facetedCeiling(room.w, room.d, room.ceiling, room.x * 0.03);
-  ceil.position.x = room.x;
-  ceil.position.z = room.z;
-  g.add(ceil);
+  // Ceiling. Where the room opens into the moat it is built as four strips
+  // around the well rather than one slab, so there is something to look up
+  // through; all four sample one room-sized fold, or the seams step.
+  const seed = room.x * 0.03;
+  const well = MOAT_WELLS.find((m) => m.room === room.id) ?? null;
+  const strip = (w, d, dx, dz) => {
+    if (w <= 0.05 || d <= 0.05) return;
+    const piece = facetedCeiling(w, d, room.ceiling, seed, { w: room.w, d: room.d, x: dx, z: dz });
+    piece.position.x = room.x + dx;
+    piece.position.z = room.z + dz;
+    g.add(piece);
+  };
+  if (!well) {
+    strip(room.w, room.d, 0, 0);
+  } else {
+    const wx = well.x - room.x;
+    const wz = well.z - room.z;
+    const north = wz - well.d / 2 + room.d / 2;
+    const south = room.d / 2 - (wz + well.d / 2);
+    strip(room.w, north, 0, -room.d / 2 + north / 2);
+    strip(room.w, south, 0, room.d / 2 - south / 2);
+    const west = wx - well.w / 2 + room.w / 2;
+    const east = room.w / 2 - (wx + well.w / 2);
+    strip(west, well.d, -room.w / 2 + west / 2, wz);
+    strip(east, well.d, room.w / 2 - east / 2, wz);
+    g.add(moatWell(well));
+  }
 
   const lightBar = coves(room.w, room.d, room.ceiling, 5);
   lightBar.position.set(room.x, 0, room.z);
@@ -458,11 +558,23 @@ function buildRoom(room) {
   boards.instanceMatrix.needsUpdate = true;
   g.add(boards);
 
-  // NO BALUSTRADE HERE (#117). One used to stand on the floor across the north
-  // of the room, described as guarding "the void up to the moat / street level".
-  // There is no void: facetedCeiling roofs the whole room, so the glass railing
-  // guarded a floor. It cannot simply be given an opening either — see the moat
-  // note at the top of this file. A railing goes in when the drop does.
+  // The balustrade, back where the drop is (#117, #131). It used to stand on the
+  // concourse floor guarding a sealed ceiling — a railing around nothing, two
+  // levels below the edge it is meant to protect — and was removed until the
+  // moat existed. It rings the rim of the well, set in from the reveal by its
+  // own thickness so it reads as the guard at the edge rather than as part of
+  // the wall.
+  if (well) {
+    const IN = 0.35;
+    for (const [len, axis, dx, dz] of [
+      [well.w, 'x', 0, -well.d / 2 + IN], [well.w, 'x', 0, well.d / 2 - IN],
+      [well.d, 'z', -well.w / 2 + IN, 0], [well.d, 'z', well.w / 2 - IN, 0],
+    ]) {
+      const bal = balustrade(len, axis);
+      bal.position.set(well.x + dx, well.rimY, well.z + dz);
+      g.add(bal);
+    }
+  }
 
   // vertical circulation: up to the Great Hall, down to the PATH. Each one is
   // tagged `userData.access` at its midpoint, so the nearby strip can name it

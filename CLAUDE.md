@@ -28,6 +28,10 @@ No TypeScript, no linter. Vanilla ES modules, Three.js 0.171, Vite 6.
 
 ## Toronto invariants (each one is a check in `qa/traps.mjs`; the grid-rotation check is covered above)
 
+`qa/traps.mjs` reads the SOURCE. Where an invariant is about geometry, the source check is a
+first pass and the guarantee is an e2e check on the built scene — `qa/front-street-track.e2e.mjs`
+for the streetcar one. A trap can be walked straight past in code that never names it (#133).
+
 - No surface streetcar track on Front Street; streetcars reach Union via the Bay Street tunnel into the below-grade Loop.
 - No catenary anywhere — the corridor is not electrified.
 - The Gardiner is elevated over Lake Shore, not over Front.
@@ -52,5 +56,5 @@ No TypeScript, no linter. Vanilla ES modules, Three.js 0.171, Vite 6.
 ## Pointers
 
 - See `MODULE_CONTRACT.md` for the full build contract, registration and performance budget.
-- See `qa/traps.mjs` for the machine-checked invariants.
+- See `qa/traps.mjs` for the machine-checked invariants, and `qa/front-street-track.e2e.mjs` for the one checked against the built scene.
 - See `README.md` for controls and provenance.

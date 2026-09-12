@@ -8,6 +8,7 @@
  * survivable with four full interiors in the scene.
  */
 import * as THREE from 'three';
+import { streamsIn } from './streaming.js';
 
 /** @type {Array<{name:string, load:() => Promise<{build:Function}>}>} */
 const MODULES = [
@@ -151,7 +152,8 @@ export async function buildWorld(ctx, onProgress = () => {}) {
   for (const it of interiors) it.lights = liftLights(it);
 
   // Proximity streaming for interiors, checked a few times a second rather than
-  // every frame - the camera cannot cross a 70 m radius in 250 ms on foot.
+  // every frame - the camera cannot cross a 70 m radius in 250 ms on foot. The
+  // coming and going radii differ; see streaming.js and #132.
   let accum = 0;
   const tmp = new THREE.Vector3();
   ctx.onFrame.push((dt) => {
@@ -162,8 +164,13 @@ export async function buildWorld(ctx, onProgress = () => {}) {
       // Groups are static once built; their box is taken on the first check.
       it.box ??= new THREE.Box3().setFromObject(it.group);
       tmp.set(it.centre.x, it.centre.y ?? 0, it.centre.z);
-      const near = ctx.camera.position.distanceTo(tmp) < it.radius
-        || it.box.distanceToPoint(ctx.camera.position) < CONTACT;
+      const near = streamsIn({
+        visible: it.group.visible,
+        distance: ctx.camera.position.distanceTo(tmp),
+        contact: it.box.distanceToPoint(ctx.camera.position),
+        radius: it.radius,
+        contactRange: CONTACT,
+      });
       if (near === it.group.visible) continue;
       it.group.visible = near;
       for (const l of it.lights) l.intensity = near ? l.userData.streamedIntensity : 0;

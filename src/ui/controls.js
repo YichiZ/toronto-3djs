@@ -177,11 +177,17 @@ export function install(ctx) {
    * move ~0.2 m a frame - and only at street level, since every lane is at
    * y = 0 and a car under the viaduct deck or over the PATH is nowhere near.
    * The per-car cap in push() is not a total, so the sum is capped here.
+   *
+   * A hop is NOT an exemption. Skipping this while airborne let a bus drive
+   * clean through a jumping walker - the shove is the only thing standing in
+   * for a car's body, since vehicles are out of the collision index, and Space
+   * turned it off. The jump clears 0.9 m and the shortest car roof is well
+   * above that, so there is nothing to hop over; height is not tested.
    */
   function trafficPush(dt) {
     framePush.x = 0;
     framePush.z = 0;
-    if (!nearbyVehicles || airborne || levelIndex !== STREET_LEVEL) return;
+    if (!nearbyVehicles || levelIndex !== STREET_LEVEL) return;
     here.cx = camera.position.x;
     here.cz = camera.position.z;
     framePushDt = dt;

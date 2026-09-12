@@ -44,6 +44,7 @@ const MODULES = [
   { name: 'retailConcourse', load: () => import('../interiors/retailConcourse.js') },
   { name: 'galleria', load: () => import('../interiors/galleria.js') },
   { name: 'path', load: () => import('../interiors/path.js') },
+  { name: 'subwayPlatform', load: () => import('../interiors/subwayPlatform.js') },
   { name: 'hhofInterior', load: () => import('../interiors/hhofInterior.js') },
 
   { name: 'pedestrians', load: () => import('../systems/pedestrians.js') },

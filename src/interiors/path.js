@@ -597,6 +597,13 @@ export const STAIRWELL = (() => {
     drop: DROP,
     landingY: FLOOR - DROP,
     run: 3.2,
+    /**
+     * The second flight, from the landing down to LEVELS.subwayPlatform (#131).
+     * The floor slab has to be cut for THIS TOO: with the hole stopping at maxZ
+     * the ongoing stair was sealed under the mezzanine floor, which is the exact
+     * bug #118 was about, one flight further down.
+     */
+    continueRun: 3.2,
   });
 })();
 
@@ -617,11 +624,15 @@ function buildSubwayMezzanine() {
   slab.closePath();
   // ShapeGeometry is laid out in local XY; the plane is turned so local +y is -z.
   const lv = (z) => cz - z;
+  // The ongoing flight, too - but no further than the room itself: a hole that
+  // pokes outside its shape fails to triangulate and is dropped silently, which
+  // put the mezzanine floor straight back over the stair.
+  const holeEndZ = Math.min(well.maxZ + well.continueRun, cz + d / 2);
   const hole = new THREE.Path();
   hole.moveTo(well.minX - cx, lv(well.minZ));
   hole.lineTo(well.maxX - cx, lv(well.minZ));
-  hole.lineTo(well.maxX - cx, lv(well.maxZ));
-  hole.lineTo(well.minX - cx, lv(well.maxZ));
+  hole.lineTo(well.maxX - cx, lv(holeEndZ));
+  hole.lineTo(well.minX - cx, lv(holeEndZ));
   hole.closePath();
   slab.holes.push(hole);
 
@@ -678,7 +689,9 @@ function buildSubwayMezzanine() {
   readers.instanceMatrix.needsUpdate = true;
   g.add(gates, readers);
 
-  // One flight down to a landing, then a closed shutter: see STAIRWELL (#118).
+  // One flight down to a landing, then a second one on to the Line 1 platform
+  // (#118 built the landing and shuttered it, because nothing was below; #131
+  // built the platform, so the stair goes where it always said it went).
   const midX = (well.minX + well.maxX) / 2;
   // The helper climbs toward +z from its origin, so the flight is turned to
   // descend that way instead - the head of the stairs meets the floor edge.
@@ -687,11 +700,17 @@ function buildSubwayMezzanine() {
   down.rotation.y = Math.PI;
   g.add(down);
 
+  // The landing runs 0.3 m past the well so it OVERLAPS the top tread of the
+  // flight below. Ending it exactly on the line left a 20 cm seam at z 14.8
+  // where the floor ray went straight through to the platform 2.7 m down.
+  const LAP = 0.3;
+  const landingFrom = well.minZ + well.run;
+  const landingTo = well.maxZ + LAP;
   const landing = new THREE.Mesh(
-    new THREE.BoxGeometry(well.maxX - well.minX, 0.3, well.maxZ - well.minZ - well.run),
+    new THREE.BoxGeometry(well.maxX - well.minX, 0.3, landingTo - landingFrom),
     M.concretePlain()
   );
-  landing.position.set(midX, well.landingY - 0.15, (well.minZ + well.run + well.maxZ) / 2);
+  landing.position.set(midX, well.landingY - 0.15, (landingFrom + landingTo) / 2);
   landing.receiveShadow = true;
   g.add(landing);
 
@@ -699,26 +718,42 @@ function buildSubwayMezzanine() {
   // the opening is guarded on the three sides the walker does not come in from.
   const wallH = FLOOR + 1.1 - (well.landingY - 0.3);
   const wallY = (FLOOR + 1.1 + well.landingY - 0.3) / 2;
+  // The sides run the length of the whole well, the second flight included, so
+  // the opening is guarded wherever the floor is missing.
   for (const x of [well.minX, well.maxX]) {
     const side = new THREE.Mesh(
-      new THREE.BoxGeometry(0.25, wallH, well.maxZ - well.minZ), M.concretePlain()
+      new THREE.BoxGeometry(0.25, wallH + 2.7, holeEndZ - well.minZ), M.concretePlain()
     );
-    side.position.set(x, wallY, (well.minZ + well.maxZ) / 2);
+    side.position.set(x, wallY - 1.35, (well.minZ + holeEndZ) / 2);
     g.add(side);
   }
-  const end = new THREE.Mesh(
-    new THREE.BoxGeometry(well.maxX - well.minX + 0.5, wallH, 0.25), M.concretePlain()
-  );
-  end.position.set(midX, wallY, well.maxZ);
-  g.add(end);
+  // The far end is open now: the flight carries on from the landing down to the
+  // platform, so the wall that used to close the well stops either side of it.
+  const CONTINUE = 4.4;                      // the width of the ongoing flight
+  for (const [from, to] of [
+    [well.minX - 0.25, midX - CONTINUE / 2],
+    [midX + CONTINUE / 2, well.maxX + 0.25],
+  ]) {
+    if (to - from < 0.2) continue;
+    const end = new THREE.Mesh(
+      new THREE.BoxGeometry(to - from, wallH, 0.25), M.concretePlain()
+    );
+    end.position.set((from + to) / 2, wallY, well.maxZ);
+    g.add(end);
+  }
 
-  // The closure itself: a rolling shutter down across the foot of the flight.
-  const shutter = new THREE.Mesh(
-    new THREE.BoxGeometry(well.maxX - well.minX - 0.3, 2.1, 0.12),
-    M.paintedSteel(0x6b6f73)
-  );
-  shutter.position.set(midX, well.landingY + 1.05, well.maxZ - 0.45);
-  g.add(shutter);
+  // The second flight, down to LEVELS.subwayPlatform. The platform module builds
+  // the room it arrives in and derives its arrival point from STAIRWELL, so the
+  // two cannot drift apart.
+  const toPlatform = stair({
+    rise: well.landingY - LEVELS.subwayPlatform, run: 3.2, width: CONTINUE,
+  });
+  // The helper climbs toward +z from its origin at the BOTTOM of the flight, so
+  // the origin goes at the platform end and the turn makes it descend southward
+  // — at well.maxZ it ran back north, underneath the flight above it.
+  toPlatform.position.set(midX, LEVELS.subwayPlatform, well.maxZ + well.continueRun);
+  toPlatform.rotation.y = Math.PI;
+  g.add(toPlatform);
 
   const hit = new THREE.Mesh(new THREE.BoxGeometry(22, 2.6, 3), new THREE.MeshBasicMaterial({ visible: false }));
   hit.position.set(cx, FLOOR + 1.3, cz - 1.6);
@@ -728,8 +763,8 @@ function buildSubwayMezzanine() {
     tenant: 'Union subway station mezzanine',
     category: 'transit',
     confidence: 'reference',
-    note: 'Fare-paid mezzanine between the PATH concourse and the Line 1 platforms. '
-      + 'The platform stair is shuttered at the landing — the platforms themselves are below this model.',
+    note: 'Fare-paid mezzanine between the PATH concourse and the Line 1 platform, '
+      + 'which the stair carries on down to at LEVELS.subwayPlatform.',
   });
   g.add(hit);
 

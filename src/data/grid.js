@@ -32,6 +32,10 @@ export const EW = Object.freeze({
 
 /** Vertical layering. Y = 0 is the Front & Bay street datum. */
 export const LEVELS = Object.freeze({
+  // Line 1's island platform under the station (#131). The mezzanine stair in
+  // interiors/path.js used to stop at a shuttered landing because there was
+  // nothing below it to arrive at.
+  subwayPlatform: -11.0,
   path: -6.5,            // PATH concourse floor
   pathCeiling: -2.9,
   // The revitalisation's excavated retail concourse under the train shed (#120).

@@ -12,10 +12,10 @@ import { LEVELS } from '../src/data/grid.js';
 
 const name = (i) => LEVEL_ORDER[i].name;
 
-test('the eight levels, low to high, with street as the fallback', () => {
+test('the nine levels, low to high, with street as the fallback', () => {
   assert.deepEqual(LEVEL_ORDER.map((l) => l.name),
-    ['PATH', 'retail concourse', 'concourse', 'street', 'viaduct deck', 'platform',
-      'SkyWalk', 'Gardiner deck']);
+    ['Line 1 platform', 'PATH', 'retail concourse', 'concourse', 'street',
+      'viaduct deck', 'platform', 'SkyWalk', 'Gardiner deck']);
   for (let i = 1; i < LEVEL_ORDER.length; i++) assert.ok(LEVEL_ORDER[i].y > LEVEL_ORDER[i - 1].y, 'low to high');
   assert.equal(name(STREET_LEVEL), 'street');
   assert.equal(nearestLevel(0, []), STREET_LEVEL, 'an empty list falls back to street');
@@ -32,7 +32,8 @@ test('the nearest level to a height, including the half-metre deck/platform spli
   assert.equal(name(nearestLevel(8.77)), 'SkyWalk', 'the Royal Bank Plaza setback roof walks as level 9');
   assert.equal(name(nearestLevel(6.6)), 'viaduct deck');
   assert.equal(name(nearestLevel(6.9)), 'platform');
-  assert.equal(name(nearestLevel(-50)), 'PATH', 'far below anything: the lowest');
+  assert.equal(name(nearestLevel(LEVELS.subwayPlatform)), 'Line 1 platform', 'the subway is the floor of the model (#131)');
+  assert.equal(name(nearestLevel(-50)), 'Line 1 platform', 'far below anything: the lowest');
   assert.equal(name(nearestLevel(99)), 'Gardiner deck', 'far above: the highest');
 });
 

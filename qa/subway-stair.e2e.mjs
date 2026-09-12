@@ -81,13 +81,19 @@ const MEASURE = `async () => {
     foot: under(foot),
     landingY: +well.landingY.toFixed(2),
     closedAt: ahead.length ? +ahead[0].distance.toFixed(2) : null,
+    beyondLanding: under(well.maxZ + 3.4),
   };
 }`;
 
-test('the mezzanine stair drops one storey, not five (#118)', async () => {
+test('the mezzanine stair arrives somewhere, not at an arbitrary depth (#118, #131)', async () => {
   const m = await page.evaluate(`(${MEASURE})()`);
-  // Unfixed: -11.66, a flight to an unmodelled Line 1 platform.
-  assert.ok(m.deepest > FLOOR - 2.5, `something is built down at ${m.deepest} (floor ${FLOOR})`);
+  // This used to demand the stair stop within 2.5 m of the mezzanine floor,
+  // because the Line 1 platform did not exist and the flight's -11.66 was a drop
+  // into nothing. #131 built the platform at LEVELS.subwayPlatform = -11, so the
+  // invariant is the one it always stood for: whatever the stair reaches is a
+  // level of the model, not a number someone typed.
+  assert.ok(m.deepest >= -11.95, `something is built below the platform, at ${m.deepest}`);
+  assert.ok(m.deepest <= -10.9, `the stair stops short of the platform, at ${m.deepest}`);
 });
 
 test('the flight is open to the room and arrives on a landing (#118)', async () => {
@@ -99,10 +105,15 @@ test('the flight is open to the room and arrives on a landing (#118)', async () 
   assert.ok(Math.abs(m.foot - m.landingY) < 0.2, `the foot is at ${m.foot}, landing at ${m.landingY}`);
 });
 
-test('the way on from the landing is closed (#118)', async () => {
+test('the way on from the landing leads down, and is not a dead end (#118, #131)', async () => {
   const m = await page.evaluate(`(${MEASURE})()`);
-  assert.ok(m.closedAt !== null && m.closedAt < 2.5,
-    `nothing closes the foot of the stairs within 2.5 m (nearest ${m.closedAt})`);
+  // The shutter that used to close this landing is gone: the flight continues to
+  // the platform. What must never come back is the dead end — a walker standing
+  // on the landing with nothing ahead and nothing below.
+  assert.equal(m.closedAt, null,
+    `something still blocks the way on ${m.closedAt} m past the landing`);
+  assert.ok(Math.abs(m.beyondLanding - -11) < 0.4,
+    `past the landing the floor is ${m.beyondLanding}, not the platform at -11`);
 });
 
 test('the whole run produced no console errors', () => {

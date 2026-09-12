@@ -15,7 +15,7 @@
 import * as THREE from 'three';
 import { genericBuildings, footprint } from '../data/buildings.js';
 import { STREETS, corridorWidth } from '../data/grid.js';
-import { massing, cornice, plinth, storefrontBand, awning, doorway, roofPlant } from './buildingKit.js';
+import { massing, sailMassing, cornice, plinth, storefrontBand, awning, doorway, roofPlant } from './buildingKit.js';
 import { M } from '../core/materials.js';
 import { register, registerInteractive } from '../core/registry.js';
 import { tenantsFor } from '../data/tenants.js';
@@ -123,18 +123,24 @@ export function build() {
     g.position.set(b.x, 0, b.z);
 
     const floors = b.floors ?? Math.max(1, Math.round(b.height / 3.6));
-    const shell = massing({
+    // A box, except where the record names another silhouette (#74: the L Tower).
+    const sail = b.shape === 'sail';
+    const shellSpec = {
       width: b.w, depth: b.d, height: b.height, floors,
       kind: b.kind ?? 'punched', palette: b.palette ?? {},
-    });
+    };
+    const shell = sail ? sailMassing({ ...shellSpec, flare: b.flare ?? b.d * 0.35 }) : massing(shellSpec);
     g.add(shell);
 
-    // L2: base course and crowning cornice give every block a silhouette.
+    // L2: base course and crowning cornice give every block a silhouette. A
+    // footprint-sized cornice would sit inside a sail's flared crown.
     g.add(plinth({ width: b.w, depth: b.d, height: 1.1, material: b.kind === 'curtain' ? M.concretePlain() : M.limestonePlain() }));
-    g.add(cornice({
-      width: b.w, depth: b.d, y: b.height + 0.35, thickness: 0.9, overhang: 0.55,
-      material: b.kind === 'curtain' ? M.concretePlain() : M.limestonePlain(),
-    }));
+    if (!sail) {
+      g.add(cornice({
+        width: b.w, depth: b.d, y: b.height + 0.35, thickness: 0.9, overhang: 0.55,
+        material: b.kind === 'curtain' ? M.concretePlain() : M.limestonePlain(),
+      }));
+    }
 
     // L3: retail only where the building actually meets a sidewalk.
     const faces = streetFaces(b);

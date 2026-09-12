@@ -40,6 +40,7 @@ const MODULES = [
 
   { name: 'greatHall', load: () => import('../interiors/greatHall.js') },
   { name: 'concourses', load: () => import('../interiors/concourses.js') },
+  { name: 'retailConcourse', load: () => import('../interiors/retailConcourse.js') },
   { name: 'galleria', load: () => import('../interiors/galleria.js') },
   { name: 'path', load: () => import('../interiors/path.js') },
   { name: 'hhofInterior', load: () => import('../interiors/hhofInterior.js') },

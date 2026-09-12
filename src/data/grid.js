@@ -34,6 +34,10 @@ export const EW = Object.freeze({
 export const LEVELS = Object.freeze({
   path: -6.5,            // PATH concourse floor
   pathCeiling: -2.9,
+  // The revitalisation's excavated retail concourse under the train shed (#120).
+  // A station space, not the city's pedestrian network: the PATH passes THROUGH
+  // Union, this belongs to it, and they are different depths.
+  unionRetail: -5.0,
   unionConcourse: -3.5,  // York / Bay / VIA concourse floors
   street: 0,
   viaductDeck: 6.5,      // rail deck over the Bay/York/Yonge/Lower Simcoe underpasses

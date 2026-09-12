@@ -8,6 +8,7 @@ import { LEVELS } from '../data/grid.js';
 /** Walkable levels, low to high. Q/E steps through these. */
 export const LEVEL_ORDER = Object.freeze([
   Object.freeze({ name: 'PATH', y: LEVELS.path }),
+  Object.freeze({ name: 'retail concourse', y: LEVELS.unionRetail }),
   Object.freeze({ name: 'concourse', y: LEVELS.unionConcourse }),
   Object.freeze({ name: 'street', y: LEVELS.street }),
   Object.freeze({ name: 'viaduct deck', y: LEVELS.viaductDeck }),

@@ -40,6 +40,7 @@ import { storefrontBand } from '../world/buildingKit.js';
 import { register, registerInteractive } from '../core/registry.js';
 import { tenantsFor } from '../data/tenants.js';
 import { registerInterior } from '../world/index.js';
+import { RETAIL } from './retailConcourse.js';
 
 const FLOOR = LEVELS.unionConcourse;   // -3.5
 const HALL_CEIL = FLOOR + 5.4;         // the tall revitalised halls
@@ -391,14 +392,35 @@ function buildRoom(room) {
   // perimeter walls, opened where the retail band sits
   const wallMat = M.concretePlain();
   const h = room.ceiling - FLOOR;
-  for (const [w, d, dx, dz] of [
-    [room.w, 0.5, 0, -room.d / 2], [room.w, 0.5, 0, room.d / 2],
-    [0.5, room.d, -room.w / 2, 0], [0.5, room.d, room.w / 2, 0],
-  ]) {
+  // VIA's south wall is also the north wall of the retail concourse one level
+  // down (#120), and carries the doorway between them. Both sides read the
+  // opening from RETAIL.door, so they cannot drift apart.
+  const door = room.short === 'via' ? RETAIL.door : null;
+  const addWall = (w, d, dx, dz) => {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
     wall.position.set(room.x + dx, FLOOR + h / 2, room.z + dz);
     wall.receiveShadow = true;
     g.add(wall);
+  };
+  for (const [w, d, dx, dz] of [
+    [room.w, 0.5, 0, -room.d / 2], [room.w, 0.5, 0, room.d / 2],
+    [0.5, room.d, -room.w / 2, 0], [0.5, room.d, room.w / 2, 0],
+  ]) {
+    const south = d < w && dz > 0;
+    if (!door || !south) { addWall(w, d, dx, dz); continue; }
+    for (const [from, to] of [
+      [room.x - room.w / 2, door.x - door.width / 2],
+      [door.x + door.width / 2, room.x + room.w / 2],
+    ]) {
+      if (to - from > 0.2) addWall(to - from, d, (from + to) / 2 - room.x, dz);
+    }
+    // and the wall above the head of the doorway
+    const headY = FLOOR + 2.1;
+    const lintel = new THREE.Mesh(
+      new THREE.BoxGeometry(door.width, room.ceiling - headY, d), wallMat
+    );
+    lintel.position.set(door.x, (room.ceiling + headY) / 2, room.z + dz);
+    g.add(lintel);
   }
 
   // retail along the two long walls
@@ -406,9 +428,24 @@ function buildRoom(room) {
   units += retailWall(room, g, {
     x: room.x, z: room.z - room.d / 2 + 0.6, rotY: 0, width: room.w - 8, face: room.face,
   });
-  units += retailWall(room, g, {
-    x: room.x, z: room.z + room.d / 2 - 0.6, rotY: Math.PI, width: room.w - 8, face: 'north',
-  });
+  const southZ = room.z + room.d / 2 - 0.6;
+  if (!door) {
+    units += retailWall(room, g, {
+      x: room.x, z: southZ, rotY: Math.PI, width: room.w - 8, face: 'north',
+    });
+  } else {
+    // Shopfronts stop either side of the doorway down to the retail concourse;
+    // a storefront across it would seal the stair behind plate glass (#120).
+    for (const [from, to] of [
+      [room.x - room.w / 2 + 2, door.x - door.width / 2 - 1],
+      [door.x + door.width / 2 + 1, room.x + room.w / 2 - 2],
+    ]) {
+      if (to - from < 6) continue;
+      units += retailWall(room, g, {
+        x: (from + to) / 2, z: southZ, rotY: Math.PI, width: to - from, face: 'north',
+      });
+    }
+  }
 
   // departure boards
   const boards = new THREE.InstancedMesh(

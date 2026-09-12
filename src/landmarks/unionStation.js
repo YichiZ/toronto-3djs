@@ -65,9 +65,34 @@ function floodlit(base) {
   return m;
 }
 
-/** Solid limestone volume with its base on y = 0. */
+/**
+ * A box with no underside (#128).
+ *
+ * These volumes stand on the ground, so their bottom face is never seen from
+ * outside — but the York and Bay concourses are BELOW them, with ceilings at
+ * +1.9, and a solid base at y = 0 hangs inside those rooms as a stone lid two
+ * metres over a visitor's head. It was 100% of the frame looking up, and it hid
+ * the faceted plaster ceiling that is the whole point of those rooms.
+ *
+ * Dropping the -Y face costs nothing outside and gives the rooms their ceiling
+ * back. The remaining faces are FrontSide, so from inside the volume they cull —
+ * which is exactly why the Great Hall has always been visible inside the central
+ * block while the concourses were not.
+ */
+function openBottomBox(w, h, d) {
+  const geo = box(w, h, d);
+  // BoxGeometry groups run px, nx, py, ny, pz, nz; ny is the one to drop.
+  const ny = geo.groups[3];
+  const index = Array.from(geo.index.array);
+  index.splice(ny.start, ny.count);
+  geo.setIndex(index);
+  geo.clearGroups();      // one material, and the old group offsets are stale
+  return geo;
+}
+
+/** Limestone volume with its base on y = 0, open underneath. */
 function stoneBlock(w, h, d, material = M.limestone()) {
-  const mesh = new THREE.Mesh(box(w, h, d), material);
+  const mesh = new THREE.Mesh(openBottomBox(w, h, d), material);
   mesh.position.y = h / 2;
   mesh.castShadow = true;
   mesh.receiveShadow = true;

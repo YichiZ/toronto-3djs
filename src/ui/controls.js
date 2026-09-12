@@ -40,8 +40,10 @@ import {
   RUN_FOV_GAIN, FOV_SETTLE, BOB_SETTLE,
 } from './runFeel.js';
 import {
-  pickLevel, levelTolerances, openHeading, LEVEL_SETTLE, LEVEL_ARRIVED, MAX_LEVEL_TOLERANCE,
+  pickLevel, levelTolerances, openHeading, insideSolidAt, pickAccess, nearestOpenSpot,
+  LEVEL_SETTLE, LEVEL_ARRIVED, MAX_LEVEL_TOLERANCE,
 } from './levelChange.js';
+import { BUILDINGS, footprint } from '../data/buildings.js';
 
 const EYE = 1.7;
 const WALK_SPEED = 3.4;   // m/s, an unhurried commuter
@@ -342,19 +344,68 @@ export function install(ctx) {
   dom.addEventListener('click', onCanvasClick);
 
   /**
+   * Building footprints with their heights, for "would this landing be inside a
+   * building?" (#110). Built once, on the first level change.
+   */
+  let solidBoxes = null;
+  const buildingBoxes = () =>
+    (solidBoxes ??= BUILDINGS.map((b) => ({ ...footprint(b), height: b.height ?? 0 })));
+
+  /**
+   * Stairs, escalators and lifts tagged `userData.access` where they are built:
+   * the same list the nearby strip reads, gathered once the world exists.
+   */
+  let accessList = null;
+  function accessPoints() {
+    if (!accessList) {
+      accessList = [];
+      scene.traverse((o) => { if (o.userData?.access) accessList.push(o.userData.access); });
+    }
+    return accessList;
+  }
+
+  /**
    * Is there a walkable floor at this level, here?
    *
    * Probes downward from just above the level and accepts a surface within a
    * storey of it. Used to skip levels that do not exist at the walker's position.
    */
-  function hasFloorAt(index) {
+  function hasFloorAt(index, x = camera.position.x, z = camera.position.z) {
     const y = LEVEL_ORDER[index].y;
-    tmpOrigin.set(camera.position.x, y + PROBE_ABOVE, camera.position.z);
+    tmpOrigin.set(x, y + PROBE_ABOVE, z);
     down.set(tmpOrigin, DOWN_VEC);
     // Every surface down the probe, not only the first - see floorAtLevel().
     const ys = [];
     for (const hit of collision.intersect(down)) if (!ignoreHit(hit)) ys.push(hit.point.y);
     return floorAtLevel(ys, y, LEVEL_TOLERANCE[index]);
+  }
+
+  /** Headroom a landing needs: a shade over the walker's own height. */
+  const LANDING_HEADROOM = 2.0;
+  const upRay = new THREE.Raycaster();
+  upRay.far = LANDING_HEADROOM;
+  upRay.camera = camera;
+
+  /**
+   * Could the walker stand here, on this level? A floor at the level, and a
+   * ceiling far enough above it (#110).
+   *
+   * The York Concourse's own stair rises into the head house's mass, so "an
+   * access joins these levels" is not the same as "its head is somewhere you
+   * could stand".
+   */
+  function canStandAt(index, x, z) {
+    const y = LEVEL_ORDER[index].y;
+    // The surface underfoot here must be this level's own floor. "A floor is
+    // somewhere down there" is not enough: west of the head house the concourse
+    // roof and its light coves sit a metre and a half over the street, and the
+    // walker would arrive standing on them.
+    tmpOrigin.set(x, y + EYE, z);
+    down.set(tmpOrigin, DOWN_VEC);
+    const floor = collision.intersect(down).find((h) => !ignoreHit(h));
+    if (!floor || Math.abs(floor.point.y - y) > LEVEL_TOLERANCE[index]) return false;
+    upRay.set(tmpOrigin, UP_VEC);
+    return !collision.intersect(upRay).some((h) => !ignoreHit(h));
   }
 
   /**
@@ -375,6 +426,42 @@ export function install(ctx) {
     // now would pop a toast about it.
     if (mode !== 'walk' || airborne) return;
     const { index, outcome } = pickLevel(levelIndex, delta, LEVEL_ORDER.length, hasFloorAt);
+    const targetY = LEVEL_ORDER[index].y;
+
+    // Straight up from the York Concourse is the inside of the head house
+    // (#110). Where the landing would be inside a building, arrive somewhere a
+    // walker could actually stand: the stair, escalator or lift that joins the
+    // two levels if its head is clear, else the nearest spot out from under the
+    // building, else refuse rather than surface inside it.
+    let arriveAt = null;
+    if (index !== levelIndex
+        && insideSolidAt(buildingBoxes(), camera.position.x, camera.position.z, targetY)) {
+      const fromY = LEVEL_ORDER[levelIndex].y;
+      // Out from under the building, too: the concourse stairs rise into the
+      // head house's own mass, and from inside a solid box a ray sees nothing,
+      // so the headroom probe alone called that arrival clear.
+      const clear = (x, z) => !insideSolidAt(buildingBoxes(), x, z, targetY) && canStandAt(index, x, z);
+      const ways = accessPoints()
+        .map((a) => pickAccess([a], camera.position, fromY, targetY))
+        .filter(Boolean)
+        .sort((a, b) => a.distance - b.distance);
+      arriveAt = ways.map((w) => w.access).find((a) => clear(a.x, a.z)) ?? null;
+      if (!arriveAt) {
+        // Every ring candidate is probed, not only the first one out from under
+        // the building: west of the station the first open spots are over the
+        // concourse's roof, and the promenade is a few metres further on.
+        arriveAt = nearestOpenSpot(buildingBoxes(), camera.position.x, camera.position.z, targetY, {
+          accept: (x, z) => canStandAt(index, x, z),
+        });
+      }
+      if (!arriveAt) {
+        window.dispatchEvent(new CustomEvent('twin:level', {
+          detail: { name: LEVEL_ORDER[index].name, outcome: 'no-access', delta },
+        }));
+        return;
+      }
+    }
+
     // The HUD says what happened, including when nothing did. Silence was the
     // whole of the old feedback: the chip kept showing the level you were
     // already on and the key read as broken.
@@ -383,7 +470,8 @@ export function install(ctx) {
     }));
     if (index === levelIndex) return;
     levelIndex = index;
-    levelChangeTo = LEVEL_ORDER[levelIndex].y + EYE;
+    if (arriveAt) camera.position.set(arriveAt.x, camera.position.y, arriveAt.z);
+    levelChangeTo = targetY + EYE;
     velocity.set(0, 0, 0);
     clearBob();
   }

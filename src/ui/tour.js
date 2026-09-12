@@ -56,7 +56,11 @@ function beat(b) {
 export const BEATS = Object.freeze([
   {
     id: 'establishing', seconds: 24, hour: 16.5,
-    pos: [120, 210, 300], look: [-260, 60, 60],
+    // From (120, 210, 300) the shot was a CIBC Square curtain wall at a Dutch
+    // angle - no station, no tower, and it is the first thing a tour viewer
+    // sees (#114). Further east and lower, looking west down Front, puts the
+    // head house across the frame with the tower closing the far end.
+    pos: [160, 80, 15], look: [-620, 95, 50],
     caption: 'Front Street West. Union Station along the bottom, the CN Tower closing the west end — a grid rotated 16.7° off true north.',
   },
   {
@@ -64,7 +68,12 @@ export const BEATS = Object.freeze([
     caption: 'Dropping onto the promenade at Bay. The head house runs 226 m west and stops short of York.',
   },
   {
-    id: 'colonnade', seconds: 24, hour: 17.1, vp: 'union-forecourt',
+    // Its own stop rather than the forecourt viewpoint: from there the
+    // entablature the caption is about sat above the frame and a lamp post ran
+    // down the middle of it (#114). Back on the promenade and tilted up, the
+    // columns and the incised band are in one shot.
+    id: 'colonnade', seconds: 24, hour: 17.1,
+    pos: [-131, 2.5, 0], look: [-131, 14, 37],
     caption: 'The colonnade: 22 Tuscan columns. The entablature above carries incised railway names — nothing more.',
   },
   {

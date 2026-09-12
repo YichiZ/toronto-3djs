@@ -142,7 +142,9 @@ function friezeTexture(names, pxPerMetre = 54, metres = LENGTH) {
   ctx.save();
   ctx.scale(squash, 1);
 
-  const capPx = Math.round(0.62 * pxPerMetreY);   // ~0.62 m cap height, carved
+  // ~0.8 m cap height, carved. At 0.62 m the names were unreadable from the
+  // middle of the hall, which is where the tour puts a viewer (#114).
+  const capPx = Math.round(0.8 * pxPerMetreY);
   const baseline = h / 2 + capPx * 0.36;
   const slot = layoutWidth / names.length;
   ctx.textBaseline = 'alphabetic';
@@ -162,9 +164,12 @@ function friezeTexture(names, pxPerMetre = 54, metres = LENGTH) {
     const width = measureTracked(ctx, name, capPx, tracking);
     const x = slot * i + Math.max(0, (slot - width) / 2);
     tracked(ctx, name, x, baseline, capPx, tracking, (ch, cx, cy) => {
-      ctx.fillStyle = 'rgba(255,252,244,0.75)';
+      // Cut deep enough to read at tour distance: at rgba(58,52,42,0.92) on
+      // this stone the names were white-on-white from the middle of the hall,
+      // and "C A L G A" was all a viewer could make out (#114).
+      ctx.fillStyle = 'rgba(255,253,247,0.9)';
       ctx.fillText(ch, cx + 2, cy + 2);      // lit lip below the cut
-      ctx.fillStyle = 'rgba(58,52,42,0.92)';
+      ctx.fillStyle = 'rgba(28,24,18,0.98)';
       ctx.fillText(ch, cx, cy);              // the cut itself
     });
   }
@@ -290,11 +295,14 @@ function buildPiersAndWalls(g) {
 function buildFrieze(g) {
   const friezeMat = (names, metres) =>
     new THREE.MeshStandardMaterial({
+      name: 'gh:frieze',   // so a test can find the carved band's own pixels
       map: friezeTexture(names, 26, metres),
       roughness: 0.78,
       metalness: 0.0,
       emissive: 0x2a2620,
-      emissiveIntensity: 0.35,   // interiors carry their own low-cost fill
+      // Interiors carry their own low-cost fill, but at 0.35 this one lifted the
+      // cut letters back into the stone they are cut from (#114).
+      emissiveIntensity: 0.18,
     });
 
   const band = new THREE.Group();

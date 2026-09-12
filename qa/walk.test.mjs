@@ -12,9 +12,10 @@ import { LEVELS } from '../src/data/grid.js';
 
 const name = (i) => LEVEL_ORDER[i].name;
 
-test('the seven levels, low to high, with street as the fallback', () => {
+test('the eight levels, low to high, with street as the fallback', () => {
   assert.deepEqual(LEVEL_ORDER.map((l) => l.name),
-    ['PATH', 'concourse', 'street', 'viaduct deck', 'platform', 'SkyWalk', 'Gardiner deck']);
+    ['PATH', 'retail concourse', 'concourse', 'street', 'viaduct deck', 'platform',
+      'SkyWalk', 'Gardiner deck']);
   for (let i = 1; i < LEVEL_ORDER.length; i++) assert.ok(LEVEL_ORDER[i].y > LEVEL_ORDER[i - 1].y, 'low to high');
   assert.equal(name(STREET_LEVEL), 'street');
   assert.equal(nearestLevel(0, []), STREET_LEVEL, 'an empty list falls back to street');
@@ -22,6 +23,11 @@ test('the seven levels, low to high, with street as the fallback', () => {
 
 test('the nearest level to a height, including the half-metre deck/platform split', () => {
   assert.equal(name(nearestLevel(LEVELS.path + 0.2)), 'PATH');
+  // The excavated retail level sits 1.5 m under the concourses and 1.5 m over
+  // the PATH (#120); the two neighbours are what make its tolerance 0.75.
+  assert.equal(name(nearestLevel(LEVELS.unionRetail)), 'retail concourse');
+  assert.equal(name(nearestLevel(LEVELS.unionRetail - 0.6)), 'retail concourse');
+  assert.equal(name(nearestLevel(LEVELS.unionConcourse)), 'concourse');
   assert.equal(name(nearestLevel(0.15)), 'street', 'a kerb-top is street');
   assert.equal(name(nearestLevel(8.77)), 'SkyWalk', 'the Royal Bank Plaza setback roof walks as level 9');
   assert.equal(name(nearestLevel(6.6)), 'viaduct deck');

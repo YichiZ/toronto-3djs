@@ -9,16 +9,29 @@
  *
  * REAL-WORLD FACTS ENCODED
  *   - YORK CONCOURSE (west end) reopened 2015 as the flagship of the
- *     revitalisation: a bright white faceted/undulating plaster ceiling, glass
- *     balustrades at the openings up to the moat level, wide clear floor, retail
- *     lining the perimeter.
+ *     revitalisation: a bright white faceted/undulating plaster ceiling, wide
+ *     clear floor, retail lining the perimeter.
  *   - BAY CONCOURSE (east end) followed with the same architectural language at
  *     a slightly smaller scale.
+ *
+ * WHAT IS NOT HERE, AND WHY (#117). The real halls open up to THE MOAT — the
+ * cut flanking the Great Hall between street and concourse, glazed over in the
+ * revitalisation — and the balustrades in those rooms guard that opening. This
+ * module built the railing and not the opening: the ceiling roofs the whole
+ * room, so the glass stood in the middle of a sealed space guarding a floor.
+ * The railing is gone until the moat exists.
+ *
+ * Building it is not a matter of cutting this ceiling. Union Station's wing
+ * massing is a solid stone block standing on y = 0, and its underside is what
+ * a visitor in York or Bay actually sees overhead — 100% of the frame, 2 m over
+ * their head. This room's ceiling at HALL_CEIL = +1.9, and anything cut into
+ * it, is hidden above that lid.
  *   - VIA CONCOURSE sits centre-south between them, against the train shed: it
  *     is the departures hall proper — seating, gate doors onto the platform
  *     stairs, and the departure boards passengers actually wait under.
  *   - All three are joined by a wide east-west passage running underneath the
- *     Great Hall, which is why the hall above has openings at both ends.
+ *     Great Hall — buildLink() below. The Great Hall floor over it is solid in
+ *     this model; its own openings are not built, so do not describe them.
  */
 import * as THREE from 'three';
 import { LEVELS } from '../data/grid.js';
@@ -408,10 +421,11 @@ function buildRoom(room) {
   boards.instanceMatrix.needsUpdate = true;
   g.add(boards);
 
-  // glass balustrade around the void up to the moat / street level
-  const bal = balustrade(room.w * 0.5, 'x');
-  bal.position.set(room.x, FLOOR + 0.02, room.z - room.d / 2 + 5.5);
-  g.add(bal);
+  // NO BALUSTRADE HERE (#117). One used to stand on the floor across the north
+  // of the room, described as guarding "the void up to the moat / street level".
+  // There is no void: facetedCeiling roofs the whole room, so the glass railing
+  // guarded a floor. It cannot simply be given an opening either — see the moat
+  // note at the top of this file. A railing goes in when the drop does.
 
   // vertical circulation: up to the Great Hall, down to the PATH. Each one is
   // tagged `userData.access` at its midpoint, so the nearby strip can name it

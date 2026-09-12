@@ -247,10 +247,30 @@ function buildUnderpass(u) {
   walls.receiveShadow = true;
   g.add(walls);
 
-  // Tunnel ceiling panel hung under the deck soffit.
-  const ceiling = new THREE.Mesh(new THREE.BoxGeometry(w - 0.6, 0.14, depth), M.ceilingPanel());
+  // Tunnel soffit under the deck. Concrete, not the pale interior panel: as a
+  // bright flat slab it took 60% of the frame and the steel below it could not
+  // read against it (#111).
+  const ceiling = new THREE.Mesh(new THREE.BoxGeometry(w - 0.6, 0.14, depth), M.concretePlain());
   ceiling.position.set(u.x, SOFFIT - 0.07, midZ);
   g.add(ceiling);
+
+  // The plate girders that carry the corridor over the roadway. Tour beat 10
+  // says "the corridor is carried on steel" and there was none in shot (#111).
+  // Web and bottom flange per girder, kept shallow so the posted clearance is
+  // still the clearance: the lowest steel sits ~0.7 m under the deck soffit.
+  const GIRDER_EVERY = 4.2;
+  const girderCount = Math.max(2, Math.floor(depth / GIRDER_EVERY));
+  const webs = instanced(UNIT, M.steelDark(), girderCount, { shadow: true });
+  const flanges = instanced(UNIT, M.paintedSteel(0x3d454c), girderCount * 2, { shadow: true });
+  for (let i = 0; i < girderCount; i++) {
+    const z = c.north + (depth / girderCount) * (i + 0.5);
+    put(webs, i, u.x, SOFFIT - 0.42, z, w - 0.4, 0.52, 0.16);
+    put(flanges, i * 2, u.x, SOFFIT - 0.70, z, w - 0.4, 0.1, 0.62);
+    put(flanges, i * 2 + 1, u.x, SOFFIT - 0.15, z, w - 0.4, 0.1, 0.62);
+  }
+  webs.instanceMatrix.needsUpdate = true;
+  flanges.instanceMatrix.needsUpdate = true;
+  g.add(webs, flanges);
 
   // Headwall band and jamb pilasters at both portal mouths.
   const heads = instanced(UNIT, M.concrete(), 2, { shadow: true });

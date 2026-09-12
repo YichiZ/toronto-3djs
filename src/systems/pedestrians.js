@@ -162,17 +162,30 @@ function pickWeighted(list, weightOf, rnd) {
   return list[list.length - 1];
 }
 
-function spawn(edges, im, slot, arch) {
+/**
+ * How far off the centreline a walker may take its lane, by the width of the
+ * space. Everyone walked the centreline exactly, so a path produced a column
+ * rather than a crowd (#112).
+ */
+const STREET_LANES = 1.1;   // sidewalks and the crossings
+const BELOW_LANES = 2.0;    // PATH corridors and the concourse loops
+
+function spawn(edges, im, slot, arch, lanes = STREET_LANES) {
   const e = pickWeighted(edges, (x) => x.w * x.len, Math.random());
   const rev = Math.random() < 0.5;
   return {
     im, slot,
     edge: e, rev, s: Math.random() * e.len,
-    speed: arch.speed[0] + Math.random() * (arch.speed[1] - arch.speed[0]),
+    // Per walker as well as per archetype: one rate per type marched a whole
+    // type in step down the same edge (#112).
+    speed: (arch.speed[0] + Math.random() * (arch.speed[1] - arch.speed[0])) * (0.86 + Math.random() * 0.28),
     height: 0.94 + Math.random() * 0.12,
     phase: Math.random() * Math.PI * 2,
     wait: 0,
     side: 0,                      // metres off its line, sidestepping the walker (#38)
+    // The part of the walkway this one keeps to, for the whole of its life, on
+    // the side its direction of travel would keep to (#112).
+    lane: (rev ? -1 : 1) * (0.15 + Math.random() * 0.85) * lanes,
   };
 }
 
@@ -210,13 +223,17 @@ function stepAgent(a, dt, walker) {
   const len = Math.hypot(to.x - from.x, to.z - from.z) || 1;
   const dx = (to.x - from.x) / len;
   const dz = (to.z - from.z) / len;
+  // Its own lane first, then the sidestep on top: the walker is dodged from
+  // where this one actually walks, not from the centreline (#112, #38).
+  const lx = x - dz * a.lane;
+  const lz = z + dx * a.lane;
   const onFloor = walker && Math.abs(walker.y - WALKER_EYE - a.edge.y) < 1.5;
   const target = onFloor
-    ? clearance({ px: x, pz: z }, { dx, dz }, { cx: walker.x, cz: walker.z }, a.slot % 2 ? 1 : -1)
+    ? clearance({ px: lx, pz: lz }, { dx, dz }, { cx: walker.x, cz: walker.z }, a.slot % 2 ? 1 : -1)
     : 0;
   a.side += (target - a.side) * Math.min(1, dt * SIDE_RATE);
-  x += -dz * a.side;
-  z += dx * a.side;
+  x = lx - dz * a.side;
+  z = lz + dx * a.side;
 
   _d.position.set(x, a.edge.y + bob, z);
   _d.rotation.set(0, Math.atan2(to.x - from.x, to.z - from.z), 0);
@@ -287,7 +304,7 @@ export function build(ctx) {
       const pathMeshes = makeMeshes(group, pathCounts, 'ped-path');
       meshes = meshes.concat(pathMeshes.filter(Boolean));
       ARCHETYPES.forEach((arch, i) => {
-        for (let k = 0; k < pathCounts[i]; k++) agents.push(spawn(g.edges, pathMeshes[i], k, arch));
+        for (let k = 0; k < pathCounts[i]; k++) agents.push(spawn(g.edges, pathMeshes[i], k, arch, BELOW_LANES));
       });
     })
     .catch(() => console.info('[pedestrians] PATH_SEGMENTS unavailable - skipping the concourse crowd'));
@@ -301,7 +318,7 @@ export function build(ctx) {
       const concMeshes = makeMeshes(group, counts, 'ped-concourse');
       meshes = meshes.concat(concMeshes.filter(Boolean));
       ARCHETYPES.forEach((arch, i) => {
-        for (let k = 0; k < counts[i]; k++) agents.push(spawn(g.edges, concMeshes[i], k, arch));
+        for (let k = 0; k < counts[i]; k++) agents.push(spawn(g.edges, concMeshes[i], k, arch, BELOW_LANES));
       });
     })
     .catch(() => console.info('[pedestrians] CONCOURSE_WALKS unavailable - skipping the Union concourse crowd'));

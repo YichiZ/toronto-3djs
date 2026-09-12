@@ -38,7 +38,10 @@ test('a pedestrian heading straight at the walker steps round it', async () => {
     const f = a.s / len;
     const px = from.x + (to.x - from.x) * f;
     const pz = from.z + (to.z - from.z) * f;
-    ctx.camera.position.set(px + dx * 3, a.edge.y + 1.7, pz + dz * 3);
+    // On the agent's own line, lane and all (#112): on the centreline the
+    // walker would simply be beside it, and the sidestep would go untested.
+    const lane = a.lane ?? 0;
+    ctx.camera.position.set(px - dz * lane + dx * 3, a.edge.y + 1.7, pz + dx * lane + dz * 3);
     const m = new THREE.Matrix4();
     const p = new THREE.Vector3();
     let min = Infinity;
@@ -87,6 +90,42 @@ test('the Union concourses carry a crowd (#70)', async () => {
     // Unfixed: nobody at all.
     assert.ok(near >= 8, `${near} pedestrians within 25 m at ${id}`);
   }
+});
+
+test('the crowd walks the width of the way, not nose to tail down its middle (#112)', async () => {
+  const r = await page.evaluate(() => {
+    const agents = window.__TWIN__.ctx.scene.getObjectByName('pedestrians').userData.agents();
+    const offs = agents.map((a) => Math.abs((a.side ?? 0) + (a.lane ?? 0)));
+    const byEdge = new Map();
+    for (const a of agents) {
+      if (!byEdge.has(a.edge)) byEdge.set(a.edge, []);
+      byEdge.get(a.edge).push(a);
+    }
+    let pairs = 0;
+    let nose = 0;
+    for (const list of byEdge.values()) {
+      if (list.length < 2) continue;
+      const sorted = [...list].sort((p, q) => p.s - q.s);
+      for (let i = 1; i < sorted.length; i++) {
+        pairs++;
+        const along = Math.abs(sorted[i].s - sorted[i - 1].s);
+        const off = (a) => (a.side ?? 0) + (a.lane ?? 0);
+        if (along < 4 && Math.abs(off(sorted[i]) - off(sorted[i - 1])) < 0.5) nose++;
+      }
+    }
+    const speeds = agents.map((a) => a.speed);
+    return {
+      offCentre: offs.filter((o) => o > 0.3).length / agents.length,
+      nose: pairs ? nose / pairs : 0,
+      speedSpread: Math.max(...speeds) - Math.min(...speeds),
+    };
+  });
+  const where = JSON.stringify(r);
+  // Unfixed: every walker exactly on the centreline, 43% of same-edge
+  // neighbours nose to tail, speeds 0.80-1.50.
+  assert.ok(r.offCentre > 0.7, `only ${(r.offCentre * 100).toFixed(0)}% walk off the centreline - ${where}`);
+  assert.ok(r.nose < 0.25, `${(r.nose * 100).toFixed(0)}% of neighbours are nose to tail - ${where}`);
+  assert.ok(r.speedSpread > 0.8, `speeds span only ${r.speedSpread.toFixed(2)} m/s - ${where}`);
 });
 
 test('the whole run produced no console errors', () => {

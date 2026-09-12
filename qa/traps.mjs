@@ -32,9 +32,18 @@ async function read(rel) {
 
 const CANADIAN_DESTINATIONS = ['HALIFAX', 'MONTREAL', 'WINNIPEG', 'VANCOUVER', 'EDMONTON', 'CALGARY', 'SASKATOON', 'REGINA', 'VICTORIA'];
 
-/** Strip comments so a check does not trip on prose describing the trap. */
+/**
+ * Strip comments so a check does not trip on prose describing the trap.
+ *
+ * Block comments are replaced by their own newlines rather than deleted: the
+ * checks that report a line number (#133) would otherwise point at a line tens
+ * of lines off, and a check scoped to a window of lines would read the wrong
+ * window entirely.
+ */
 function codeOnly(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => '\n'.repeat((c.match(/\n/g) ?? []).length))
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
 /**
@@ -46,7 +55,52 @@ function codeNoStrings(src) {
   return codeOnly(src)
     .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
     .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
-    .replace(/`(?:[^`\\]|\\.)*`/g, '``');
+    // Template literals span lines; keep their newlines or every line number
+    // after one is wrong (#133).
+    .replace(/`(?:[^`\\]|\\.)*`/g, (s) => `\`${'\n'.repeat((s.match(/\n/g) ?? []).length)}\``);
+}
+
+/** Lines around a match that count as its context. */
+const CONTEXT_LINES = 3;
+
+/**
+ * Streetcar references with no below-grade or King Street context NEAR THEM.
+ *
+ * Both halves of this used to be wrong (#133). It tested the whole file, so one
+ * legitimising token anywhere exempted every streetcar reference in it — and
+ * `world/forecourt.js`, which is exactly where surface track on Front would be
+ * written, has twenty. And `/king/i` was unanchored, so the word "looking"
+ * legitimised a file; forecourt.js contains one of those too.
+ *
+ * Scoped to a window around each reference, with the tokens anchored. Exported
+ * so qa/traps.test.mjs can feed it the bait directly.
+ *
+ * This is a SOURCE check and it can only see what the source says. The geometric
+ * guarantee — nothing rail-shaped at street level in the Front Street corridor,
+ * whatever it is called — is qa/front-street-track.e2e.mjs, which is what
+ * actually catches 400 m of unnamed rail laid down Front.
+ *
+ * @param {string} source file text
+ * @returns {Array<{line:number, text:string}>}
+ */
+export function streetcarOffences(source) {
+  // Two views of the same lines, and they have to stay in step: a reference is
+  // found in code with the STRINGS BLANKED, because a registry note reading
+  // "no streetcar on Front" is the reconstruction documenting the trap. Its
+  // context is judged on code with the strings KEPT and only the comments gone
+  // — `street.id === 'king'` is how the legitimate case is actually written,
+  // while "looking" in a comment is how the old check was fooled.
+  const found = codeNoStrings(source).split('\n');
+  const context = codeOnly(source).split('\n');
+  const LEGITIMATE = /below.?grade|tunnel|loop|LEVELS\.path|\bking\b/i;
+  const out = [];
+  for (let i = 0; i < found.length; i++) {
+    if (!/streetcar|tram/i.test(found[i])) continue;
+    const from = Math.max(0, i - CONTEXT_LINES);
+    const window = context.slice(from, i + CONTEXT_LINES + 1).join('\n');
+    if (!LEGITIMATE.test(window)) out.push({ line: i + 1, text: found[i].trim().slice(0, 80) });
+  }
+  return out;
 }
 
 const CHECKS = [
@@ -57,15 +111,18 @@ const CHECKS = [
       const files = await walk(SRC);
       const offenders = [];
       for (const f of files) {
-        const src = codeNoStrings(await readFile(f, 'utf8'));
-        if (!/streetcar|tram/i.test(src)) continue;
-        // A streetcar reference is only legitimate below grade or on King.
-        const legitimate = /below.?grade|tunnel|loop|LEVELS\.path|EW\.king|king/i.test(src);
-        if (!legitimate) offenders.push(f.replace(SRC, ''));
+        for (const o of streetcarOffences(await readFile(f, 'utf8'))) {
+          offenders.push(`${f.replace(SRC, '')}:${o.line}`);
+        }
       }
       return offenders.length
         ? { status: 'fail', detail: `streetcar geometry with no below-grade or King Street context: ${offenders.join(', ')}` }
-        : { status: 'pass', detail: 'streetcar references are confined to the Bay Street tunnel, the Union Loop and King Street' };
+        : {
+          status: 'pass',
+          detail: 'every streetcar reference in the source names the Bay Street tunnel, the Union '
+            + 'Loop or King Street within three lines of itself. The geometric check — no rail at '
+            + 'street level in the Front corridor — is qa/front-street-track.e2e.mjs',
+        };
     },
   },
   {

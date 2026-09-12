@@ -174,20 +174,27 @@ export const asphalt = (repeat = [8, 8]) =>
     }
   }, { repeat });
 
-/** Precast paver sidewalk with a scored joint pattern. */
+/**
+ * Precast paver sidewalk with a scored joint pattern.
+ *
+ * Quiet on purpose (#113). At a 14-unit step between paver and joint, over
+ * heavy grain, the pavement was the brightest and busiest surface in the scene —
+ * brighter than the limestone beside it — and it strobed as you walked. The
+ * joint pattern still reads; it just stops competing with the buildings.
+ */
 export const sidewalk = (repeat = [10, 10]) =>
   texture('sidewalk', 512, (ctx, s) => {
-    ctx.fillStyle = '#9d9a94';
+    ctx.fillStyle = '#8e8b85';
     ctx.fillRect(0, 0, s, s);
     const n = 4;
     for (let r = 0; r < n; r++) {
       for (let c = 0; c < n; c++) {
-        const v = noise(r, c, 61) * 18 - 9;
-        ctx.fillStyle = `rgb(${162 + v},${159 + v},${152 + v})`;
+        const v = noise(r, c, 61) * 8 - 4;
+        ctx.fillStyle = `rgb(${149 + v},${146 + v},${140 + v})`;
         ctx.fillRect((c * s) / n + 2, (r * s) / n + 2, s / n - 4, s / n - 4);
       }
     }
-    grain(ctx, s, 12, 43);
+    grain(ctx, s, 7, 43);
   }, { repeat });
 
 /**
@@ -196,13 +203,16 @@ export const sidewalk = (repeat = [10, 10]) =>
  */
 export const forecourtPaving = (repeat = [6, 6]) =>
   texture('forecourt', 512, (ctx, s) => {
-    ctx.fillStyle = '#b0aca4';
+    // The inlay was a 43-unit step between band and band, which read as stripes
+    // across the promenade and flickered along it (#113). An 11-unit step still
+    // says granite bands, without taking the frame from the station.
+    ctx.fillStyle = '#98948c';
     ctx.fillRect(0, 0, s, s);
     for (let i = 0; i < 8; i++) {
-      ctx.fillStyle = i % 3 === 0 ? '#8d8880' : '#b8b4ac';
+      ctx.fillStyle = i % 3 === 0 ? '#948f87' : '#9c9890';
       ctx.fillRect(0, (i * s) / 8, s, s / 8 - 3);
     }
-    grain(ctx, s, 10, 71);
+    grain(ctx, s, 7, 71);
   }, { repeat });
 
 /** Weathered copper for the Royal York's chateau roof. */

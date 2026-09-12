@@ -66,7 +66,7 @@ const hopAndWatch = (ms) => page.evaluate(async (runMs) => {
   const { ctx, controls } = window.__TWIN__;
   const nearby = ctx.scene.getObjectByName('vehicles').userData.nearby;
   const frame = () => new Promise((r) => requestAnimationFrame(r));
-  const out = { frames: 0, air: 0, inside: 0, insideAir: 0, hops: 0, reached: 0 };
+  const out = { frames: 0, air: 0, inside: 0, insideAir: 0, hops: 0, reached: 0, closest: Infinity };
   const t0 = performance.now();
   while (performance.now() - t0 < runMs) {
     if (!controls.airborne) { controls.jump(); out.hops++; }
@@ -82,6 +82,11 @@ const hopAndWatch = (ms) => page.evaluate(async (runMs) => {
       const lateral = rx * -car.dz + rz * car.dx;
       if (Math.abs(along) < car.half - 0.05 && Math.abs(lateral) < car.halfWidth - 0.05) hit = true;
       if (Math.abs(along) < car.half + 0.5 && Math.abs(lateral) < car.halfWidth + 0.5) near = true;
+      // How far outside this car's footprint the walker is: 0 is its very edge.
+      // "Did a car arrive?" has to be asked outside the radius the push keeps
+      // clear, or the precondition asks for the thing the push prevents (#116).
+      const gap = Math.max(Math.abs(along) - car.half, Math.abs(lateral) - car.halfWidth);
+      if (gap < out.closest) out.closest = gap;
     });
     if (hit) out.inside++;
     if (hit && controls.airborne) out.insideAir++;
@@ -102,7 +107,14 @@ test('a car does not drive through a walker who is mid-hop', async () => {
   assert.ok(r.frames > 60, `only ${r.frames} frames rendered in 4 s`);
   assert.ok(r.hops > 2, `the walker hardly hopped (${r.hops} hops)`);
   assert.ok(r.air > r.frames * 0.4, `barely airborne: ${r.air} of ${r.frames} frames`);
-  assert.ok(r.reached > 0, 'no car ever reached the walker');
+  // A car came, which is what this suite needs before its real assertions mean
+  // anything. It used to demand the walker be inside the footprint grown by
+  // 0.5 m - exactly the clearance the push holds - so the guard asked for the
+  // failure the feature exists to prevent, and the two assertions below never
+  // ran (#116). The push settles cars about 0.5 m off the footprint; 2 m says a
+  // car arrived without asking it to breach.
+  assert.ok(r.closest < 2,
+    `no car came near the walker: closest was ${r.closest.toFixed(2)} m outside a footprint (reached ${r.reached})`);
   // Before the fix the shove was skipped while airborne, so the car passed
   // clean through the hopping walker.
   assert.equal(r.insideAir, 0, `walker was inside a car mid-hop on ${r.insideAir} of ${r.air} airborne frames`);

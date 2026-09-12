@@ -29,8 +29,16 @@ after(async () => { await world?.close(); });
  */
 async function luminance(viewpoint, hour) {
   await page.evaluate(([id, h]) => {
-    window.__TWIN__.controls.teleport(id);
-    window.__TWIN__.time.setHour(h);
+    const T = window.__TWIN__;
+    T.controls.teleport(id);
+    T.time.setHour(h);
+    // The city, not the traffic. A crowd and a lane of cars drifting through
+    // the frame move these readings several units between runs, and the
+    // forecourt's "under half of noon" margin is thin enough to flake on it.
+    for (const name of ['pedestrians', 'vehicles', 'trains']) {
+      const g = T.ctx.scene.getObjectByName(name);
+      if (g) g.visible = false;
+    }
   }, [viewpoint, hour]);
   // Streaming, and the indoor-light check with it, runs every 0.25 s.
   await page.waitForTimeout(700);
@@ -64,8 +72,12 @@ test('streetlamps throw a pool of light on the pavement (#76)', async () => {
   // Unlit pavement under the Bay lanterns read 4 at 23:30; with the pools, 13.
   const bay = await luminance('bay-north-of-front', 23.5);
   assert.ok(bay > 9, `Bay north of Front at 23:30 is ${bay.toFixed(1)}`);
+  // The square has no lamps of its own: its light is the podium's outdoor
+  // screen, so it is the reading most exposed to the ground's own brightness.
+  // It read 12.5 until #113 took the contrast and the glare out of the paving
+  // by design; now 10.8, and the screen and the silhouettes still read.
   const square = await luminance('maple-leaf-square', 23.5);
-  assert.ok(square > 12, `Maple Leaf Square at 23:30 is ${square.toFixed(1)}`);
+  assert.ok(square > 9, `Maple Leaf Square at 23:30 is ${square.toFixed(1)}`);
 });
 
 test('the head house is floodlit after dark (#85)', async () => {

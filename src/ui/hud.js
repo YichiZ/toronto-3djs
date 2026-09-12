@@ -129,7 +129,10 @@ export function install(ctx, { controls, tour, time, reference, footsteps, failu
       ? `no level ${delta > 0 ? 'above' : 'below'}`
       // Refused rather than surfacing inside a building (#110).
       : outcome === 'no-access' ? `no way ${delta > 0 ? 'up' : 'down'} from here`
-        : outcome === 'fallback' ? `${name} — none modelled here` : name;
+        // Asked for mid-hop, or from orbit, where there is no walker (#119).
+        : outcome === 'airborne' ? 'land first'
+          : outcome === 'walk-only' ? 'walk mode only'
+            : outcome === 'fallback' ? `${name} — none modelled here` : name;
     toast.classList.toggle('warn', refused);
     toast.hidden = false;
     // Restart the flash rather than letting a second press inherit a

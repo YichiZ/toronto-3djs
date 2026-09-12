@@ -251,10 +251,28 @@ function corridor(s, tenantKey) {
   floor.receiveShadow = true;
   g.add(floor);
 
-  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(len, s.width), M.ceilingPanel());
+  // The soffit, and the ribs under it. One flat pale panel read as a white void
+  // brighter than the floor, with no edge and no direction (#111) — under tour
+  // beat 6's "no daylight anywhere". A darker soffit with ribs across it gives
+  // the corridor a ceiling that recedes with the walk.
+  const ceil = new THREE.Mesh(
+    new THREE.PlaneGeometry(len, s.width),
+    local('soffit', () => new THREE.MeshStandardMaterial({ color: 0xb4b1a9, roughness: 0.92 }))
+  );
   ceil.rotation.x = Math.PI / 2;
   ceil.position.set(len / 2, CEIL, 0);
   g.add(ceil);
+
+  const RIB_EVERY = 2.4;
+  const ribCount = Math.max(2, Math.floor(len / RIB_EVERY));
+  const ribs = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.3, 0.24, s.width),
+    local('rib', () => new THREE.MeshStandardMaterial({ color: 0x8f949a, roughness: 0.65, metalness: 0.2 })),
+    ribCount
+  );
+  for (let i = 0; i < ribCount; i++) place(ribs, i, (len / ribCount) * (i + 0.5), CEIL - 0.12, 0);
+  ribs.instanceMatrix.needsUpdate = true;
+  g.add(ribs);
 
   // Side walls, broken by an opening wherever another corridor meets this one.
   // Built as one solid box per side, a T-junction was walled off: a walker could
@@ -273,7 +291,11 @@ function corridor(s, tenantKey) {
   const N = Math.max(2, Math.round(len / 5.5));
   const troffers = new THREE.InstancedMesh(
     new THREE.BoxGeometry(2.6, 0.07, 0.55),
-    local('troffer', () => new THREE.MeshBasicMaterial({ color: 0xf7f5ea })),
+    // Emissive rather than flat: as a basic colour they read as pale quads
+    // floating under the soffit rather than as fittings that are lit (#111).
+    local('troffer', () => new THREE.MeshStandardMaterial({
+      color: 0xfdfbf2, emissive: 0xfff2d4, emissiveIntensity: 1.4, roughness: 0.4,
+    })),
     N * 2
   );
   let ti = 0;
@@ -477,7 +499,11 @@ function buildStreetcarLoop() {
   const LAMPS = 16;
   const lamps = new THREE.InstancedMesh(
     new THREE.BoxGeometry(2.2, 0.07, 0.5),
-    local('troffer', () => new THREE.MeshBasicMaterial({ color: 0xf7f5ea })),
+    // Emissive rather than flat: as a basic colour they read as pale quads
+    // floating under the soffit rather than as fittings that are lit (#111).
+    local('troffer', () => new THREE.MeshStandardMaterial({
+      color: 0xfdfbf2, emissive: 0xfff2d4, emissiveIntensity: 1.4, roughness: 0.4,
+    })),
     LAMPS
   );
   for (let i = 0; i < LAMPS; i++) {

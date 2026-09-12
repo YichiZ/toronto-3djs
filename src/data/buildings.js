@@ -239,7 +239,10 @@ export const BUILDINGS = [
     // buildings in Toronto", 2026 (205 m, 59 floors).
     x: 232, z: 62, w: 34, d: 34, height: 205, floors: 58, year: 2015,
     kind: 'curtain', palette: { glass: '#93b2c6', spandrel: '#2b333a' },
-    confidence: 'reference', note: 'Daniel Libeskind curve; reconstructed here as a tapered slab. Height and storeys verified; the footprint is not.',
+    // Libeskind's sail (#74): the north face sweeps out in a concave curve toward
+    // the top, the silhouette from Front Street East. Built by sailGeometry().
+    shape: 'sail', flare: 18,
+    confidence: 'reference', note: 'Daniel Libeskind: the north face sweeps out in a concave curve toward the top. Height and storeys verified; the footprint and the 18 m flare at the crown are approximated.',
   },
   {
     id: 'yonge-front-se', name: '1 Yonge / Toronto Star Building', address: '1 Yonge Street',

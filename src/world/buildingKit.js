@@ -49,6 +49,81 @@ export function massing({ width, depth, height, floors, kind = 'punched', palett
   return mesh;
 }
 
+/**
+ * A tower whose north face sweeps out in a concave curve toward the top: the
+ * L Tower's silhouette (#74). Local space as massing(): footprint centred on the
+ * origin, base on y = 0, grid north = -z. The south, east and west faces rise
+ * plumb; the north face leaves the footprint and reaches `flare` metres out at
+ * the crown along (y / height) ** power, slow low down and fast near the top.
+ * Each face maps its facade 0..1 in u and v, as a box does.
+ * @returns {THREE.BufferGeometry}
+ */
+export function sailGeometry({ width, depth, height, flare, power = 2.2, levels = 24 }) {
+  const hw = width / 2;
+  const south = depth / 2;
+  const northAt = (t) => -depth / 2 - flare * t ** power;
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+
+  // One strip per wall: vertices shared up the wall, so the curved face shades
+  // smooth, but not across corners, which stay crisp. `across(t, s)` gives the
+  // wall's [x, z] at height fraction t, with s = 0..1 left to right as seen from
+  // outside, so every quad winds outward.
+  const wall = (across) => {
+    const base = positions.length / 3;
+    for (let i = 0; i <= levels; i++) {
+      const t = i / levels;
+      for (const s of [0, 1]) {
+        const [x, z] = across(t, s);
+        positions.push(x, t * height, z);
+        uvs.push(s, t);
+      }
+    }
+    for (let i = 0; i < levels; i++) {
+      const a = base + i * 2;
+      indices.push(a, a + 1, a + 3, a, a + 3, a + 2);
+    }
+  };
+  wall((t, s) => [s ? hw : -hw, south]);                   // south, seen from +z
+  wall((t, s) => [s ? -hw : hw, northAt(t)]);              // north, seen from -z
+  wall((t, s) => [hw, s ? northAt(t) : south]);            // east, seen from +x
+  wall((t, s) => [-hw, s ? south : northAt(t)]);           // west, seen from -x
+
+  // Roof and underside.
+  const cap = (y, north, up) => {
+    const base = positions.length / 3;
+    for (const [x, z] of [[-hw, south], [hw, south], [hw, north], [-hw, north]]) {
+      positions.push(x, y, z);
+      uvs.push((x + hw) / width, (z - north) / (south - north));
+    }
+    indices.push(...(up ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2]).map((k) => base + k));
+  };
+  cap(height, northAt(1), true);
+  cap(0, northAt(0), false);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** The sail as a building shell: sailGeometry() in the facade material massing() uses. */
+export function sailMassing({ width, depth, height, floors, kind = 'curtain', palette = {}, flare }) {
+  const storeys = floors ?? Math.max(1, Math.round(height / 3.6));
+  const mat = facadeMaterial(kind, {
+    floors: storeys,
+    baysAcross: Math.max(4, Math.round(width / 3.2)),
+    ...palette,
+  });
+  const mesh = new THREE.Mesh(sailGeometry({ width, depth, height, flare }), mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
 /** Projecting cornice / entablature band wrapping a rectangular volume. */
 export function cornice({ width, depth, y, thickness = 1.1, overhang = 0.7, material = M.limestone() }) {
   const mesh = new THREE.Mesh(box(width + overhang * 2, thickness, depth + overhang * 2), material);

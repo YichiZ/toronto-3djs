@@ -422,9 +422,20 @@ export function install(ctx) {
   function changeLevel(delta) {
     // Only while walking, and not mid-hop: the level is what the walker is
     // standing on, and mid-air it is not standing on anything yet. In orbit the
-    // rig owns the camera outright, so a level change there moved nothing and
-    // now would pop a toast about it.
-    if (mode !== 'walk' || airborne) return;
+    // rig owns the camera outright.
+    //
+    // Both cases say so. This guard used to return before the dispatch below,
+    // so the one case it covers was the one case with no feedback at all, and
+    // Space is right next to the movement keys: a key that works most of the
+    // time and silently does nothing the rest reads as flaky input (#119).
+    if (mode !== 'walk' || airborne) {
+      window.dispatchEvent(new CustomEvent('twin:level', {
+        // Mode first: in orbit there is no walker, so whether one would have
+        // been mid-hop is not the reason the key did nothing.
+        detail: { name: LEVEL_ORDER[levelIndex].name, outcome: mode !== 'walk' ? 'walk-only' : 'airborne', delta },
+      }));
+      return;
+    }
     const { index, outcome } = pickLevel(levelIndex, delta, LEVEL_ORDER.length, hasFloorAt);
     const targetY = LEVEL_ORDER[index].y;
 

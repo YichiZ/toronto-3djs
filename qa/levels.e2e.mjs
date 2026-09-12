@@ -110,6 +110,47 @@ test('a refused level change tells you so', async () => {
   assert.equal(toast.level, 'Gardiner deck', 'the level changed after all');
 });
 
+test('mid-hop, a level key says to land first rather than going quiet (#119)', async () => {
+  await standAt(OVER_THE_PATH, 0);
+  const r = await page.evaluate(async () => {
+    const { controls } = window.__TWIN__;
+    const frame = () => new Promise((res) => requestAnimationFrame(res));
+    controls.jump();
+    await frame();
+    await frame();
+    const airborne = controls.airborne;
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', bubbles: true }));
+    await frame();
+    const el = document.querySelector('.hud-toast');
+    return { airborne, text: el?.textContent, hidden: el?.hidden, warn: el?.classList.contains('warn'), level: controls.level };
+  });
+  assert.equal(r.airborne, true, 'the walker was not mid-hop when the key was pressed');
+  // Unfixed: the guard returned before the dispatch, so nothing was said at all.
+  assert.equal(r.hidden, false, 'the HUD said nothing about the refused key');
+  assert.match(r.text, /land first/);
+  assert.ok(r.warn, 'a refusal should not read like an ordinary level change');
+  assert.equal(r.level, 'street', 'the level changed mid-hop');
+});
+
+test('in orbit, a level key says walk mode only (#119)', async () => {
+  const r = await page.evaluate(async () => {
+    const { controls } = window.__TWIN__;
+    // Land first: the hop from the test above would otherwise be the reason.
+    while (controls.airborne) await new Promise((res) => requestAnimationFrame(res));
+    controls.setMode('orbit');
+    await new Promise((res) => requestAnimationFrame(res));
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', bubbles: true }));
+    await new Promise((res) => requestAnimationFrame(res));
+    const el = document.querySelector('.hud-toast');
+    const out = { text: el?.textContent, hidden: el?.hidden, mode: controls.mode };
+    controls.setMode('walk');
+    return out;
+  });
+  assert.equal(r.mode, 'orbit');
+  assert.equal(r.hidden, false, 'the HUD said nothing at all');
+  assert.match(r.text, /walk mode only/);
+});
+
 test('after a level change the walker faces somewhere walkable, not a wall (#72)', async () => {
   // The issue's repro: in the York Concourse, E rose to street level on the
   // spot, still facing the way it faced below - into a blank stone wall.

@@ -413,15 +413,22 @@ function buildRoom(room) {
   bal.position.set(room.x, FLOOR + 0.02, room.z - room.d / 2 + 5.5);
   g.add(bal);
 
-  // vertical circulation: up to the Great Hall, down to the PATH
+  // vertical circulation: up to the Great Hall, down to the PATH. Each one is
+  // tagged `userData.access` at its midpoint, so the nearby strip can name it
+  // and a level change can arrive on it instead of inside the head house (#110).
+  const access = (kind, x, z, lowY, highY, lowName, highName) =>
+    ({ kind, x, z, lowY, highY, lowName, highName });
   const up = escalator({ rise: GREAT_HALL_Y - FLOOR, run: 8.0 });
   up.position.set(room.x + room.w / 2 - 7, FLOOR, room.z - 4);
+  up.userData.access = access('Escalator', up.position.x, room.z, FLOOR, GREAT_HALL_Y, room.name, 'the Great Hall');
   g.add(up);
   const upStair = stair({ rise: GREAT_HALL_Y - FLOOR, run: 7.0, width: 4.0 });
   upStair.position.set(room.x + room.w / 2 - 12, FLOOR, room.z - 4);
+  upStair.userData.access = access('Stairs', upStair.position.x, room.z - 0.5, FLOOR, GREAT_HALL_Y, room.name, 'the Great Hall');
   g.add(upStair);
   const down = stair({ rise: FLOOR - LEVELS.path, run: 6.0, width: 3.4 });
   down.position.set(room.x - room.w / 2 + 8, LEVELS.path, room.z + 6);
+  down.userData.access = access('Stairs', down.position.x, room.z + 9, LEVELS.path, FLOOR, 'the PATH', room.name);
   g.add(down);
 
   // wayfinding over the stair heads (#70)

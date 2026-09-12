@@ -92,6 +92,79 @@ export function openHeading(clear, min = FACE_CLEAR) {
   return clear.indexOf(Math.max(...clear));
 }
 
+/**
+ * How far a level change will take you to a stair, escalator or lift.
+ *
+ * Generous next to the nearby strip's 60 m: this is the difference between
+ * arriving on a floor and arriving inside a wall (#110).
+ */
+export const LEVEL_ACCESS_METRES = 120;
+
+/** A floor within this of an access's end counts as being on it. */
+const ON_FLOOR = 1.5;
+
+/**
+ * Would a landing at (x, z) on the level at height `y` be inside a building?
+ *
+ * Only at or above the street: below grade a footprint is where the interiors
+ * are, and standing inside one is the point. A floor probe cannot answer this —
+ * at the York Concourse the street surface runs on under the head house, so the
+ * landing had a floor and was still inside the building (#110).
+ *
+ * @param {{minX:number, maxX:number, minZ:number, maxZ:number, height:number}[]} boxes
+ */
+export function insideSolidAt(boxes, x, z, y, margin = 0.5) {
+  if (y < -0.5) return false;
+  return boxes.some((b) => b.height > y + 1
+    && x > b.minX - margin && x < b.maxX + margin
+    && z > b.minZ - margin && z < b.maxZ + margin);
+}
+
+/**
+ * The nearest access joining the level at `fromY` to the one at `toY`, either
+ * way round, or null if none is within `maxMetres`.
+ *
+ * @param {{x:number, z:number, lowY:number, highY:number}[]} list
+ * @param {{x:number, z:number}} pos
+ */
+export function pickAccess(list, pos, fromY, toY, maxMetres = LEVEL_ACCESS_METRES) {
+  let best = null;
+  for (const a of list) {
+    const joins =
+      (Math.abs(a.lowY - fromY) < ON_FLOOR && Math.abs(a.highY - toY) < ON_FLOOR)
+      || (Math.abs(a.highY - fromY) < ON_FLOOR && Math.abs(a.lowY - toY) < ON_FLOOR);
+    if (!joins) continue;
+    const distance = Math.hypot(a.x - pos.x, a.z - pos.z);
+    if (distance <= maxMetres && (!best || distance < best.distance)) best = { access: a, distance };
+  }
+  return best;
+}
+
+/**
+ * The nearest spot around (x, z) that is not inside a building at height `y`.
+ *
+ * The fallback when no stair joins the two levels, or none of them is somewhere
+ * you could stand: rings outward on `step` metres until a heading comes up
+ * clear. From the York Concourse this lands on the forecourt promenade, which is
+ * where the way up actually is. Positions only — whether a floor is there is the
+ * caller's probe to run.
+ *
+ * @returns {{x:number, z:number, distance:number} | null}
+ */
+export function nearestOpenSpot(boxes, x, z, y, { step = 4, max = 80, headings = 16, accept = () => true } = {}) {
+  const ok = (cx, cz) => !insideSolidAt(boxes, cx, cz, y) && accept(cx, cz);
+  if (ok(x, z)) return { x, z, distance: 0 };
+  for (let r = step; r <= max; r += step) {
+    for (let i = 0; i < headings; i++) {
+      const a = (i * 2 * Math.PI) / headings;
+      const cx = x + Math.cos(a) * r;
+      const cz = z + Math.sin(a) * r;
+      if (ok(cx, cz)) return { x: cx, z: cz, distance: r };
+    }
+  }
+  return null;
+}
+
 export function pickLevel(index, delta, count, hasFloorAt) {
   for (let i = index + delta; i >= 0 && i < count; i += delta) {
     if (hasFloorAt(i)) return { index: i, outcome: 'ok' };
